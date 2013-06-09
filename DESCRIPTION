@@ -1,0 +1,12 @@
+Package: SGAT
+Type: Package
+Title: Solar/Satellite Geolocation for Animal Tracking
+Version: 0.0-1
+Date: 2013-06-06
+Author: Simon Wotherspoon, Michael Sumner and Simeon Lisovski
+Maintainer: Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au>
+Suggests: GeoLight, geosphere, maptools, raster
+Description: Facilities for estimating the broadscale animal motions from archival or satellite tags.
+NeedsCompilation: no
+ByteCompile: yes
+License: GPL-3
