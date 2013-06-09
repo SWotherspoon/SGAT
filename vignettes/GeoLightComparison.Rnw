@@ -1,0 +1,197 @@
+\documentclass[a4paper]{article}
+\usepackage{a4wide}
+\usepackage[authoryear]{natbib}
+\usepackage{amsmath}
+
+\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
+%\VignetteIndexEntry{Comparison with GeoLight}
+%\VignetteDepends{GeoLight,geosphere,SGAT}
+%\VignettePackage{SGAT}
+%\VignetteKeyword{Geolocation}
+\begin{document}
+
+\title{GeoLight Comparison}
+\date{2013}
+\author{\textbf{Simeon Lisovski} \\
+%EndAName
+Centre for Integrative Ecology\\
+Deakin University\\
+\and \textbf{Michael Sumner} \\
+%EndAName
+Australian Antarctic Division\\
+\and \textbf{Simon Wotherspoon} \\
+%EndAName
+Australian Antarctic Division,\\
+Institute for Marine and Antarctic Studies\\
+University of Tasmania}
+\maketitle
+
+\begin{abstract}
+  The \textbf{SGAT} package provides facilities for Geolocation estimation.
+  This document compares the the threshold based estimates derived
+  by the \textbf{GeoLight} package to those derived by \textbf{SGAT}.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+This package and the \textbf{GeoLight} package provide some common
+functionality, but are based on different astronomical
+approximations. This document briefly explores the differences.
+
+
+\section{Hoopoe}
+\label{sec:hoopoe}
+
+Consider the \texttt{hoopoe2} dataset from the \textbf{GeoLight}
+package. The dataset provides estimated times of twilight divided into
+successive pairs.
+<<>>=
+## Hoopoe data from GeoLight
+library(GeoLight)
+data(hoopoe2)
+head(hoopoe2)
+@
+The \texttt{coord} function estimates the animals location from these
+sunrise, sunset pairs
+<<>>=
+## GeoLight estimates
+p.gl <- with(hoopoe2,coord(tFirst,tSecond,type))
+@
+
+The (non-exported) function \texttt{coord} from the SGAT package
+provides similar functionality, but uses an alternative set of solar
+calculations
+<<>>=
+## SGAT estimates
+library(SGAT)
+p.sbw <- with(hoopoe2,SGAT:::coord(tFirst,tSecond,type))
+@
+
+
+Comparing the two estimated tracks graphically
+(Figure~\ref{fig:hoopoe}), shows that the differences in the two are
+minor, but that near the equinox, \textbf{SGAT} obtains more latitudes
+the \textbf{GeoLight}, although it is impossible to determine whether
+these are simply spurious.
+<<label=hoopoe,eval=F>>=
+## Compare lon, lat separately
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+matplot(cbind(p.gl[,1],p.sbw[,1]),type='l',col=4:3,ylab="Lon")
+matplot(cbind(p.gl[,2],p.sbw[,2]),type='l',col=4:3,ylab="Lat")
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<hoopoe>>
+@
+  \caption{Estimated tracks from Geolight (blue) and SGAT (green) for
+    the hoopoe data.}
+  \label{fig:hoopoe}
+\end{figure}
+
+
+\section{Simulation}
+\label{sec:simulation}
+
+As a second comparison, we simulate zenith angles and hence times of
+twilight for a known track, and compare the performance of the two
+packages on this simulated data.
+
+It must be noted that this is \emph{not a fair comparison}, as the
+zenith angles will be simulated using the \textbf{SGAT} package, and so
+will be more consistent with the calculations of that package.
+
+Simulate 366 days of data along a completely artificial (Lissajous) track
+<<>>=
+## Simulate a track
+ts <- 0:365
+tms <- seq(as.POSIXct("2013-01-01","GMT"),by=24*60*60,length=length(ts))
+lon <- 20*sin(2*pi*ts/365)
+lat <- 20*cos(1.5*2*pi*ts/365)
+@
+This is re-sampled to two minute time intervals, and zenith angles calculated
+<<>>=
+## Resample to two minute intervals and compute zenith angles
+tms.out <- seq(min(tms),max(tms),by=2*60)
+d <- zenith.simulate(tms,lon,lat,tms.out)
+@
+and then precise times and locations of the observed sunrise and
+sunset are calculated by interpolation
+<<>>=
+## Compute times and location for sunrise and sunset
+twl <- twilight.simulate(d)
+@
+and prepare a dataframe of successive pairs for \texttt{coord}
+<<>>=
+## Separate into pairs
+d <- data.frame(tFirst=as.character(twl$twilight[-nrow(twl)]),
+                tSecond=as.character(twl$twilight[-1]),
+                type=ifelse(twl$rise[-nrow(twl)],1,2),
+                lonFirst=twl$lon[-nrow(twl)],
+                latFirst=twl$lat[-nrow(twl)],
+                lonSecond=twl$lon[-1],
+                latSecond=twl$lat[-1])
+@
+
+Finally, estimate locations with \textbf{GeoLight} and \textbf{SGAT},
+and the midpoint of the twilight locations with \textbf{geosphere}
+<<>>=
+## Compute midpoint of true twilight locations
+library(geosphere)
+p.md <- midPoint(cbind(d$lonFirst,d$latFirst),cbind(d$lonSecond,d$latSecond))
+## Threshold method estimates from GeoLight and SGAT
+p.gl <- with(d,coord(tFirst,tSecond,type))
+p.sbw <- with(d,SGAT:::coord(tFirst,tSecond,type))
+@
+and plot these estimates as time series (Figure~\ref{fig:simtrack}).
+Where \textbf{SGAT} produces an estimate and \textbf{GeoLight} does
+not, the estimates \textbf{SGAT} produces are so poor that it is
+unclear whether they are of any value at all.
+<<label=simtrack,eval=F>>=
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+matplot(cbind(p.md[,1],p.gl[,1],p.sbw[,1]),type='l',col=c(1,4,3),ylab="Lon")
+matplot(cbind(p.md[,2],p.gl[,2],p.sbw[,2]),type='l',col=c(1,4,3),ylab="Lat")
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<simtrack>>
+@
+  \caption{Estimated tracks from Geolight (blue) and SGAT (green) for
+    the simulated track.}
+  \label{fig:simtrack}
+\end{figure}
+
+
+Figure~\ref{fig:simerr} shows the difference between \textbf{GeoLight}
+and \textbf{SGAT} estimates and the midpoint of the true twilight
+locations.
+<<label=simerr,eval=F>>=
+## Compare SGAT and GeoLight estimate to twilight midpoints
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+matplot(cbind(p.gl[,1]-p.md[,1],p.sbw[,1]-p.md[,1]),type='l',ylim=c(-1,1),col=c(4,3),ylab="Lon")
+matplot(cbind(p.gl[,2]-p.md[,2],p.sbw[,2]-p.md[,2]),type='l',ylim=c(-1,1),col=c(4,3),ylab="Lat")
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<simerr>>
+@
+\caption{Difference between estimated tracks from Geolight (blue) and
+  SGAT (green) and the simulated track.}
+  \label{fig:simerr}
+\end{figure}
+
+\clearpage
+\nocite{Sumner2009}
+\nocite{Lisovski2012}
+\bibliographystyle{apalike}
+\bibliography{SGAT}
+
+
+\end{document}
