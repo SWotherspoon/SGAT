@@ -694,7 +694,8 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.
 ##'
 ##' @title Satellite Model Structures
-##' @param X the locations determined by satellite.
+##' @param tm the times of the satellite determined locations.
+##' @param X the satellite determined locations.
 ##' @param location.model the model for the errors in satellite locations.
 ##' @param sd a vector or two column matrix of dispersions for the location model.
 ##' @param df a vector or two column matrix of degrees of freedom for the t location model.
@@ -713,9 +714,10 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{X}}{the satellite estimated locations.}
+##' \item{\code{X}}{the times of the satellite determined locations.}
+##' \item{\code{X}}{the satellite determined locations.}
 ##' @export
-satellite.model <- function(X,
+satellite.model <- function(tm,X,
                             location.model=c("Normal","T"),
                             sd,df=NULL,beta,
                             logp.x=function(x) rep.int(0,nrow(x)),
@@ -744,7 +746,7 @@ satellite.model <- function(X,
   }
 
   ## Times (hours) between observations
-  dt <- diff(as.numeric(twilight)/3600)
+  dt <- diff(as.numeric(tm)/3600)
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
 
@@ -798,7 +800,8 @@ satellite.model <- function(X,
        x0=x0,
        z0=z0,
        ## Data
-       X=x)
+       tm=tm,
+       X=X)
 }
 
 
@@ -871,8 +874,8 @@ satellite.model <- function(X,
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
 ##' \item{\code{twilight}}{the twilight times.}
-##' \item{\code{z0}}{.}
-##' \item{\code{z0}}{an array of initial intermediate locations.}
+##' \item{\code{rise}}{the sunrise indicators.}
+##' \item{\code{group}}{the grouping vector.}
 ##' @export
 threshold.model <- function(twilight,rise,
                             twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
