@@ -249,7 +249,7 @@ Then Log Normal model is defined
 <<>>=
 ## Define log Normal model
 model <- threshold.model(Shearwater$Twilight,Shearwater$Rise,
-                         twilight.model="ModifiedLogNormal",
+                         twilight.model="LogNormal",
                          alpha=c(1.2,0.8),beta=c(1.34,0.06),
                          logp.x=log.prior,
                          logp.z=log.prior,
