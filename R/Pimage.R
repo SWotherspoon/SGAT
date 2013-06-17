@@ -19,14 +19,14 @@ chain.bin <- function(chain, pimg) {
 
     if (Z) weights <- c(diff(unclass(times)/3600)) else weights <- rep(1, length(times))
 
-    if (is.null(grid)) grid <- .chaingrid(chain)
-    pimgs <- Pimage(times, grid = grid, Z = Z)
+    
+    
   for (k in seq_along(weights)) {
-    pimgs[[k]] <- bin.pimg(pimgs[[k]], t(chain[k, 1:2, ]), weight = weights[k])
+    pimg[[k]] <- bin.pimg(pimg[[k]], t(chain[k, 1:2, ]), weight = weights[k])
   }
   ## should also have a flag for whether this is initialized/scaled, so iter number is independent
-  attr(pimgs, "itersbin") <- attr(pimgs, "itersbin") + dim(chain)[3]
-  pimgs
+  attr(pimg, "itersbin") <- attr(pimg, "itersbin") + dim(chain)[3]
+  pimg
 }
 
 
