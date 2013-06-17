@@ -6,7 +6,7 @@ Date: 2013-06-06
 Author: Simon Wotherspoon, Michael Sumner and Simeon Lisovski
 Maintainer: Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au>
 Suggests: GeoLight, geosphere, maptools
-Imports: raster
+Imports: raster, sp
 Description: Facilities for estimating the broadscale animal motions from archival or satellite tags.
 NeedsCompilation: no
 ByteCompile: yes
