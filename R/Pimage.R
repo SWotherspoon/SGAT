@@ -40,6 +40,7 @@ chain.bin <- function(chain, pimg) {
 ##' @return \code{\link{Pimage}}
 ##' @export
 ##' @importFrom raster raster xmin  xmax ymin ymax
+##' @importFrom sp CRS
 Pimage <- function(tm, grid = NULL, Z = TRUE) {
     stopifnot(inherits(tm, "POSIXct"))
     stopifnot(inherits(Z, "logical"))
@@ -120,6 +121,83 @@ bin.pimg <-
       class(pimg) <- c("pimg", "list")
     }
     pimg
+  }
+
+
+##' @rdname chain.bin
+##' @export
+"[.Pimage" <- function(x, i, j, drop = TRUE, ...) {
+  timeobject <- .times(x)
+  
+  n <- length(x)
+  if(nargs() == 1) n2 <-  n
+  if (missing(i)) i <- seq_len(n)
+  
+  if (all(class(i) == "logical")) {
+    n2 <- sum(i)
+    i <- which(i)
+  }
+  
+  if (all(class(i) == "character")) {
+    if (length(i) == 1L && i %in% c("days", "weeks", "months", "years")) {
+      ct <- cut(as.POSIXct(x), i, start.on.monday = FALSE)
+    }
+    i <- grep(i, names(x))
+  }
+  class(x) <- NULL
+  val <- NextMethod("[")
+  ##browser()
+  class(val) <- "Pimage"
+  
+  attr(val, "times") <- timeobject
+  val <- as.image.Pimage(val)
+  raster(val)
+  
+}
+
+
+as.image.Pimage <-
+  function (pimgs)
+  {
+    ## should have checks elsewhere for these NULLs, do they persist when no mixing?
+    ## bad <- unlist(lapply(pimgs, function(x) is.null(x$image)))
+    `as.matrix.pimg` <-
+      function(x) {
+        
+        pimg <- x
+        img <- matrix(0,pimg$xbound[3],pimg$ybound[3])
+        if(!is.null(pimg$image)) {
+          off <- pimg$offset
+          img[off[1]:(off[1]+nrow(pimg$image)-1),
+              off[2]:(off[2]+ncol(pimg$image)-1)] <- pimg$image
+        }
+        img
+      }
+    
+    `as.image.pimg` <-
+      function(pimg) {
+        img <- coords.pimg(pimg)
+        img$z <- as.matrix.pimg(pimg)
+        img
+      }
+    `coords.pimg` <-
+      function(pimg) {
+        list(x=seq(pimg$xbound[1],pimg$xbound[2],length=pimg$xbound[3]),
+             y=seq(pimg$ybound[1],pimg$ybound[2],length=pimg$ybound[3]))
+      }
+    
+    res <- as.image.pimg(pimgs[[1]])
+    if (length(pimgs) == 1)
+      return(res)
+    for (i in seq_along(pimgs)[-1]) {
+      img <- pimgs[[i]]
+      Xpos <- img$offset[1]
+      Ypos <- img$offset[2]
+      Xind <- Xpos:(Xpos + dim(img$image)[1] - 1)
+      Yind <- Ypos:(Ypos + dim(img$image)[2] - 1)
+      res$z[Xind, Yind] <- res$z[Xind, Yind] + img$image
+    }
+    res
   }
 
 
