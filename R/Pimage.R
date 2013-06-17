@@ -19,8 +19,8 @@ chain.bin <- function(chain, pimg) {
 
     if (Z) weights <- c(diff(unclass(times)/3600)) else weights <- rep(1, length(times))
 
-    
-    
+
+
   for (k in seq_along(weights)) {
     pimg[[k]] <- bin.pimg(pimg[[k]], t(chain[k, 1:2, ]), weight = weights[k])
   }
@@ -39,8 +39,8 @@ chain.bin <- function(chain, pimg) {
 ##' @param Z logical, is this a summary of Z (intermediate) location estimates?
 ##' @return \code{\link{Pimage}}
 ##' @export
-##' @importFrom raster raster xmin  xmax ymin ymax
-##' @importFrom sp CRS
+##' @importFrom raster raster xmin xmax ymin ymax
+
 Pimage <- function(tm, grid = NULL, Z = TRUE) {
     stopifnot(inherits(tm, "POSIXct"))
     stopifnot(inherits(Z, "logical"))
@@ -126,18 +126,19 @@ bin.pimg <-
 
 ##' @rdname chain.bin
 ##' @export
+
 "[.Pimage" <- function(x, i, j, drop = TRUE, ...) {
   timeobject <- .times(x)
-  
+
   n <- length(x)
   if(nargs() == 1) n2 <-  n
   if (missing(i)) i <- seq_len(n)
-  
+
   if (all(class(i) == "logical")) {
     n2 <- sum(i)
     i <- which(i)
   }
-  
+
   if (all(class(i) == "character")) {
     if (length(i) == 1L && i %in% c("days", "weeks", "months", "years")) {
       ct <- cut(as.POSIXct(x), i, start.on.monday = FALSE)
@@ -148,11 +149,11 @@ bin.pimg <-
   val <- NextMethod("[")
   ##browser()
   class(val) <- "Pimage"
-  
+
   attr(val, "times") <- timeobject
   val <- as.image.Pimage(val)
   raster(val)
-  
+
 }
 
 
@@ -163,7 +164,7 @@ as.image.Pimage <-
     ## bad <- unlist(lapply(pimgs, function(x) is.null(x$image)))
     `as.matrix.pimg` <-
       function(x) {
-        
+
         pimg <- x
         img <- matrix(0,pimg$xbound[3],pimg$ybound[3])
         if(!is.null(pimg$image)) {
@@ -173,7 +174,7 @@ as.image.Pimage <-
         }
         img
       }
-    
+
     `as.image.pimg` <-
       function(pimg) {
         img <- coords.pimg(pimg)
@@ -185,7 +186,7 @@ as.image.Pimage <-
         list(x=seq(pimg$xbound[1],pimg$xbound[2],length=pimg$xbound[3]),
              y=seq(pimg$ybound[1],pimg$ybound[2],length=pimg$ybound[3]))
       }
-    
+
     res <- as.image.pimg(pimgs[[1]])
     if (length(pimgs) == 1)
       return(res)
