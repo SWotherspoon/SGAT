@@ -374,14 +374,14 @@ dimensional frequency table
 bin.weighted <- function(s,xlim,ylim,n,w=rep(1,dim(s)[1])) {
   nrows <- n*diff(ylim)
   ncols <- n*diff(xlim)
-  xbin <- seq(xlim[1],xlim[2],length=ncols+1)
-  ybin <- seq(ylim[1],ylim[2],length=nrows+1)
+  xbin <- seq(xlim[1],xlim[2],length=ncols)
+  ybin <- seq(ylim[1],ylim[2],length=nrows)
 
   W <- 0
   for(k in 1:dim(s)[1]) {
      W <- W+w[k]*table(
-      factor(.bincode(s[k,1,],xbin),levels=1:(ncols+1)),
-      factor(.bincode(s[k,2,],ybin),levels=1:(nrows+1)))
+      factor(.bincode(s[k,1,],xbin),levels=1:ncols),
+      factor(.bincode(s[k,2,],ybin),levels=1:nrows+1))
   }
   W[W==0] <- NA
   list(x=xbin,y=ybin,W=W)
