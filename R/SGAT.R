@@ -968,8 +968,8 @@ threshold.model <- function(twilight,rise,
                             60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[is.na(twilight) &  is.finite(r)] <- -1.0E-8
+             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E-8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -981,8 +981,8 @@ threshold.model <- function(twilight,rise,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[is.na(twilight) &  is.finite(r)] <- -1.0E-8
+             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E-8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
