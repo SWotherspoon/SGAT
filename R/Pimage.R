@@ -39,8 +39,6 @@ chain.bin <- function(chain, pimg) {
 ##' @param Z logical, is this a summary of Z (intermediate) location estimates?
 ##' @return \code{\link{Pimage}}
 ##' @export
-##' @importFrom raster raster xmin xmax ymin ymax
-
 Pimage <- function(tm, grid = NULL, Z = TRUE) {
     stopifnot(inherits(tm, "POSIXct"))
     stopifnot(inherits(Z, "logical"))
