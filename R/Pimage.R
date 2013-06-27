@@ -123,7 +123,7 @@ bin.pimg <-
 
 
 ##' @rdname chain.bin
-##' @export
+##' 
 
 "[.Pimage" <- function(x, i, j, drop = TRUE, ...) {
   timeobject <- .times(x)
