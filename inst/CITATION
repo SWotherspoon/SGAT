@@ -1,0 +1,30 @@
+citHeader("When citing the 'SBW' package in publications please include:")
+
+bibentry(
+  bibtype="Article",
+  title = "Bayesian estimation of animal movement from archival and satellite tags.",
+  author = c(
+    person(c("Michael", "D."),"Sumner",role="aut"),
+    person(c("Simon", "J."),"Wotherspoon",role="aut"),
+    person(c("Mark", "A."),"Hindell",role="aut")),
+  journal = "PLoS ONE",
+  month = "Jan",
+  number = "10",
+  publisher = "Public Library of Science",
+  volume = "4",
+  year = "2009",
+  url = "http://dx.plos.org/10.1371/journal.pone.0007324")
+
+bibentry(
+  bibtype="Article",
+  title = "GeoLight - processing and analysing light-based geolocator data in R",
+  author = c(
+    person("Simeon","Lisovski",role="aut"),
+    person("Steffen","Hahn",role="aut")),
+  journal = "Methods in Ecology and Evolution",
+  month = "Dec",
+  number = "6",
+  pages = "1055--1059",
+  volume = "3",
+  year = "2012",
+  url = "http://doi.wiley.com/10.1111/j.2041-210X.2012.00248.x")
