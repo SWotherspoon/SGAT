@@ -3,6 +3,8 @@
 #################
 
 *.Rproj
+*.Rdata
+*.Rhistory
 .Rbuildignore
 .Rhistory
 NAMESPACE
