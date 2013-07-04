@@ -188,6 +188,7 @@ as.image.Pimage <-
     res <- as.image.pimg(pimgs[[1]])
     if (length(pimgs) == 1)
       return(res)
+    if (all(sapply(pimgs, function(x) is.null(x$image)))) return(res)
     for (i in seq_along(pimgs)[-1]) {
       img <- pimgs[[i]]
       Xpos <- img$offset[1]
