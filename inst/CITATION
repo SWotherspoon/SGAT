@@ -1,4 +1,4 @@
-citHeader("When citing the 'SBW' package in publications please include:")
+citHeader("When citing the 'SGAT' package in publications please include:")
 
 bibentry(
   bibtype="Article",
