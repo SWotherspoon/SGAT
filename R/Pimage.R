@@ -42,7 +42,8 @@ chain.bin <- function(chain, pimg) {
 Pimage <- function(tm, grid = NULL, Z = TRUE) {
     stopifnot(inherits(tm, "POSIXct"))
     stopifnot(inherits(Z, "logical"))
-    stopifnot(all(diff(unclass(tm)) > 0))
+    ## not fatal, since this is handy for multiple track-chains
+    if(!all(diff(unclass(tm)) > 0)) warning("input time stamps are not monotonically increasing, i.e. they contain duplicates and/or are out of temporal order")
     stopifnot(length(tm) >= 2)
 
     p0 <- function (xmin, xmax, ymin, ymax, xydim) {
