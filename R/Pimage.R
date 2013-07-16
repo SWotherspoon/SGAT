@@ -138,11 +138,9 @@ bin.pimg <-
     i <- which(i)
   }
 
+
   if (all(class(i) == "character")) {
-    if (length(i) == 1L && i %in% c("days", "weeks", "months", "years")) {
-      ct <- cut(as.POSIXct(x), i, start.on.monday = FALSE)
-    }
-    i <- grep(i, names(x))
+      i <- grep(i, names(x))
   }
   class(x) <- NULL
   val <- NextMethod("[")
@@ -155,6 +153,49 @@ bin.pimg <-
 
 }
 
+
+##' cut.Pimage
+##' 
+##' cut a Pimage object based on a cut.POSIXt input breaks character string, and return a brick
+##' ##importMethodsFrom(raster, as.matrix)
+##' @examples
+##' \dontrun{
+##' load("C:\\Users\\mdsumner\\Desktop\\Movement_fit.Rdata")
+##'  library(SGAT)
+##' p <- Pimage(fit$model$twilight, grid = SGAT:::.chaingrid(fit$z))
+##' p <- chain.bin(fit$z, p)
+##' image(p[], col = trip::oc.colors(256))
+##' b <- cut.Pimage(p, "2 weeks")
+##' @export
+cut.Pimage <- function(x, breaks, ...) {
+    pobject <- x
+    r <- pobject[1]
+    x <- .times(x)
+    ##NextMethod("cut")
+    x <- cut.POSIXt(x, breaks = breaks,  ...)
+    ## now rebuild the output
+    
+    ## to save that nasty error
+  if (length(x) > length(pobject)) x <- x[seq_len(length(pobject))]
+    ## do we need an as.raster workhorse here?
+    ## Error in as.vector(data) : 
+    ##no method for coercing this S4 class to a vector
+      res <- array(0.0, c(dim(r)[1:2], nlevels(x)))
+    
+    
+    ##this is probably slow, better to as.matrix into an array and rebuild
+    ## (annoyingly, as.matrix does not work here in the namespace)
+    ##brick(pobject[1], nl = nlevels(x), values = FALSE)
+    ## 
+    
+    
+    for (i in seq_len(nlevels(x))) {
+          ##res[,,i] <- matrix(getValues(pobject[x == levels(x)[i]], dim(res)[1]))
+          res[,,i] <- raster:::as.matrix(pobject[x == levels(x)[i]])
+      }
+
+  brick(res, xmn=xmin(r), xmx=xmax(r), ymn=ymin(r), ymx=ymax(r), crs=projection(r))
+       }
 
 as.image.Pimage <-
   function (pimgs)
