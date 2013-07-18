@@ -158,49 +158,57 @@ bin.pimg <-
 ##' cut.Pimage
 ##'
 ##' cut a Pimage object based on a date-time input breaks character string, and return a multi-layer raster
-##' 
+##'
 ##' @title cut.POSIXt for Pimage
 ##' @aliases cut
-##' 
+##'
 ##' @examples
 ##' \dontrun{
 ##' load("Movement_fit.Rdata")
-##' 
+##'
 ##' p <- Pimage(fit$model$twilight, grid = SGAT:::.chaingrid(fit$z))
 ##' p <- chain.bin(fit$z, p)
 ##' image(p[], col = trip::oc.colors(256))
 ##' b <- cut(p, "2 weeks")
+##' ## odd time intervals work the same as cut.POSIXt
+##'b <- cut(p, "86000 secs")
+##'
+##'
+##'b <- cut(p, "21 days")
+##'
+##'## the object knows what this 3rd dimension is
+##'getZ(b)
+##'
+##'occol <- c("#FFFFFF", "#975FFF", "#4860FF", "#0070FF", "#00A5FF", "#23C0FF", 
+##'           "#6CC0FF", "#58CBD8", "#22DEA2", "#0ECE4B", "#06C300", "#3CE700", 
+##'           "#6BFF00", "#8FFF00", "#B7FF00", "#DCFF00", "#FAFF00", "#FFE000", 
+##'           "#FFBC00", "#FF9800", "#FF7400", "#FF4A00", "#FF1400", "#DE0000", 
+##'           "#AA0000")
+##'plot(b, col = occol)
+##'
+##'library(maptools)
+##'data(wrld_simpl)
+##'plot(b, col = occol, addfun = function() {plot(wrld_simpl, add = TRUE);box()})
+##'
 ##' }
 ##' @export
 cut.Pimage <- function(x, breaks, ...) {
-    pobject <- x
-    r <- pobject[1]
-    x <- .times(x)
-    ##NextMethod("cut")
-    x <- cut.POSIXt(x, breaks = breaks,  ...)
+
+  r1 <- x[1]
+    datetimes <- .times(x)
+
+    ct <- cut.POSIXt(datetimes, breaks = breaks,  ...)
     ## now rebuild the output
 
-    ## to save that nasty error
-  ##if (length(x) > length(pobject)) x <- x[seq_len(length(pobject))]
-    ## do we need an as.raster workhorse here?
-    ## Error in as.vector(data) :
-    ##no method for coercing this S4 class to a vector
-      res <- array(0.0, c(dim(r)[1:2], nlevels(x)))
-
-
-    ##this is probably slow, better to as.matrix into an array and rebuild
-    ## (annoyingly, as.matrix does not work here in the namespace)
-    ##brick(pobject[1], nl = nlevels(x), values = FALSE)
-    ##
-
-
-    for (i in seq_len(nlevels(x))) {
-          ##res[,,i] <- matrix(getValues(pobject[x == levels(x)[i]], dim(res)[1]))
-          res[,,i] <- raster::as.matrix(pobject[x == levels(x)[i]])
+    res <- array(0.0, c(dim(r1)[1:2], nlevels(ct)))
+    for (i in seq_len(nlevels(ct))) {
+          ## this is the solution to the as.matrix namespace problem (don't use it) MDSumner 2013-07-18
+          res[,,i] <- getValues(x[ct == levels(ct)[i]], format='matrix')
       }
-
-  brick(res, xmn=xmin(r), xmx=xmax(r), ymn=ymin(r), ymx=ymax(r), crs=projection(r))
-       }
+  
+  res <- brick(res, xmn=xmin(r1), xmx=xmax(r1), ymn=ymin(r1), ymx=ymax(r1), crs=projection(r1))       
+  setZ(res, as.POSIXct(levels(ct), tz = "GMT"), name = "datetime") 
+}
 
 as.image.Pimage <-
   function (pimgs)
@@ -251,7 +259,7 @@ as.image.Pimage <-
 .times <- function(x, Z = attr(x, "Z")) {
     ## this should be an as.POSIXct method
    res <- attr(x, "times")
-    if (Z) res <- res[1] + diff(unclass(res))/2
+    if (Z) res <- res[-length(res)] + diff(unclass(res))/2
     res
 }
 
