@@ -73,7 +73,8 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     pbase <- p0(xmin(grid), xmax(grid), ymin(grid), ymax(grid), dims[1L:2L])
     pim <- vector("list", n)
     for (i in seq_along(pim)) pim[[i]] <- pbase
-    attr(pim, "times") <- tm
+    .times(pim) <- tm
+    ##attr(pim, "times") <- tm
 
     attr(pim, "Z") <- Z
     class(pim) <- c("Pimage")
@@ -155,7 +156,8 @@ bin.pimg <-
   ##browser()
   class(val) <- "Pimage"
 
-  attr(val, "times") <- timeobject
+  .times(val) <- timeobjects
+##  attr(val, "times") <- timeobject
   val <- as.image.Pimage(val)
   raster(val)
 
