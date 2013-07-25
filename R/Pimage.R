@@ -17,7 +17,7 @@
 ##' @return \code{\link{Pimage}}
 ##' @export
 chain.bin <- function(chain, pimg) {
-    Z <- isZ(pimg)
+    Z <- .isZ(pimg)
     times <- .times(pimg)
 
     if (Z) {
@@ -56,7 +56,7 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     p0 <- function (xmin, xmax, ymin, ymax, xydim) {
         res <- list(xbound = c(xmin, xmax, xydim[1L]),
                     ybound = c(ymin, ymax, xydim[2L]),
-                    offset = c(1, 1), image = NULL)
+                    offset = c(1L, 1L), image = NULL)
         res
     }
     if (is.null(grid)) {
@@ -69,8 +69,9 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     n <- length(tm) - Z
 
     dims <- dim(grid)
-
-    pbase <- p0(xmin(grid), xmax(grid), ymin(grid), ymax(grid), dims[1L:2L])
+  res <- res(grid)
+    pbase <- p0(xmin(grid) + res[1L]/2L, xmax(grid) - res[1L]/2L, 
+                ymin(grid) + res[2L]/2L, ymax(grid) - res[2L]/2L, dims[2L:1L])
     pim <- vector("list", n)
     for (i in seq_along(pim)) pim[[i]] <- pbase
     .times(pim) <- tm
@@ -156,7 +157,7 @@ bin.pimg <-
   ##browser()
   class(val) <- "Pimage"
 
-  .times(val) <- timeobjects
+  .times(val) <- timeobject
 ##  attr(val, "times") <- timeobject
   val <- as.image.Pimage(val)
   raster(val)
