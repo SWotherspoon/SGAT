@@ -285,12 +285,12 @@ twilight <- function(tm,lon,lat,rise,zenith=96,iters=3) {
 ##' @rdname twilight
 ##' @export
 sunrise <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=T,zenith=zenith,iters=iters)
+  twilight(tm,lon,lat,rise=TRUE,zenith=zenith,iters=iters)
 
 ##' @rdname twilight
 ##' @export
 sunset <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=F,zenith=zenith,iters=iters)
+  twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
 
 
 ##' Convert streams of twilights to sunrise/sunset pairs
@@ -385,7 +385,7 @@ threshold.estimate <- function(trise,tset,zenith=96,tol=0) {
   lat2 <- ifelse(abs(a)>tol,180/pi*asin(x),NA)
 
   ## Average latitudes
-  cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=T))
+  cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=TRUE))
 }
 
 
@@ -694,7 +694,8 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.
 ##'
 ##' @title Satellite Model Structures
-##' @param X the locations determined by satellite.
+##' @param tm the times of the satellite determined locations.
+##' @param X the satellite determined locations.
 ##' @param location.model the model for the errors in satellite locations.
 ##' @param sd a vector or two column matrix of dispersions for the location model.
 ##' @param df a vector or two column matrix of degrees of freedom for the t location model.
@@ -713,14 +714,15 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{X}}{the satellite estimated locations.}
+##' \item{\code{X}}{the times of the satellite determined locations.}
+##' \item{\code{X}}{the satellite determined locations.}
 ##' @export
-satellite.model <- function(X,
+satellite.model <- function(tm,X,
                             location.model=c("Normal","T"),
                             sd,df=NULL,beta,
                             logp.x=function(x) rep.int(0,nrow(x)),
                             logp.z=function(z) rep.int(0,nrow(z)),
-                            x0,z0=NULL,fixedx=F) {
+                            x0,z0=NULL,fixedx=FALSE) {
 
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
@@ -744,7 +746,7 @@ satellite.model <- function(X,
   }
 
   ## Times (hours) between observations
-  dt <- diff(as.numeric(twilight)/3600)
+  dt <- diff(as.numeric(tm)/3600)
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
 
@@ -755,14 +757,14 @@ satellite.model <- function(X,
            Normal=
            function(x) {
              r <- (X-x)/sd
-             logp <- rowSums(dnorm(r,0,1,log=T)) + logp.x(x)
+             logp <- rowSums(dnorm(r,0,1,log=TRUE)) + logp.x(x)
              logp[fixedx] <- 0
              logp
            },
            T=
            function(x) {
              r <- (X-x)/sd
-             logp <- rowSums(dt(r,df,log=T)) + logp.x(x)
+             logp <- rowSums(dt(r,df,log=TRUE)) + logp.x(x)
              logp[fixedx] <- 0
              logp
            })
@@ -798,7 +800,8 @@ satellite.model <- function(X,
        x0=x0,
        z0=z0,
        ## Data
-       X=x)
+       tm=tm,
+       X=X)
 }
 
 
@@ -871,15 +874,15 @@ satellite.model <- function(X,
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
 ##' \item{\code{twilight}}{the twilight times.}
-##' \item{\code{z0}}{.}
-##' \item{\code{z0}}{an array of initial intermediate locations.}
+##' \item{\code{rise}}{the sunrise indicators.}
+##' \item{\code{group}}{the grouping vector.}
 ##' @export
 threshold.model <- function(twilight,rise,
                             twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                             alpha,beta,
                             logp.x=function(x) rep.int(0,nrow(x)),
                             logp.z=function(z) rep.int(0,nrow(z)),
-                            x0,z0=NULL,fixedx=F,
+                            x0,z0=NULL,fixedx=FALSE,
                             zenith=96) {
 
   ## Calculate dog-leg distances along an x-z track
@@ -928,7 +931,7 @@ threshold.model <- function(twilight,rise,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1],alpha[2],log=T)
+             logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -939,7 +942,7 @@ threshold.model <- function(twilight,rise,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1],alpha[2],log=T)
+             logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -950,7 +953,7 @@ threshold.model <- function(twilight,rise,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1],alpha[2],log=T)
+             logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -962,11 +965,11 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=T),
-                            dgamma(r,alpha[1],alpha[2],log=T))
+                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
+                            dgamma(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
+             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -976,10 +979,10 @@ threshold.model <- function(twilight,rise,
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
-                            dlnorm(r,alpha[1],alpha[2],log=T))
+                            dlnorm(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
+             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1028,7 +1031,7 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     alpha,beta,
                                     logp.x=function(x) rep.int(0,nrow(x)),
                                     logp.z=function(z) rep.int(0,nrow(z)),
-                                    x0,z0=NULL,fixedx=F,
+                                    x0,z0=NULL,fixedx=FALSE,
                                     zenith=96) {
 
   ## Calculate dog-leg distances along an x-z track
@@ -1079,7 +1082,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Gamma=
            function(x) {
              r <- residuals(x[group,])
-             logp <- dgamma(r,alpha[1],alpha[2],log=T)
+             logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -1090,7 +1093,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            LogNormal=
            function(x) {
              r <- residuals(x[group,])
-             logp <- dlnorm(r,alpha[1],alpha[2],log=T)
+             logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -1101,7 +1104,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Normal=
            function(x) {
              r <- residuals(x[group,])
-             logp <- dnorm(r,alpha[1],alpha[2],log=T)
+             logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -1113,8 +1116,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=T),
-                            dgamma(r,alpha[1],alpha[2],log=T))
+                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
+                            dgamma(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
@@ -1126,8 +1129,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
-                            dlnorm(r,alpha[1],alpha[2],log=T))
+                            60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=TRUE),
+                            dlnorm(r,alpha[1],alpha[2],log=TRUE))
              logp[is.na(twilight) & !is.finite(r)] <- 0
              logp[is.na(twilight) &  is.finite(r)] <- -Inf
              logp[!is.na(twilight) & !is.finite(r)] <- -Inf
