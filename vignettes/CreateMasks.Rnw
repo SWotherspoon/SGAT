@@ -40,7 +40,11 @@ set.seed(27)
 
 \section{Mask lookup function for tripEstimation/SGAT}
 \label{sec:lookupfunction}
-These models need a function that can take a matrix of coordinate values and return a TRUE or FALSE value for each location. Any level of detail can be hidden, though in practice it should be as efficient as possible. The final input to the model will be a function like the following pseudocode.
+These models need a function that can take a matrix of coordinate
+values and return a TRUE or FALSE value for each location. Any level
+of detail can be hidden, though in practice it should be as efficient
+as possible. The final input to the model will be a function like the
+following pseudocode.
 
 <<label=masksummary,eval=FALSE>>=
 lookup <- function(x) {
@@ -56,7 +60,9 @@ coords <- proposal.locations()
 lookup(coords)
 @
 
-The mask lookup function has to conform to the following constraints and otherwise can include any spatio-temporal test to produce the results.
+The mask lookup function has to conform to the following constraints
+and otherwise can include any spatio-temporal test to produce the
+results.
 \begin{enumerate}
 \item{input is single matrix \texttt{x} with 2-columns of the X and Y coordinates}
 \item{return value is a logical vector of \texttt{length(x)}, with no missing values}
@@ -68,7 +74,10 @@ In the following sections we demonstrate a variety of methods for creating mask 
 \label{sec:bbox}
 This is the simplest of all cases, a lookup function tests for presence within a \emph{bounding box}.
 
-First define a \emph{function that creates a function}, this allows us to provide the flexibility for the minimum and maximum values, without relying on values defined in the workspace. The function returned by \texttt{bboxlookup} encapsulates the input values \text{xlim,ylim}.
+First define a \emph{function that creates a function}, this allows us
+to provide the flexibility for the minimum and maximum values, without
+relying on values defined in the workspace. The function returned by
+\texttt{bboxlookup} encapsulates the input values \text{xlim,ylim}.
 
 <<label=bbox,eval=TRUE>>=
 bboxlookup <- function(xlim, ylim) {
@@ -182,18 +191,31 @@ principle will be explored in detail later for sophisticated masks.)
 
 <<label=rasterizepoly,eval=TRUE>>=
 library(raster)
-rgrid <- raster(xmn = xrange[1], xmx = xrange[2], ymn = yrange[1], ymx = yrange[2], nrows = 300, ncols = 230)
+rgrid <- raster(xmn = xrange[1], xmx = xrange[2],
+                ymn = yrange[1], ymx = yrange[2],
+                nrows = 300, ncols = 230)
 rmask <- rasterize(p, rgrid)
 @
 
-The rasterization process has produced a grid where the cell values are either valid value (such as 1) or \texttt{NA} for pixels where no polygon overlapped the cell. This is actually more information than we need for a mask test, so we convert the cell values to booleans with either a \texttt{TRUE} or \texttt{FALSE} for the test. We can further simplify the data to its most raw form that R can use, which is just a matrix of values with coordinate values for each dimension.
+The rasterization process has produced a grid where the cell values
+are either valid value (such as 1) or \texttt{NA} for pixels where no
+polygon overlapped the cell. This is actually more information than we
+need for a mask test, so we convert the cell values to booleans with
+either a \texttt{TRUE} or \texttt{FALSE} for the test. We can further
+simplify the data to its most raw form that R can use, which is just a
+matrix of values with coordinate values for each dimension.
 
-The \texttt{raster} orientation is different from the default used by R's \text{image} function, so we flip about the Y axis, and transpose.
-\texttt{We can probably just include a mkLookup function or similar is SGAT that reduces the need to talk about this at all.}
+The \texttt{raster} orientation is different from the default used by
+R's \text{image} function, so we flip about the Y axis, and transpose.
+\textbf{We can probably just include a mkLookup function or similar is
+  SGAT that reduces the need to talk about this at all.}
+
 <<label=rasterizepolyconvert>>=
 rmask <- !is.na(rmask)
 
-mask <- list(x = xFromCol(rmask), y = rev(yFromRow(rmask)), z = values(t(flip(rmask, direction = "y")), format = "matrix"))
+mask <- list(x = xFromCol(rmask),
+             y = rev(yFromRow(rmask)),
+             z = values(t(flip(rmask, direction = "y")), format = "matrix"))
 @
 
 Create a function to extract the cell value from the list object and plot the result.
