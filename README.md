@@ -14,7 +14,7 @@ The package is easily built with RStudio
 
 3. Install [Rtools](http://cran.r-project.org/bin/windows/Rtools/) or equivalent for your platform
 
-4. Install [devtools](http://cran.r-project.org/bin/windows/Rtools/) and [roxygen2](http://cran.r-project.org/web/packages/roxygen2/index.html) packages and dependencies in R
+4. Install [devtools](http://cran.r-project.org/web/packages/devtools/index.html) and [roxygen2](http://cran.r-project.org/web/packages/roxygen2/index.html) packages and dependencies in R
 
 5. Install [geosphere](http://cran.r-project.org/web/packages/geosphere/index.html), [GeoLight](http://cran.r-project.org/web/packages/GeoLight/index.html) packages and dependencies.
 
