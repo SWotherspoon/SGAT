@@ -21,7 +21,7 @@
 
 
 ## this takes input vectors, but probably better to avoid segments as an explicit
-## object, rather input lists of datetime and light (unlist is
+## object, as an input lists of datetime and light
 curve.model <- function(datetime, light, segments, calibration,
                         twilight.model = c("LogNormal"),
                         alpha, beta,
