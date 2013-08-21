@@ -20,7 +20,8 @@
   }
 
 
-
+## this takes input vectors, but probably better to avoid segments as an explicit
+## object, rather input lists of datetime and light (unlist is
 curve.model <- function(datetime, light, segments, calibration,
                         twilight.model = c("LogNormal"),
                         alpha, beta,
@@ -33,17 +34,28 @@ curve.model <- function(datetime, light, segments, calibration,
     sun <- solar(datetime)
     tm <- tapply(datetime, segments, median)
     dt <- diff(as.numeric(tm)/3600)
-    logpx <-
-    switch(twilight.model,
-           LogNormal= function(x) {
-               elev <- zenith(sun, x[segments, 1], x[segments, 2])
-                att <- calibration(elev) ##+ x[, 3]
-                logp <- dnorm(light, att, alpha[1], log = TRUE)
-
-
-               sapply(split(logp, segments), sum) ##+ dnorm(x[,3], 0, alpha[2], log = TRUE)
+    logpx <- function(x) {
+        x <- x[segments,]
+        elev <- zenith(sun, x[,1], x[,2])
+        att <- calibration(elev) ##+ x[segments, 3]
+        logp <- dnorm(light, att, alpha[1], log = TRUE)
+        ## unlist would be better, see below
+        sapply(split(logp, segments), sum) ##+ dnorm(x[,3], 0, alpha[2], log = TRUE)
            }
-       )
+
+    ## require(rbenchmark)
+
+## nn <- sample(10000, replace = TRUE)
+## nn <- nn[nn > 100]
+## l <- lapply(nn, rnorm)
+
+#### unlist and no check for recursion is slightly better
+## benchmark(ul =  unlist(lapply(l, sum)),
+##           ulnr = unlist(lapply(l, sum), recursive = FALSE),
+##           dc = do.call(c, lapply(l, sum)),
+##           replications = 500)
+
+
     ## Contribution to log posterior from each z location
     logpz <- function(z) {
         logp.z(z)
