@@ -425,7 +425,7 @@ threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold
     ## Interpolate the non-missing latitudes
     keep <- !is.na(ls$x[,2])
     ts <- ls$time[keep]
-    lat <- ls$x[keep,1]
+    lat <- ls$x[keep,2]
     lat <- approx(x=ts,y=lat,xout=time,rule=2)$y
     ls <- list(time=time,x=cbind(lon,lat))
   }
