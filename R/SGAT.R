@@ -345,6 +345,12 @@ twilight.pairs <- function(twilight,rise) {
 ##' sine of the solar declination is less than \code{tol}, the
 ##' latitude estimates are returned as \code{NA}.
 ##'
+##' If \code{unfold=TRUE}, \code{threshold.path} attempts to construct
+##' a continuous path that does not wrap longitudes into
+##' (-180,180]. However, this process can fail if the observer crosses
+##' the dateline near an equinox, and it may be necessary to manually
+##' intervene.
+##'
 ##' These functions provides the same basic functionality of the
 ##' \code{coord} function from \pkg{GeoLight}, but are based on
 ##' different astronomical approximations.
@@ -356,6 +362,7 @@ twilight.pairs <- function(twilight,rise) {
 ##' @param time times for which locations are required.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param tol tolerance on the sine of the solar declination.
+##' @param unfold if \code{TRUE}, unfold longitudes across the dateline.
 ##' @return \code{threshold.estimate} returns estimated locations as a
 ##' two column (lon,lat) matrix.  \code{threshold.location} and
 ##' \code{threshold.path} return a list with components
@@ -405,16 +412,21 @@ threshold.location <- function(twilight,rise,zenith=96,tol=0.08) {
 
 ##' @rdname threshold.estimate
 ##' @export
-threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08) {
+threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=TRUE) {
   ## Estimate locations
   ls <- threshold.location(twilight,rise,zenith=zenith,tol=tol)
-  if(!is.null(ts)) {
-    ## Interpolate
-    ts <- ls$time
+  if(!is.null(time)) {
+    ## Interpolate the non-missing longitudes
     keep <- !is.na(ls$x[,1])
-    lon <- approx(x=ts[keep],y=ls$x[keep,1],xout=time,rule=2)$y
+    ts <- ls$time[keep]
+    lon <- ls$x[keep,1]
+    if(unfold) lon <- cumsum(c(lon[1],(diff(lon)+180)%%360-180))
+    lon <- approx(x=ts,y=lon,xout=time,rule=2)$y
+    ## Interpolate the non-missing latitudes
     keep <- !is.na(ls$x[,2])
-    lat <- approx(x=ts[keep],y=ls$x[keep,2],xout=time,rule=2)$y
+    ts <- ls$time[keep]
+    lat <- ls$x[keep,1]
+    lat <- approx(x=ts,y=lat,xout=time,rule=2)$y
     ls <- list(time=time,x=cbind(lon,lat))
   }
   ls
