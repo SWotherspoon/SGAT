@@ -22,7 +22,8 @@
 ##' @param grid a specification for the grid extent and resolution
 ##' @return \code{\link{Pimage}}
 ##' @export
-chain.bin <- function(fit, bin = c("primary", "intermediate"), pimg = NULL, proj = NULL, grid =NULL) {
+chain.bin <- function(fit, bin = c("primary", "intermediate"),
+                      pimg = NULL, proj = NULL, grid =NULL) {
 
     bin <- match.arg(bin)
     chain <- switch(bin,
@@ -32,11 +33,14 @@ chain.bin <- function(fit, bin = c("primary", "intermediate"), pimg = NULL, proj
     ## case 1: pimg is supplied
     ##  do nothing, though what about the Z aspect of an existing pimg?
 
-    ## handle proj cases . . .
+    ## handle proj cases . . . wrap this in spTransform method
+    ## check for longlat non-changes
+    ## and broken strings
+    ## and rgdal available
     if (!is.null(proj)) {
         proj <- projection(proj)
         for (i in seq_len(dim(chain)[3])) {
-            ##
+            ## will need to bolt up sp objects here for datum transforms
         }
     }
 
