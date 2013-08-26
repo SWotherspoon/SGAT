@@ -1356,6 +1356,8 @@ estelle.metropolis <- function(model,
 
   ## Number of locations
   n <- dim(x0)[1]
+  ## Number of parameters
+  m <- dim(x0)[2]
 
   ## Extract model components
   logpx <- model$logpx
@@ -1364,7 +1366,7 @@ estelle.metropolis <- function(model,
   fixedx <- model$fixedx
 
   ## Allocate storage for the samples
-  ch.x <- array(0,c(n,2,iters,chains))
+  ch.x <- array(0,c(n,m,iters,chains))
   ch.z <- array(0,c(n-1,2,iters,chains))
 
   ## PARALLEL - parallelise this loop
@@ -1502,6 +1504,8 @@ stella.metropolis <- function(model,
 
   ## Number of locations
   n <- dim(x0)[1]
+  ## Number of parameters
+  m <- dim(x0)[2]
 
   ## Extract model components
   logpx <- model$logpx
@@ -1509,7 +1513,7 @@ stella.metropolis <- function(model,
   fixedx <- model$fixedx
 
   ## Allocate storage for the samples
-  ch.x <- array(0,c(n,2,iters,chains))
+  ch.x <- array(0,c(n,m,iters,chains))
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
