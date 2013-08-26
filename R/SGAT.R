@@ -732,8 +732,8 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 satellite.model <- function(tm,X,
                             location.model=c("Normal","T"),
                             sd,df=NULL,beta,
-                            logp.x=function(x) rep.int(0,nrow(x)),
-                            logp.z=function(z) rep.int(0,nrow(z)),
+                            logp.x=function(x) rep.int(0L,nrow(x)),
+                            logp.z=function(z) rep.int(0L,nrow(z)),
                             x0,z0=NULL,fixedx=FALSE) {
 
   ## Calculate dog-leg distances along an x-z track
@@ -892,8 +892,8 @@ satellite.model <- function(tm,X,
 threshold.model <- function(twilight,rise,
                             twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                             alpha,beta,
-                            logp.x=function(x) rep.int(0,nrow(x)),
-                            logp.z=function(z) rep.int(0,nrow(z)),
+                            logp.x=function(x) rep.int(0L,nrow(x)),
+                            logp.z=function(z) rep.int(0L,nrow(z)),
                             x0,z0=NULL,fixedx=FALSE,
                             zenith=96) {
 
@@ -1041,8 +1041,8 @@ threshold.model <- function(twilight,rise,
 grouped.threshold.model <- function(twilight,rise,group,
                                     twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                                     alpha,beta,
-                                    logp.x=function(x) rep.int(0,nrow(x)),
-                                    logp.z=function(z) rep.int(0,nrow(z)),
+                                    logp.x=function(x) rep.int(0L,nrow(x)),
+                                    logp.z=function(z) rep.int(0L,nrow(z)),
                                     x0,z0=NULL,fixedx=FALSE,
                                     zenith=96) {
 
@@ -1185,6 +1185,132 @@ grouped.threshold.model <- function(twilight,rise,group,
        twilight=twilight,
        rise=rise,
        group=group)
+}
+
+
+
+
+
+##' Threshold Model Structures for Stella and Estelle
+##'
+##' Stella and Estelle require a model structure that describes the
+##' model being fitted. These function generate basic model structures
+##' for threshold twilight data that should provide a suitable
+##' starting point for most analyses.
+##'
+##' The \code{curve.model} function constructs a model structure
+##' assuming that each twilight profile is associated with a single
+##' location.  The errors in observed log light level are assumed to
+##' be Normally distributed about their expected value.
+##'
+##' The initialization locations \code{x0} and \code{z0} must be
+##' consistent with the chosen twilight model.  That is, if
+##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
+##' yield negative twilight errors.
+##'
+##' Both Estelle and Stella variants of the model assume that the
+##' speed of travel between successive (x) locations is gamma
+##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.
+##'
+##' @title Curve Model Structure
+##' @param datetime vector of sample times as POSIXct.
+##' @param light vector of observed (log) light levels.
+##' @param segments vector of integers that assign observations to twilight segments.
+##' @param calibration function that maps zenith angles to expected light levels.
+##' @param alpha parameters of the twilight model.
+##' @param beta parameters of the behavioural model.
+##' @param logp.x function to evaluate any additional contribution to the log posterior from the twilight locations.
+##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param x0 suggested starting points for twilight locations.
+##' @param z0 suggested starting points for intermediate locations.
+##' @param fixedx logicial vector indicating which twilight locations to hold fixed.
+##' @return a list with components
+##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
+##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
+##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
+##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
+##' \item{\code{residuals}}{function to evaluate the twilight model residuals.}
+##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
+##' \item{\code{x0}}{an array of initial twilight locations.}
+##' \item{\code{z0}}{an array of initial intermediate locations.}
+##' \item{\code{datetime}}{the sample times.}
+##' \item{\code{light}}{the recorded light levels.}
+##' \item{\code{segments}}{vector of integers that assign observations to twilight segments.}
+##' @export
+curve.model <- function(datetime,light,segments,
+                        calibration,alpha,beta,
+                        logp.x=function(x) rep.int(0L,nrow(x)),
+                        logp.z=function(z) rep.int(0L,nrow(z)),
+                        x0,z0=NULL,fixedx=FALSE) {
+
+  ## Calculate dog-leg distances along an x-z track
+  trkdist.xz <- function(x,z) {
+    n <- nrow(x)
+    cosx2 <- cos(pi/180*x[,2])
+    sinx2 <- sin(pi/180*x[,2])
+    cosz2 <- cos(pi/180*z[,2])
+    sinz2 <- sin(pi/180*z[,2])
+
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+  }
+
+  ## Calculate distances along an x track
+  trkdist.x <- function(x) {
+    n <- nrow(x)
+    cosx2 <- cos(pi/180*x[,2])
+    sinx2 <- sin(pi/180*x[,2])
+
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+  }
+
+
+  ## Convert to solar time.
+  sun <- solar(datetime)
+  ## Median time in each segment
+  tm <- tapply(datetime, segments, median)
+  ## Times (hours) between observations
+  dt <- diff(as.numeric(tm)/3600)
+  ## Fixed x locations
+  fixedx <- rep(fixedx,length=nrow(x0))
+
+   ## Contribution to log posterior from each x location
+   logpx <- function(x) {
+     xs <- x[segments,]
+     zenith <- zenith(sun,xs[,1],xs[,2])
+     fitted <- calibration(zenith)+xs[,3]
+     ## Contributions to log posterior
+     logp <- dnorm(light,fitted,alpha[1],log=TRUE)
+     sapply(split(logp,segments),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
+   }
+
+  ## Contribution to log posterior from each z location
+  logpz <- function(z) {
+    logp.z(z)
+  }
+
+  ## Contribution to log posterior from the movement
+  estelle.logpb <- function(x,z) {
+    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  stella.logpb <- function(x) {
+    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  list(## Positional contribution to the log posterior
+       logpx=logpx,
+       logpz=logpz,
+       ## Behavioural contribution to the log posterior
+       estelle.logpb = estelle.logpb,
+       stella.logpb=stella.logpb,
+       ## Locations to be held fixed
+       fixedx=fixedx,
+       ## Suggested starting points
+       x0=x0,
+       z0=z0)
 }
 
 
