@@ -25,8 +25,6 @@ chain.bin <- function(fit, bin = c("primary", "intermediate"),
                       pimg = NULL, grid =NULL, proj = NULL) {
   ##TODO:
   ##  checks for out of bounds transformation
-  ##  add to existing pimg, currently this is lost
-
 
 
     modeltimes <- fit$model$twilight
