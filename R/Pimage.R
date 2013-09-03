@@ -23,7 +23,7 @@
 ##' @param grid a specification for the grid extent and resolution, see Details
 ##' @return \code{\link{Pimage}}
 ##' @export
-chain.bin <- function(fit, bin = c("primary", "intermediate"),
+model.bin <- function(fit, bin = c("primary", "intermediate"),
                       pimg = NULL, grid =NULL, proj = NULL) {
   ##TODO:
   ##  checks for out of bounds transformation
@@ -123,12 +123,7 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     if(!all(diff(unclass(tm)) > 0)) warning("input time stamps are not monotonically increasing, i.e. they contain duplicates and/or are out of temporal order")
     stopifnot(length(tm) >= 2)
 
-    p0 <- function (xmin, xmax, ymin, ymax, xydim) {
-        res <- list(xbound = c(xmin, xmax, xydim[1L]),
-                    ybound = c(ymin, ymax, xydim[2L]),
-                    offset = c(1L, 1L), image = NULL)
-        res
-    }
+
     if (is.null(grid)) {
         grid <- raster()
     } else {
@@ -140,7 +135,7 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
 
     dims <- dim(grid)
   res <- res(grid)
-    pbase <- p0(xmin(grid) + res[1L]/2L, xmax(grid) - res[1L]/2L,
+    pbase <- pimg(xmin(grid) + res[1L]/2L, xmax(grid) - res[1L]/2L,
                 ymin(grid) + res[2L]/2L, ymax(grid) - res[2L]/2L, dims[2L:1L])
     pim <- vector("list", n)
     for (i in seq_along(pim)) pim[[i]] <- pbase
@@ -152,8 +147,24 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     pim
 }
 
-bin.pimg <-
-  function(pimg, xy, weight = 1) {
+
+pimg <- function (xmin, xmax, ymin, ymax, xydim) {
+        res <- list(xbound = c(xmin, xmax, xydim[1L]),
+                    ybound = c(ymin, ymax, xydim[2L]),
+                    offset = c(1L, 1L), image = NULL)
+        res
+    }
+as.pimg.raster <- function(x) {
+    dims <- dim(x)
+    res <- res(x)
+     pimg(xmin(x) + res[1L]/2L, xmax(x) - res[1L]/2L,
+                ymin(x) + res[2L]/2L, ymax(x) - res[2L]/2L, dims[2L:1L])
+
+}
+
+##' importsFrom MASS kde2d bandwidth.nrd
+chain.bin <-
+  function(pimg, xy, weight = 1, type = c("bin", "kde"), hscale = 0.7) {
 
     xbnd <- pimg$xbound
     ybnd <- pimg$ybound
@@ -197,6 +208,12 @@ bin.pimg <-
                    ybound=ybnd,
                    offset=off,
                    image=img)
+      if (type == "kde") {
+          x <- as.local.pimg(pimg)
+          kde <- kde2d(xy[,1], xy[,2], h = pmax(1, c(bandwidth.nrd(xy[,1]), bandwidth.nrd(xy[,2]))) * hscale,
+                       n = c(length(x$x), length(x$y)), lims = c(range(x$x), range(x$y)))
+          pimg$image <- kde$z
+      }
       class(pimg) <- c("pimg", "list")
     }
     pimg
@@ -300,14 +317,19 @@ print.Pimage <- function(x, ...) {
 }
 
 
+as.local.pimg <- function (pimg)
+{
+    img <- coords.pimg(pimg)
+    img$x <- img$x[pimg$offset[1]:(pimg$offset[1] + nrow(pimg$image) -
+        1)]
+    img$y <- img$y[pimg$offset[2]:(pimg$offset[2] + ncol(pimg$image) -
+        1)]
+    img$z <- pimg$image
+    img
+}
 
 
-as.image.Pimage <-
-  function (pimgs)
-  {
-    ## should have checks elsewhere for these NULLs, do they persist when no mixing?
-    ## bad <- unlist(lapply(pimgs, function(x) is.null(x$image)))
-    `as.matrix.pimg` <-
+  `as.matrix.pimg` <-
       function(x) {
 
         pimg <- x
@@ -331,6 +353,13 @@ as.image.Pimage <-
         list(x=seq(pimg$xbound[1],pimg$xbound[2],length=pimg$xbound[3]),
              y=seq(pimg$ybound[1],pimg$ybound[2],length=pimg$ybound[3]))
       }
+
+
+as.image.Pimage <-
+  function (pimgs)
+  {
+    ## should have checks elsewhere for these NULLs, do they persist when no mixing?
+    ## bad <- unlist(lapply(pimgs, function(x) is.null(x$image)))
 
     res <- as.image.pimg(pimgs[[1]])
     if (length(pimgs) == 1)
