@@ -1864,7 +1864,7 @@ mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
     z <- rnorm(m*n)*S
     dim(z) <- c(m,m*n)
     z <- colSums(z)
-    dim(z) <- c(n,2)
+    dim(z) <- c(n, m)
     mu+z
   }
 }
