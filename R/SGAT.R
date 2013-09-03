@@ -725,7 +725,7 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for the satellite locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logicial vector indicating which satellite locations
+##' @param fixedx logical vector indicating which satellite locations
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
@@ -877,6 +877,13 @@ satellite.model <- function(tm,X,
 ##' time actually available for travel can be specified directly with
 ##' the \code{dt} argument.
 ##'
+##' The \code{polar.threshold.model} function is experimental.  It is
+##' identical to \code{threshold.model} except that it allows for the
+##' case where the tag is so far North or South that twilight is not
+##' observed.  In these cases, an approximate time of twilight may be
+##' supplied, and the logical vector \code{polar} is used to indicate
+##' which twilights are approximate and which are actual.
+##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
 ##' @param rise logical vector indicating which twilights are sunrise.
@@ -889,7 +896,8 @@ satellite.model <- function(tm,X,
 ##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logicial vector indicating which twilight locations to hold fixed.
+##' @param fixedx logical vector indicating which twilight locations to hold fixed.
+##' @param polar logical vector indicating which twilights were unobserved
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -960,9 +968,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -971,9 +977,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -982,9 +986,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -995,9 +997,7 @@ threshold.model <- function(twilight,rise,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
-             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
+             logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1008,9 +1008,7 @@ threshold.model <- function(twilight,rise,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
-             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
+             logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1113,8 +1111,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1123,9 +1120,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1134,9 +1129,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1147,9 +1140,7 @@ grouped.threshold.model <- function(twilight,rise,group,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1160,9 +1151,7 @@ grouped.threshold.model <- function(twilight,rise,group,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=TRUE),
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1206,6 +1195,154 @@ grouped.threshold.model <- function(twilight,rise,group,
 
 
 
+##' @rdname threshold.model
+##' @export
+polar.threshold.model <- function(twilight,rise,
+                                  twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
+                                  alpha,beta,
+                                  logp.x=function(x) rep.int(0L,nrow(x)),
+                                  logp.z=function(z) rep.int(0L,nrow(z)),
+                                  x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+
+  ## Calculate dog-leg distances along an x-z track
+  trkdist.xz <- function(x,z) {
+    n <- nrow(x)
+    cosx2 <- cos(pi/180*x[,2])
+    sinx2 <- sin(pi/180*x[,2])
+    cosz2 <- cos(pi/180*z[,2])
+    sinz2 <- sin(pi/180*z[,2])
+
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+  }
+
+  ## Calculate distances along an x track
+  trkdist.x <- function(x) {
+    n <- nrow(x)
+    cosx2 <- cos(pi/180*x[,2])
+    sinx2 <- sin(pi/180*x[,2])
+
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+  }
+
+
+  ## Convert twilights to solar time.
+  s <- solar(twilight)
+  ## Sign for residuals
+  sgn <- ifelse(rise,1,-1)
+  ## Fixed x locations
+  fixedx <- rep(fixedx,length=nrow(x0))
+  ## Polar locations indicator
+  if(is.null(polar))
+    polar <- logical(length(twilight))
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(twilight)/3600)
+
+  ## Discrepancy in expected and observed times of twilight, with sign
+  ## selected so that a positive value corresponds to the observed
+  ## sunrise occurring after the expected time of sunrise, and the
+  ## observed sunset occurring before the expected time of sunset
+  residuals <- function(x) {
+    4*sgn*(s$solarTime-twilight.solartime(s,x[,1],x[,2],rise,zenith))
+  }
+
+  ## Contribution to log posterior from each x location
+  twilight.model <- match.arg(twilight.model)
+  logpx <-
+    switch(twilight.model,
+           Gamma=
+           function(x) {
+             r <- residuals(x)
+             logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           LogNormal=
+           function(x) {
+             r <- residuals(x)
+             logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           Normal=
+           function(x) {
+             r <- residuals(x)
+             logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           ModifiedGamma=
+           function(x) {
+             r <- residuals(x)
+             logp <- ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
+                            dgamma(r,alpha[1],alpha[2],log=TRUE))
+             logp[!polar & !is.finite(r)] <- -1.0E8
+             logp[polar & is.finite(r)] <- -1.0E8
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           ModifiedLogNormal=
+           function(x) {
+             r <- residuals(x)
+             logp <- ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
+                            dlnorm(r,alpha[1],alpha[2],log=TRUE))
+             logp[!polar & !is.finite(r)] <- -1.0E8
+             logp[polar & is.finite(r)] <- -1.0E8
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           })
+
+  ## Contribution to log posterior from each z location
+  logpz <- function(z) {
+    logp.z(z)
+  }
+
+  ## Contribution to log posterior from the movement
+  estelle.logpb <- function(x,z) {
+    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  stella.logpb <- function(x) {
+    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+
+  list(## Positional contribution to the log posterior
+       logpx=logpx,
+       logpz=logpz,
+       ## Behavioural contribution to the log posterior
+       estelle.logpb=estelle.logpb,
+       stella.logpb=stella.logpb,
+       ## Residuals
+       residuals=residuals,
+       ## Locations to be held fixed
+       fixedx=fixedx,
+       ## Suggested starting points
+       x0=x0,
+       z0=z0,
+       ## Data
+       twilight=twilight,
+       rise=rise)
+}
+
+
+
 
 
 ##' Light Curve Model Structures for Stella and Estelle
@@ -1244,7 +1381,7 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logicial vector indicating which twilight locations to hold fixed.
+##' @param fixedx logical vector indicating which twilight locations to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
 ##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
@@ -1297,15 +1434,15 @@ curve.model <- function(datetime,light,segments,
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
 
-   ## Contribution to log posterior from each x location
-   logpx <- function(x) {
-     xs <- x[segments,]
-     zenith <- zenith(sun,xs[,1],xs[,2])
-     fitted <- calibration(zenith)+xs[,3]
-     ## Contributions to log posterior
-     logp <- dnorm(light,fitted,alpha[1],log=TRUE)
-     sapply(split(logp,segments),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
-   }
+  ## Contribution to log posterior from each x location
+  logpx <- function(x) {
+    xs <- x[segments,]
+    zenith <- zenith(sun,xs[,1],xs[,2])
+    fitted <- calibration(zenith)+xs[,3]
+    ## Contributions to log posterior
+    logp <- dnorm(light,fitted,alpha[1],log=TRUE)
+    sapply(split(logp,segments),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
+  }
 
   ## Contribution to log posterior from each z location
   logpz <- function(z) {
