@@ -1275,6 +1275,7 @@ polar.threshold.model <- function(twilight,rise,
              logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1285,6 +1286,7 @@ polar.threshold.model <- function(twilight,rise,
              logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1295,6 +1297,7 @@ polar.threshold.model <- function(twilight,rise,
              logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1307,6 +1310,7 @@ polar.threshold.model <- function(twilight,rise,
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
+             logp[polar & !is.finite(r)] <- 0
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1319,6 +1323,7 @@ polar.threshold.model <- function(twilight,rise,
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
+             logp[polar & !is.finite(r)] <- 0
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
