@@ -40,6 +40,8 @@ NULL
 ##' @export
 solar <- function(tm) {
 
+  rad <- pi/180
+
   ## Time as Julian day (R form)
   Jd <- as.numeric(tm)/86400.0+2440587.5
 
@@ -57,16 +59,16 @@ solar <- function(tm) {
   e <- 0.016708634-Jc*(0.000042037+0.0000001267*Jc)
 
   ## Equation of centre for the sun (degrees) [L]
-  eqctr <- sin(pi/180*M)*(1.914602-Jc*(0.004817+0.000014*Jc))+
-    sin(pi/180*2*M)*(0.019993-0.000101*Jc)+
-      sin(pi/180*3*M)*0.000289
+  eqctr <- sin(rad*M)*(1.914602-Jc*(0.004817+0.000014*Jc))+
+    sin(rad*2*M)*(0.019993-0.000101*Jc)+
+      sin(rad*3*M)*0.000289
 
   ## The true longitude of the sun (degrees) [M]
   lambda0 <- L0 + eqctr
 
   ## The apparent longitude of the sun (degrees) [P]
   omega <- 125.04-1934.136*Jc
-  lambda <- lambda0-0.00569-0.00478*sin(pi/180*omega)
+  lambda <- lambda0-0.00569-0.00478*sin(rad*omega)
 
 
   ## The mean obliquity of the ecliptic (degrees) [Q]
@@ -75,18 +77,18 @@ solar <- function(tm) {
 
   ## The corrected obliquity of the ecliptic (degrees) [R]
   omega <- 125.04-1934.136*Jc
-  obliq <- obliq0 + 0.00256*cos(pi/180*omega)
+  obliq <- obliq0 + 0.00256*cos(rad*omega)
 
   ## The equation of time (minutes of time) [U,V]
-  y <- tan(pi/180*obliq/2)^2
-  eqnTime <- 180/pi*4*(y*sin(pi/180*2*L0) -
-                      2*e*sin(pi/180*M) +
-                      4*e*y*sin(pi/180*M)*cos(pi/180*2*L0) -
-                      0.5*y^2*sin(pi/180*4*L0) -
-                      1.25*e^2*sin(pi/180*2*M))
+  y <- tan(rad*obliq/2)^2
+  eqnTime <- 4/rad*(y*sin(rad*2*L0) -
+                      2*e*sin(rad*M) +
+                      4*e*y*sin(rad*M)*cos(rad*2*L0) -
+                      0.5*y^2*sin(rad*4*L0) -
+                      1.25*e^2*sin(rad*2*M))
 
   ## The sun's declination (radians) [T]
-  solarDec <- asin(sin(pi/180*obliq)*sin(pi/180*lambda))
+  solarDec <- asin(sin(rad*obliq)*sin(rad*lambda))
   sinSolarDec <- sin(solarDec)
   cosSolarDec <- cos(solarDec)
 
@@ -129,20 +131,22 @@ solar <- function(tm) {
 ##' @export
 zenith <- function(sun,lon,lat) {
 
+  rad <- pi/180
+
   ## Suns hour angle (degrees) [AC!!]
   hourAngle <- sun$solarTime+lon-180
   #hourAngle <- sun$solarTime%%360+lon-180
 
   ## Cosine of sun's zenith [AD]
-  cosZenith <- (sin(pi/180*lat)*sun$sinSolarDec+
-                cos(pi/180*lat)*sun$cosSolarDec*cos(pi/180*hourAngle))
+  cosZenith <- (sin(rad*lat)*sun$sinSolarDec+
+                cos(rad*lat)*sun$cosSolarDec*cos(rad*hourAngle))
 
   ## Limit to [-1,1] [!!]
   cosZenith[cosZenith > 1] <- 1
   cosZenith[cosZenith < -1] <- -1
 
   ## Ignore refraction correction
-  180/pi*acos(cosZenith)
+  acos(cosZenith)/rad
 }
 
 
@@ -169,8 +173,9 @@ zenith <- function(sun,lon,lat) {
 ##' unrefracted(refracted(90))
 ##' @export
 refracted <- function(zenith) {
+  rad <- pi/180
   elev <- 90-zenith
-  te <- tan((pi/180)*elev)
+  te <- tan((rad)*elev)
   ## Atmospheric Refraction [AF]
   r <- ifelse(elev>85,0,
               ifelse(elev>5,58.1/te-0.07/te^3+0.000086/te^5,
@@ -211,10 +216,11 @@ unrefracted <- function(zenith)
 ##' @seealso \code{\link{twilight}}
 ##' @export
 twilight.solartime <- function(solar,lon,lat,rise,zenith=96) {
-  cosz <- cos(pi/180*zenith)
-  cosHA <- (cosz-sin(pi/180*lat)*solar$sinSolarDec)/(cos(pi/180*lat)*solar$cosSolarDec)
+  rad <- pi/180
+  cosz <- cos(rad*zenith)
+  cosHA <- (cosz-sin(rad*lat)*solar$sinSolarDec)/(cos(rad*lat)*solar$cosSolarDec)
   ## Compute the sun's hour angle from its declination for this location
-  hourAngle <- ifelse(rise,360,0)+ifelse(rise,-180/pi,180/pi)*suppressWarnings(acos(cosHA))
+  hourAngle <- ifelse(rise,360,0)+ifelse(rise,-1,1)*suppressWarnings(acos(cosHA)/rad)
   ## Solar time of sunrise at this zenith angle, lon and lat
   #(hourAngle+180-lon)%%360
   #360*(solar$solarTime%/%360)+solarTime
@@ -291,6 +297,7 @@ sunrise <- function(tm,lon,lat,zenith=96,iters=3)
 ##' @export
 sunset <- function(tm,lon,lat,zenith=96,iters=3)
   twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
+
 
 
 ##' Convert streams of twilights to sunrise/sunset pairs
@@ -376,25 +383,26 @@ twilight.pairs <- function(twilight,rise) {
 ##' @seealso \code{\link{zenith}}
 ##' @export
 threshold.estimate <- function(trise,tset,zenith=96,tol=0) {
+  rad <- pi/180
   sr <- solar(trise)
   ss <- solar(tset)
-  cosz <- cos(pi/180*zenith)
+  cosz <- cos(rad*zenith)
   lon <- -(sr$solarTime+ss$solarTime+ifelse(sr$solarTime<ss$solarTime,360,0))/2
   lon <- (lon+180)%%360-180
 
   ## Compute latitude from sunrise
   hourAngle <- sr$solarTime+lon-180
   a <- sr$sinSolarDec
-  b <- sr$cosSolarDec*cos(pi/180*hourAngle)
+  b <- sr$cosSolarDec*cos(rad*hourAngle)
   x <- (a*cosz-sign(a)*b*suppressWarnings(sqrt(a^2+b^2-cosz^2)))/(a^2+b^2)
-  lat1 <- ifelse(abs(a)>tol,180/pi*asin(x),NA)
+  lat1 <- ifelse(abs(a)>tol,asin(x)/rad,NA)
 
   ## Compute latitude from sunset
   hourAngle <- ss$solarTime+lon-180
   a <- ss$sinSolarDec
-  b <- ss$cosSolarDec*cos(pi/180*hourAngle)
+  b <- ss$cosSolarDec*cos(rad*hourAngle)
   x <- (a*cosz-sign(a)*b*suppressWarnings(sqrt(a^2+b^2-cosz^2)))/(a^2+b^2)
-  lat2 <- ifelse(abs(a)>tol,180/pi*asin(x),NA)
+  lat2 <- ifelse(abs(a)>tol,asin(x)/rad,NA)
 
   ## Average latitudes
   cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=TRUE))
@@ -483,12 +491,14 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.proposal,ss.proposal,
                                   n.thin=10,n.iters=1000) {
 
+
   ## Great circle distance (km)
   gcdist <- function(a,b) {
+    rad <- pi/180
     6378.137*acos(pmin.int(
-      cos(pi/180*a[2])*cos(pi/180*b[2])*
-      cos(pi/180*(b[1]-a[1]))+sin(pi/180*a[2])*
-      sin(pi/180*b[2]),
+      cos(rad*a[2])*cos(rad*b[2])*
+      cos(rad*(b[1]-a[1]))+sin(rad*a[2])*
+      sin(rad*b[2]),
       1))
   }
 
@@ -749,22 +759,24 @@ satellite.model <- function(tm,X,
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
 
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
   }
 
   ## Calculate distances along an x track
   trkdist.x <- function(x) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
 
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
   }
 
   ## Fixed x locations
@@ -923,22 +935,24 @@ threshold.model <- function(twilight,rise,
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
 
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
   }
 
   ## Calculate distances along an x track
   trkdist.x <- function(x) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
 
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
   }
 
 
@@ -1063,22 +1077,24 @@ grouped.threshold.model <- function(twilight,rise,group,
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
 
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
   }
 
   ## Calculate distances along an x track
   trkdist.x <- function(x) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
 
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
   }
 
 
@@ -1207,22 +1223,24 @@ polar.threshold.model <- function(twilight,rise,
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
 
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
   }
 
   ## Calculate distances along an x track
   trkdist.x <- function(x) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
 
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
   }
 
 
@@ -1405,22 +1423,24 @@ curve.model <- function(datetime,light,segments,
   ## Calculate dog-leg distances along an x-z track
   trkdist.xz <- function(x,z) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
 
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
   }
 
   ## Calculate distances along an x track
   trkdist.x <- function(x) {
     n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
 
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
   }
 
 
