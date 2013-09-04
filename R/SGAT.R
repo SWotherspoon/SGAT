@@ -299,6 +299,30 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
   twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
 
 
+##' Midpoints of a path
+##'
+##' Compute the midpoints of a sequence of locations along path.
+##' @title Path Midpoints
+##' @param p a two column matrix of (lon,lat) locations along the path.
+##' @param fold should the longitudes be folded into [-180,180).
+##' @return a two column matrix of (lon,lat) midpoints.
+##' @export
+midPoints <- function(p,fold=FALSE) {
+  n <- nrow(p)
+  rad <- pi/180
+  p <- rad*p
+  dlon <- diff(p[,1])
+  lon1 <- p[-n,1]
+  lat1 <- p[-n,2]
+  lat2 <- p[-1,2]
+  bx <- cos(lat2)*cos(dlon)
+  by <- cos(lat2)*sin(dlon)
+  lat <- atan2(sin(lat1)+sin(lat2),sqrt((cos(lat1)+bx)^2+by^2))/rad
+  lon <- (lon1+atan2(by,cos(lat1)+bx))/rad
+  if(fold) lon <- (lon+180)%%360-180
+  cbind(lon,lat)
+}
+
 
 ##' Convert streams of twilights to sunrise/sunset pairs
 ##'
