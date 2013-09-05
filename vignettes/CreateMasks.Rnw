@@ -290,7 +290,17 @@ plot(wrld_simpl)
   \label{fig:countryoutlines}
 \end{figure}
 
+\subsection{Manipulate coastal polygons to build a custom mask}
 
+
+
+\section{Time series masks}
+\subsection{SST masks}
+\subsection{Maximum depth mask and related ideas}
+
+\section{Map projections, working with the native coordinate system}
+
+\section{Combining masks together using lookup functions, disparate data sources}
 
 \clearpage
 \nocite{Sumner2009}
