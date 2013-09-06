@@ -5,7 +5,7 @@
 
 \SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
 %\VignetteIndexEntry{Worked Geolocation examples}
-%\VignetteDepends{geosphere,GeoLight,SGAT,raster,maptools}
+%\VignetteDepends{GeoLight,SGAT,raster,maptools}
 %\VignettePackage{SGAT}
 %\VignetteKeyword{Geolocation}
 \begin{document}
@@ -202,8 +202,7 @@ The midpoints of the $x$ locations are used as the initial $z$
 locations
 <<>>=
 ## Initial z locations
-library(geosphere)
-z0 <- midPoint(x0[-nrow(x0),],x0[-1,])
+z0 <- midPoints(x0)
 @
 
 

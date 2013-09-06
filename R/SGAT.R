@@ -324,6 +324,25 @@ midPoints <- function(p,fold=FALSE) {
 }
 
 
+##' Great circle distance along a peth
+##'
+##' Compute the great circle distances (in km) between a sequence of locations along path.
+##' @title Distance along a path
+##' @param p a two column matrix of (lon,lat) locations along the path.
+##' @return vector of interpoint distances (km)
+##' @export
+pathDist <- function(p) {
+  n <- nrow(p)
+  p <- (pi/180)*p
+  dlon <- p[-1,1]-p[-n,1]
+  coslat <- cos(p[,2])
+  sinlat <- sin(p[,2])
+
+  6378.137*acos(pmin.int(coslat[-n]*coslat[-1]*cos(dlon)+sinlat[-n]*sinlat[-1],1))
+}
+
+
+
 ##' Convert streams of twilights to sunrise/sunset pairs
 ##'
 ##' This function converts the twilight, rise format used by Stella
