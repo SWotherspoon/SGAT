@@ -1519,7 +1519,9 @@ curve.model <- function(datetime,light,segments,
        fixedx=fixedx,
        ## Suggested starting points
        x0=x0,
-       z0=z0)
+       z0=z0,
+       ## Median time, as per threshold model
+       twilight = tm)
 }
 
 
