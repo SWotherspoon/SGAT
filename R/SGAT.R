@@ -1476,7 +1476,7 @@ curve.model <- function(datetime,light,segments,
   ## Convert to solar time.
   sun <- solar(datetime)
   ## Median time in each segment
-  tm <- tapply(datetime, segments, median)
+  tm <- as.vector(tapply(datetime, segments, median) ) + ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "GMT")
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
   ## Times (hours) between observations
