@@ -1411,7 +1411,7 @@ curve.model <- function(time,light,segment,
     ## Contributions to log posterior
     logp <- dnorm(light,fitted,alpha[1],log=TRUE)
     data.frame(time=time,
-               segment=segment
+               segment=segment,
                zenith=zenith,
                fitted=fitted,
                light=light,
