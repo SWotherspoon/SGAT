@@ -1778,7 +1778,7 @@ stella.metropolis <- function(model,
 ##' \code{location.summary} returns a dataframe of summary quantities for each location
 ##' \code{location.mean} returns an array of the means of the samples for each location
 ##' @export
-location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
+location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
   if(discard>0) s <- chain.tail(s,discard)
   if(length(dim(s))==4) s <- chain.collapse(s)
   smry <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
@@ -1787,13 +1787,13 @@ location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
   lat <- t(apply(s[,2,],1,smry))
   colnames(lat) <- paste("lat",colnames(lat),sep=".")
   d <- as.data.frame(cbind(lon,lat))
-  if(!is.null(twilight)) {
+  if(!is.null(time)) {
     ## Add timing information
     n <- nrow(d)
-    if(length(twilight)==n)
-      d <- cbind(time=twilight,d)
+    if(length(time)==n)
+      d <- cbind(time=time,d)
     else
-      d <- cbind(time1=twilight[1:n],time2=twilight[2:(n+1)],d)
+      d <- cbind(time1=time[1:n],time2=time[2:(n+1)],d)
   }
   d
 }
