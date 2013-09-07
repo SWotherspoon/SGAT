@@ -787,7 +787,7 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' the \code{dt} argument.
 ##'
 ##' @title Satellite Model Structures
-##' @param tm the times of the satellite determined locations.
+##' @param time the times of the satellite determined locations.
 ##' @param X the satellite determined locations.
 ##' @param location.model the model for the errors in satellite locations.
 ##' @param sd a vector or two column matrix of dispersions for the location model.
@@ -808,10 +808,10 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{X}}{the times of the satellite determined locations.}
+##' \item{\code{time}}{the times of the satellite determined locations.}
 ##' \item{\code{X}}{the satellite determined locations.}
 ##' @export
-satellite.model <- function(tm,X,
+satellite.model <- function(time,X,
                             location.model=c("Normal","T"),
                             sd,df=NULL,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
@@ -874,7 +874,7 @@ satellite.model <- function(tm,X,
        x0=x0,
        z0=z0,
        ## Data
-       tm=tm,
+       time=time,
        X=X)
 }
 
@@ -960,7 +960,7 @@ satellite.model <- function(tm,X,
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{twilight}}{the twilight times.}
+##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{group}}{the grouping vector.}
 ##' @export
@@ -1074,7 +1074,7 @@ threshold.model <- function(twilight,rise,
        x0=x0,
        z0=z0,
        ## Data
-       twilight=twilight,
+       time=twilight,
        rise=rise)
 }
 
@@ -1195,7 +1195,7 @@ grouped.threshold.model <- function(twilight,rise,group,
        x0=x0,
        z0=z0,
        ## Data
-       twilight=twilight,
+       time=twilight,
        rise=rise,
        group=group)
 }
@@ -1327,7 +1327,7 @@ polar.threshold.model <- function(twilight,rise,
        x0=x0,
        z0=z0,
        ## Data
-       twilight=twilight,
+       time=twilight,
        rise=rise)
 }
 
@@ -1361,9 +1361,9 @@ polar.threshold.model <- function(twilight,rise,
 ##' the \code{dt} argument.
 ##'
 ##' @title Curve Model Structure
-##' @param datetime vector of sample times as POSIXct.
+##' @param time vector of sample times as POSIXct.
 ##' @param light vector of observed (log) light levels.
-##' @param segments vector of integers that assign observations to twilight segments.
+##' @param segment vector of integers that assign observations to twilight segments.
 ##' @param calibration function that maps zenith angles to expected light levels.
 ##' @param alpha parameters of the twilight model.
 ##' @param beta parameters of the behavioural model.
@@ -1382,34 +1382,35 @@ polar.threshold.model <- function(twilight,rise,
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{datetime}}{the sample times.}
+##' \item{\code{time}}{the sample times.}
 ##' \item{\code{light}}{the recorded light levels.}
-##' \item{\code{segments}}{vector of integers that assign observations to twilight segments.}
+##' \item{\code{segment}}{vector of integers that assign observations to twilight segments.}
 ##' @export
-curve.model <- function(datetime,light,segments,
+curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
                         logp.x=function(x) rep.int(0L,nrow(x)),
                         logp.z=function(z) rep.int(0L,nrow(z)),
                         x0,z0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Convert to solar time.
-  sun <- solar(datetime)
+  sun <- solar(time)
   ## Median time in each segment
-  tm <- .POSIXct(sapply(split(datetime,segments),median),"GMT")
+  tm <- .POSIXct(sapply(split(time,segment),median),"GMT")
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
 
+
   ## Contribution to log posterior from each x location
   logpx <- function(x) {
-    xs <- x[segments,]
+    xs <- x[segment,]
     zenith <- zenith(sun,xs[,1],xs[,2])
     fitted <- calibration(zenith)+xs[,3]
     ## Contributions to log posterior
     logp <- dnorm(light,fitted,alpha[1],log=TRUE)
-    sapply(split(logp,segments),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
+    sapply(split(logp,segment),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
   }
 
   ## Contribution to log posterior from each z location
@@ -1440,7 +1441,7 @@ curve.model <- function(datetime,light,segments,
        x0=x0,
        z0=z0,
        ## Median time, as per threshold model
-       twilight = tm)
+       time = tm)
 }
 
 
