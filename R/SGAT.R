@@ -1402,6 +1402,21 @@ curve.model <- function(time,light,segment,
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
 
+  ## Return a dataframe of the fitted zenith and light observations
+  ## for a set of estimated locations.
+  fitted <- function(x) {
+    xs <- x[segment,]
+    zenith <- zenith(sun,xs[,1],xs[,2])
+    fitted <- calibration(zenith)+xs[,3]
+    ## Contributions to log posterior
+    logp <- dnorm(light,fitted,alpha[1],log=TRUE)
+    data.frame(time=time,
+               segment=segment
+               zenith=zenith,
+               fitted=fitted,
+               light=light,
+               logl=logp)
+  }
 
   ## Contribution to log posterior from each x location
   logpx <- function(x) {
