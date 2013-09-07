@@ -128,7 +128,7 @@ A set of initial $x$ locations are estimated
 ## Initial x locations
 x0 <- threshold.path(twl$twilight,twl$rise)$x
 ## Initial z locations
-z0 <- midPoints(x0)
+z0 <- trackMidpts(x0)
 @
 and adjusted to meet the requirements of the Log Normal model
 <<>>=
@@ -139,7 +139,7 @@ model <- threshold.model(twl$twilight,twl$rise,
                          x0=x0,z0=z0)
 r <- model$residuals(x0)
 x0 <- cbind(x0[,1]-ifelse(twl$rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
-z0 <- midPoints(x0)
+z0 <- trackMidpts(x0)
 model <- threshold.model(twl$twilight,twl$rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
@@ -310,7 +310,7 @@ model <- threshold.model(twl$twilight,twl$rise,
                          x0=NULL,z0=NULL)
 r <- model$residuals(x0)
 x0 <- cbind(x0[,1]-ifelse(twl$rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
-z0 <- midPoints(x0)
+z0 <- trackMidpts(x0)
 model <- threshold.model(twl$twilight,twl$rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),

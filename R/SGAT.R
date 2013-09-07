@@ -307,7 +307,7 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
 ##' @param fold should the longitudes be folded into [-180,180).
 ##' @return a two column matrix of (lon,lat) midpoints.
 ##' @export
-midPoints <- function(p,fold=FALSE) {
+trackMidpts <- function(p,fold=FALSE) {
   n <- nrow(p)
   rad <- pi/180
   p <- rad*p
@@ -1775,9 +1775,9 @@ location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
     ## Add timing information
     n <- nrow(d)
     if(length(twilight)==n)
-      d <- cbind(Time=twilight,d)
+      d <- cbind(time=twilight,d)
     else
-      d <- cbind(T1=twilight[1:n],Time2=twilight[2:(n+1)],d)
+      d <- cbind(time1=twilight[1:n],time2=twilight[2:(n+1)],d)
   }
   d
 }

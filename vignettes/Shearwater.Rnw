@@ -202,7 +202,7 @@ The midpoints of the $x$ locations are used as the initial $z$
 locations
 <<>>=
 ## Initial z locations
-z0 <- midPoints(x0)
+z0 <- trackMidpts(x0)
 @
 
 
