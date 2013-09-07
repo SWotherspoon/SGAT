@@ -324,22 +324,41 @@ midPoints <- function(p,fold=FALSE) {
 }
 
 
-##' Great circle distance along a peth
+##' Distances along a path
 ##'
-##' Compute the great circle distances (in km) between a sequence of locations along path.
+##' The \code{trackDist} computes the great circle distances (in km)
+##' between successive locations along path. The \code{trackDist2}
+##' accepts a second sequence of intermediate points, and computes the
+##' great circle distances along the dog leg paths from \code{x[i,]}
+##' to \code{z[i,]} to \code{x[i+1,]}.
+##'
 ##' @title Distance along a path
-##' @param p a two column matrix of (lon,lat) locations along the path.
+##' @param x a two column matrix of (lon,lat) locations along the path.
+##' @param z a two column matrix of (lon,lat) intermediate locations along the path.
 ##' @return vector of interpoint distances (km)
 ##' @export
-pathDist <- function(p) {
+trackDist <- function(x) {
   n <- nrow(p)
-  p <- (pi/180)*p
-  dlon <- p[-1,1]-p[-n,1]
-  coslat <- cos(p[,2])
-  sinlat <- sin(p[,2])
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2])
+  sinx2 <- sin(rad*x[,2])
 
-  6378.137*acos(pmin.int(coslat[-n]*coslat[-1]*cos(dlon)+sinlat[-n]*sinlat[-1],1))
+  6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
 }
+
+
+##' @rdname trackDist
+trackDist2 <- function(x,z) {
+    n <- nrow(x)
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
+
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+  }
 
 
 
@@ -799,29 +818,6 @@ satellite.model <- function(tm,X,
                             logp.z=function(z) rep.int(0L,nrow(z)),
                             x0,z0=NULL,fixedx=FALSE,dt=NULL) {
 
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-    cosz2 <- cos(rad*z[,2])
-    sinz2 <- sin(rad*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
   ## Times (hours) between observations
@@ -854,12 +850,12 @@ satellite.model <- function(tm,X,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -975,30 +971,6 @@ threshold.model <- function(twilight,rise,
                             logp.z=function(z) rep.int(0L,nrow(z)),
                             x0,z0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
 
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-    cosz2 <- cos(rad*z[,2])
-    sinz2 <- sin(rad*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
-
   ## Convert twilights to solar time.
   s <- solar(twilight)
   ## Sign for residuals
@@ -1078,12 +1050,12 @@ threshold.model <- function(twilight,rise,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -1116,30 +1088,6 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     logp.z=function(z) rep.int(0L,nrow(z)),
                                     x0,z0=NULL,fixedx=FALSE,dt=NULL,
                                     zenith=96) {
-
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-    cosz2 <- cos(rad*z[,2])
-    sinz2 <- sin(rad*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1223,12 +1171,12 @@ grouped.threshold.model <- function(twilight,rise,group,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -1262,30 +1210,6 @@ polar.threshold.model <- function(twilight,rise,
                                   logp.x=function(x) rep.int(0L,nrow(x)),
                                   logp.z=function(z) rep.int(0L,nrow(z)),
                                   x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
-
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-    cosz2 <- cos(rad*z[,2])
-    sinz2 <- sin(rad*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1379,12 +1303,12 @@ polar.threshold.model <- function(twilight,rise,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -1468,30 +1392,6 @@ curve.model <- function(datetime,light,segments,
                         logp.z=function(z) rep.int(0L,nrow(z)),
                         x0,z0=NULL,fixedx=FALSE,dt=NULL) {
 
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-    cosz2 <- cos(rad*z[,2])
-    sinz2 <- sin(rad*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    rad <- pi/180
-    cosx2 <- cos(rad*x[,2])
-    sinx2 <- sin(rad*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
-
   ## Convert to solar time.
   sun <- solar(datetime)
   ## Median time in each segment
@@ -1519,12 +1419,12 @@ curve.model <- function(datetime,light,segments,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
