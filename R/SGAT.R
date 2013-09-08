@@ -2059,7 +2059,7 @@ geolight.convert <- function(tFirst,tSecond,type) {
 ##' twilights Wedge Island when solar zenith is 95 degrees.
 ##'
 ##' These data supplied courtesy of Delphi Ward and Mark Hindell,
-##' Intstitute of Marine and Antarctic Studies, University of
+##' Institute of Marine and Antarctic Studies, University of
 ##' Tasmania.
 ##' @name Shearwater
 ##' @docType data
@@ -2085,10 +2085,10 @@ NULL
 ##' Data recorded while the seal is at the isthmus are used for calibration (ellie1calib). 
 ##'
 ##' These data supplied courtesy of Mark Hindell,
-##' Intstitute of Marine and Antarctic Studies, University of
+##' Institute of Marine and Antarctic Studies, University of
 ##' Tasmania.
 ##' @name ellie1
-##' @alias ellie1calib
+##' @aliases ellie1calib
 ##' @docType data
 ##' @title Southern Elephant seal tag data
 ##' @format \code{ellie1} A data frame with 3 columns.  The columns
