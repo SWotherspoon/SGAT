@@ -12,15 +12,12 @@
 \SweaveOpts{concordance=TRUE}
 
 \title{Light-curve methods}
-\date{2013}
-\author{\textbf{Michael Sumner} \\
-%EndAName
-Australian Antarctic Division\\
-\textbf{Simon Wotherspoon} \\
-%EndAName
-Australian Antarctic Division,\\
-Institute for Marine and Antarctic Studies\\
-University of Tasmania}
+\date{}
+\author{\textbf{Michael Sumner\footnote{Australian Antarctic Division}} and 
+\textbf{Simon Wotherspoon}\footnote{Australian Antarctic Division,
+Institute for Marine and Antarctic Studies
+University of Tasmania}}
+ 
 \maketitle
 
 \begin{abstract}
