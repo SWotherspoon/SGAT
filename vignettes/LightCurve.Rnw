@@ -43,7 +43,10 @@ lat.max <- -50
 @
 
 <<calib>>=
-calibration <- with(ellie1calib, approxfun(zenith, light))
+## rule 2 to avoid NAs at extremes
+calibration <- with(ellie1calib, approxfun(zenith, light, rule = 2))
+## with(subset(ellie1, segment == 1), plot(time, light))
+## with(subset(ellie1, segment == 1), lines(time, calibration(zenith(solar(time), 158.9, -54.5))))
 
 @
 <<model>>=
@@ -53,9 +56,11 @@ model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
 
 <<init>>=
 ## find starting points
-grid <- list(x = seq(lon.min, lon.max, length = 40),
-             y = seq(lat.min, lat.max, length = 30),
-             z = array(0, c(40, 30, length(model$time))))
+nx <- 50
+ny <- 30
+grid <- list(x = seq(lon.min, lon.max, length = nx),
+             y = seq(lat.min, lat.max, length = ny),
+             z = array(0, c(nx, ny, length(model$time))))
 for (i in seq_along(grid$x)) {
         for (j in seq_along(grid$y)) {
             grid$z[i,j,] <- model$logpx(cbind(rep(grid$x[i], length(model$time)), grid$y[j], 0))
