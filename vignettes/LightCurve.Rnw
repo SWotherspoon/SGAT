@@ -32,6 +32,47 @@ University of Tasmania}
 set.seed(42)
 @
 
+<<load>>=
+data(ellie1)
+data(ellie1calib)
+
+lon.min <- 140
+lon.max <- 220
+lat.min <- -80
+lat.max <- -50
+@
+
+<<calib>>=
+calibration <- with(ellie1calib, approxfun(zenith, light))
+
+@
+<<model>>=
+model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
+                     alpha = c(7, 10), beta = c(0.5, 0.08))
+@
+
+<<init>>=
+## find starting points
+grid <- list(x = seq(lon.min, lon.max, length = 40),
+             y = seq(lat.min, lat.max, length = 30),
+             z = array(0, c(40, 30, length(model$time))))
+for (i in seq_along(grid$x)) {
+        for (j in seq_along(grid$y)) {
+            grid$z[i,j,] <- model$logpx(cbind(rep(grid$x[i], length(model$time)), grid$y[j], 0))
+        }
+    }
+
+x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3, which.max), ]), 0)
+@
+
+<<proposals>>=
+x.proposal <- mvnorm(S=diag(c(0.005,0.005, 0.05)),n=nrow(x0))
+z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
+@
+
+<<run1>>=
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
+@
 
 \section{Introduction}
 \label{sec:introduction}
