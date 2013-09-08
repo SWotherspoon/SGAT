@@ -1390,14 +1390,14 @@ curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
                         logp.x=function(x) rep.int(0L,nrow(x)),
                         logp.z=function(z) rep.int(0L,nrow(z)),
-                        x0,z0=NULL,fixedx=FALSE,dt=NULL) {
+                        x0=NULL,z0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Convert to solar time.
   sun <- solar(time)
   ## Median time in each segment
   tm <- .POSIXct(sapply(split(time,segment),median),"GMT")
   ## Fixed x locations
-  fixedx <- rep(fixedx,length=nrow(x0))
+  fixedx <- rep(fixedx,length=length(tm))
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
