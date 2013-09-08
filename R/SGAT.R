@@ -2048,8 +2048,8 @@ geolight.convert <- function(tFirst,tSecond,type) {
 
 ##' Twilight times from a flight of a Short-tailed Shearwater.
 ##'
-##' Twilight times derived from light intensity measurements from a
-##' archval tag on a Short-tailed Shearwater (\emph{Puffinus
+##' Twilight times derived from light intensity measurements from an
+##' archival tag on a Short-tailed Shearwater (\emph{Puffinus
 ##' tenuirostris}).  The bird was tagged at its burrow on Wedge
 ##' Island, Tasmania Australia (147.670E 43.133S).  The bird makes two
 ##' foraging trips, returning to its burrow after each trip.
@@ -2070,6 +2070,38 @@ geolight.convert <- function(tFirst,tSecond,type) {
 ##' \code{twilight} \tab times of twilight. \cr
 ##' \code{rise} \tab logical indicating which twilights are sunrise. \cr
 ##' \code{burrow} \tab logical indicating when the bird in its burrow.
+##' }
+##' @keywords data
+NULL
+
+##' Light data from the foraging trip of a Southern elephant seal.
+##'
+##' Light intensity measurements over time from an
+##' archival tag on a Southern elephant seal (\emph{Mirounga
+##' leonina}).  The seal was tagged at the isthmus on Macquarie Island (158.950E, 54.5S),
+##' with data from a time-depth-recorder (Mk9 TDR; Wildlife Computers, Seattle, WA, USA). 
+##' This tag provides regular time series of measurements of depth, water temperature, and 
+##' ambient light level. The original data were processed to remove values at depths greater than 15m and to classify periods of twilight. The seal makes one single foraging trip, returning to the isthmus where it was tagged. 
+##' Data recorded while the seal is at the isthmus are used for calibration (ellie1calib). 
+##'
+##' These data supplied courtesy of Mark Hindell,
+##' Intstitute of Marine and Antarctic Studies, University of
+##' Tasmania.
+##' @name ellie1
+##' @alias ellie1calib
+##' @docType data
+##' @title Southern Elephant seal tag data
+##' @format \code{ellie1} A data frame with 3 columns.  The columns
+##' represent
+##' \tabular{rl}{
+##' \code{time} \tab times of measurement \cr
+##' \code{light} \tab  (log) light values \cr
+##' \code{segment} \tab integer indicating sequence of twilight periods \cr
+##' }
+##'  \code{ellie1calib} A data frame with 2 columns.  The columns represent
+##' \tabular{rl}{
+##' \code{zenith} \tab zenith values \cr
+##' \code{light} \tab  (log) light values \cr
 ##' }
 ##' @keywords data
 NULL
