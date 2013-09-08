@@ -9,12 +9,13 @@
 %\VignettePackage{SGAT}
 %\VignetteKeyword{Curve}
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 \title{Light-curve methods}
 \date{2013}
-\textbf{Michael Sumner} \\
+\author{\textbf{Michael Sumner} \\
 %EndAName
-Australian Antarctic Division
+Australian Antarctic Division\\
 \textbf{Simon Wotherspoon} \\
 %EndAName
 Australian Antarctic Division,\\
@@ -28,14 +29,20 @@ University of Tasmania}
 \end{abstract}
 
 
-<<echo=FALSE>>=
+<<first,echo=FALSE,print=FALSE>>=
 set.seed(42)
+
+library(SGAT)
+@
+
+<<second,eval=FALSE,echo=TRUE>>=
+library(SGAT)
 @
 
 <<load>>=
-data(ellie1)
-data(ellie1calib)
 
+data(ellie1)
+data("ellie1calib")
 lon.min <- 140
 lon.max <- 220
 lat.min <- -80
@@ -56,8 +63,8 @@ model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
 
 <<init>>=
 ## find starting points
-nx <- 50
-ny <- 30
+nx <- 5
+ny <- 3
 grid <- list(x = seq(lon.min, lon.max, length = nx),
              y = seq(lat.min, lat.max, length = ny),
              z = array(0, c(nx, ny, length(model$time))))
