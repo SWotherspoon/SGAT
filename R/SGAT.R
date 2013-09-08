@@ -1378,7 +1378,7 @@ polar.threshold.model <- function(twilight,rise,
 ##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
 ##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
 ##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
-##' \item{\code{residuals}}{function to evaluate the twilight model residuals.}
+##' \item{\code{fitted}}{function to evaluate the fitted values for a given set of lcoations.}
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
@@ -1450,6 +1450,8 @@ curve.model <- function(time,light,segment,
        ## Behavioural contribution to the log posterior
        estelle.logpb = estelle.logpb,
        stella.logpb=stella.logpb,
+       ## Fitted values
+       fitted=fitted,
        ## Locations to be held fixed
        fixedx=fixedx,
        ## Suggested starting points
