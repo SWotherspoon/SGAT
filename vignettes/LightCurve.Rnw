@@ -1,0 +1,65 @@
+\documentclass[a4paper]{article}
+\usepackage{a4wide}
+\usepackage[authoryear]{natbib}
+\usepackage{amsmath}
+
+\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
+%\VignetteIndexEntry{Worked Geolocation examples}
+%\VignetteDepends{GeoLight,SGAT,raster,maptools}
+%\VignettePackage{SGAT}
+%\VignetteKeyword{Curve}
+\begin{document}
+
+\title{Light-curve methods}
+\date{2013}
+\textbf{Michael Sumner} \\
+%EndAName
+Australian Antarctic Division
+\textbf{Simon Wotherspoon} \\
+%EndAName
+Australian Antarctic Division,\\
+Institute for Marine and Antarctic Studies\\
+University of Tasmania}
+\maketitle
+
+\begin{abstract}
+  The \textbf{SGAT} package provides facilities for Geolocation
+  estimation with light curve methods. 
+\end{abstract}
+
+
+<<echo=FALSE>>=
+set.seed(42)
+@
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+\section{Data preparation}
+\label{sec:dataprep}
+Filter and prepare raw data. Fixed points. 
+
+\section{Calibration data}
+\label{sec:calibration}
+
+\section{Defining twilight segments}
+\label{sec:segments}
+
+
+\section{Masks}
+\label{sec:masks}
+
+
+\section{Movement model}
+\label{sec:movement}
+Stella or Estelle, constraints on movements. 
+
+\section{Initialization}
+\label{sec:init}
+
+\nocite{Sumner2009}
+\bibliographystyle{apalike}
+\bibliography{SGAT}
+
+\end{document}
