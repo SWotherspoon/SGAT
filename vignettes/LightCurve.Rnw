@@ -13,16 +13,15 @@
 
 \title{Light-curve methods}
 \date{}
-\author{\textbf{Michael Sumner\footnote{Australian Antarctic Division}} and 
+\author{\textbf{Michael Sumner\footnote{Australian Antarctic Division}} and
 \textbf{Simon Wotherspoon}\footnote{Australian Antarctic Division,
 Institute for Marine and Antarctic Studies
 University of Tasmania}}
- 
 \maketitle
 
 \begin{abstract}
   The \textbf{SGAT} package provides facilities for Geolocation
-  estimation with light curve methods. 
+  estimation with light curve methods.
 \end{abstract}
 
 
@@ -88,7 +87,7 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0
 
 \section{Data preparation}
 \label{sec:dataprep}
-Filter and prepare raw data. Fixed points. 
+Filter and prepare raw data. Fixed points.
 
 \section{Calibration data}
 \label{sec:calibration}
@@ -103,7 +102,7 @@ Filter and prepare raw data. Fixed points.
 
 \section{Movement model}
 \label{sec:movement}
-Stella or Estelle, constraints on movements. 
+Stella or Estelle, constraints on movements.
 
 \section{Initialization}
 \label{sec:init}
