@@ -21,36 +21,79 @@ University of Tasmania}}
 
 \begin{abstract}
   The \textbf{SGAT} package provides facilities for Geolocation
-  estimation with light curve methods.
+  estimation with light curve methods. This document demonstrates building an running a light curve model with a Southern elephant seal data set. 
 \end{abstract}
 
 
-<<first,echo=FALSE,print=FALSE>>=
+<<first,echo=FALSE,results=hide>>=
 set.seed(42)
-
 library(SGAT)
 @
 
-<<second,eval=FALSE,echo=TRUE>>=
+\section{Introduction}
+\label{sec:introduction}
+This document demonstrates the use of the Curve model applied to a
+Southern elephant seal data set.
+
+\section{Southern elephant seal}
+\label{sec:ses}
+The \texttt{ellie1} data set contains light intensities recorded over time by an archival tag on a Southern elephant seal (\emph{Mirounga leonina}). The seal was tagged on the isthmus at Macquarie Island ($158.950^{\circ}$E, $54.50^{\circ}$S) and makes one foraging trip, then returns to the isthmus. 
+
+
+<<load,echo=TRUE>>=
 library(SGAT)
-@
-
-<<load>>=
-
 data(ellie1)
-data("ellie1calib")
-lon.min <- 140
-lon.max <- 220
-lat.min <- -80
-lat.max <- -50
+head(ellie1)
+tail(ellie1)
 @
+
+The original data also include depth and temperature. This data set has been processed to identify individual twilight \emph{segments} and removed any records where the depth was greater than 15m. Each segment represents the time of day where the light is changing most quickly around sunrise or sunset. 
+
+\begin{figure}[ht]
+  \centering
+<<plotsegs,fig=TRUE>>=
+with(subset(ellie1, segment %in% c(9, 10)), plot(time, light, col = c("dodgerblue", "firebrick")[(segment %% 2L)+1L]))
+@
+  \caption{Plot of two twilight segments.}
+  \label{fig:plotsegs}
+\end{figure}
+
 
 <<calib>>=
+data(ellie1calib)
 ## rule 2 to avoid NAs at extremes
 calibration <- with(ellie1calib, approxfun(zenith, light, rule = 2))
 ## with(subset(ellie1, segment == 1), plot(time, light))
 ## with(subset(ellie1, segment == 1), lines(time, calibration(zenith(solar(time), 158.9, -54.5))))
 
+@
+
+
+The \texttt{land.mask} function constructs a land mask based on
+an input polygon layer.
+<<>>=
+## Construct a land mask
+library(raster)
+library(maptools)
+data(wrld_simpl)
+land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
+  r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
+              xmn = xlim[1L], xmx = xlim[2L],
+              ymn= ylim[1L], ymx = ylim[2L],
+              crs = projection(poly))
+  r <- rasterize(poly, r)
+  r <- as.matrix(is.na(r))[nrow(r):1L, ]
+  if(land) r <- !r
+  xbin <- seq(xlim[1L], xlim[2L], length=ncol(r) + 1L)
+  ybin <- seq(ylim[1L], ylim[2L], length=nrow(r) + 1L)
+
+  function(p) {
+    r[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin))]
+  }
+}
+lonlim <- c(140, 220)
+latlim <- c(-80, -50)
+is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 @
 <<model>>=
 model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
@@ -59,10 +102,10 @@ model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
 
 <<init>>=
 ## find starting points
-nx <- 5
-ny <- 3
-grid <- list(x = seq(lon.min, lon.max, length = nx),
-             y = seq(lat.min, lat.max, length = ny),
+nx <- 30L
+ny <- 25L
+grid <- list(x = seq(lonlim[1L], lonlim[2L], length = nx),
+             y = seq(latlim[1L], latlim[2L], length = ny),
              z = array(0, c(nx, ny, length(model$time))))
 for (i in seq_along(grid$x)) {
         for (j in seq_along(grid$y)) {
@@ -79,11 +122,9 @@ z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
 @
 
 <<run1>>=
-fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
+##fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
 @
 
-\section{Introduction}
-\label{sec:introduction}
 
 \section{Data preparation}
 \label{sec:dataprep}
