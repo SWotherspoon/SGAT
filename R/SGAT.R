@@ -2127,7 +2127,7 @@ NULL
 ##' with data from a time-depth-recorder (Mk9 TDR; Wildlife Computers, Seattle, WA, USA). 
 ##' This tag provides regular time series of measurements of depth, water temperature, and 
 ##' ambient light level. The original data were processed to remove values at depths greater than 15m and to classify periods of twilight. The seal makes one single foraging trip, returning to the isthmus where it was tagged. 
-##' Data recorded while the seal is at the isthmus are used for calibration (ellie1calib). 
+##' Data recorded while the seal is at the isthmus are used for calibration (\code{\link{ellie1calib}}). 
 ##'
 ##' These data supplied courtesy of Mark Hindell,
 ##' Institute of Marine and Antarctic Studies, University of
