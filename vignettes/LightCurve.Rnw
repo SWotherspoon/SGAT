@@ -4,7 +4,7 @@
 \usepackage{amsmath}
 
 \SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
-%\VignetteIndexEntry{Worked Geolocation examples}
+%\VignetteIndexEntry{Worked Geolocation examples with curve methods}
 %\VignetteDepends{GeoLight,SGAT,raster,maptools}
 %\VignettePackage{SGAT}
 %\VignetteKeyword{Curve}
@@ -21,7 +21,7 @@ University of Tasmania}}
 
 \begin{abstract}
   The \textbf{SGAT} package provides facilities for Geolocation
-  estimation with light curve methods. This document demonstrates building an running a light curve model with a Southern elephant seal data set. 
+  estimation with light curve methods. This document demonstrates building an running a light curve model with a Southern elephant seal data set.
 \end{abstract}
 
 
@@ -37,7 +37,7 @@ Southern elephant seal data set.
 
 \section{Southern elephant seal}
 \label{sec:ses}
-The \texttt{ellie1} data set contains light intensities recorded over time by an archival tag on a Southern elephant seal (\emph{Mirounga leonina}). The seal was tagged on the isthmus at Macquarie Island ($158.950^{\circ}$E, $54.50^{\circ}$S) and makes one foraging trip, then returns to the isthmus. 
+The \texttt{ellie1} data set contains light intensities recorded over time by an archival tag on a Southern elephant seal (\emph{Mirounga leonina}). The seal was tagged on the isthmus at Macquarie Island ($158.950^{\circ}$E, $54.50^{\circ}$S) and makes one foraging trip, then returns to the isthmus.
 
 
 <<load,echo=TRUE>>=
@@ -47,7 +47,7 @@ head(ellie1)
 tail(ellie1)
 @
 
-The original data also include depth and temperature. This data set has been processed to identify individual twilight \emph{segments} and removed any records where the depth was greater than 15m. Each segment represents the time of day where the light is changing most quickly around sunrise or sunset. 
+The original data also include depth and temperature. This data set has been processed to identify individual twilight \emph{segments} and removed any records where the depth was greater than 15m. Each segment represents the time of day where the light is changing most quickly around sunrise or sunset.
 
 \begin{figure}[ht]
   \centering
