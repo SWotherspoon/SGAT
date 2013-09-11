@@ -41,7 +41,7 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     ## not sure what to do here . .
     ##    if (Z != Zarg) warning(sprintf("bin=%s argument is incompatible with pimg object, ignored", Zarg))
 
-    chain <- if(Z) fit$x else fit$x
+    chain <- if(Z) fit$z else fit$x
 
     ## set up tests for map projection, and rgdal availibility
     projected <- FALSE
