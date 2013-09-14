@@ -1974,11 +1974,11 @@ chain.project <- function(s,to.crs,from.crs=NULL) {
   if(is.null(from)) from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
 
   if(length(dim(s))==4) {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,,]),as.vector(s[,2,,])),from),to))
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,,]),as.vector(s[,2,,])),from),to.crs))
     s[,1,,] <- p[,1]
     s[,2,,] <- p[,2]
   } else {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,]),as.vector(s[,2,])),from),to))
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,]),as.vector(s[,2,])),from),to.crs))
     s[,1,] <- p[,1]
     s[,2,] <- p[,2]
   }
