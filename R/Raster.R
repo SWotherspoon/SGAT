@@ -49,7 +49,7 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' These functions allow a trip to be divided into time slices, and
 ##' location density estimates generated for each time slice.
 ##'
-##' The \code{time.slices} function defines the slices into which the
+##' The \code{slices} function defines the slices into which the
 ##' trip is divided, and whether the primary or intermediate locations
 ##' are to be binned. If \code{breaks} is NULL, each location forms a
 ##' separate time slice, otherwise \code{breaks} divides the trip into
@@ -76,7 +76,7 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' @param right parameter to \code{cut.POSIXt}
 ##' @param chain NULL, or the subset of chains to bin.
 ##' @return \code{slice} returns the locations for time slice of the
-##' track binned into a raster, \code{time.slices} returns a slices
+##' track binned into a raster, \code{slices} returns a slices
 ##' object that defines the time slices into which to bin,
 ##' \code{slice.interval} returns the time interval spanned by a
 ##' slice, and \code{slice.indices} returns the valid set of indices
@@ -115,14 +115,14 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,chains=NULL) {
 
 ##' @rdname slice
 ##' @export
-time.slices <- function(type=c("x","z"),breaks=NULL,
-                        mcmc=NULL,grid=raster(),
-                        include.lowest=TRUE,right=FALSE) {
+slices <- function(type=c("x","z"),breaks=NULL,
+                   mcmc=NULL,grid=raster(),
+                   include.lowest=TRUE,right=FALSE) {
   r <- list(type=match.arg(type),
             breaks=breaks,
             mcmc=mcmc,
             grid=grid,
-            include.lowest=include.lowest
+            include.lowest=include.lowest,
             right=right)
   class(r) <- "slices"
   r
@@ -147,7 +147,7 @@ slice.indices <- function(slices,k,mcmc=slices$mcmc) {
   time <- mcmc$model$time
   if(type=="z") time <- time[-length(time)]
   if(!is.null(breaks))
-    unique(unclass(cut(time
+    unique(unclass(cut(time,
                        slices$breaks,
                        include.lowest=slices$include.lowest,
                        right=slices$right)))
