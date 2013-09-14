@@ -54,8 +54,8 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' are to be binned. If \code{breaks} is NULL, each location forms a
 ##' separate time slice, otherwise \code{breaks} divides the trip into
 ##' time slices in the same style as \code{\link{cut.POSIXt}}.  A
-##' default set of samples and a raster defining the bin into which to
-##' bin may also be specified.
+##' default set of samples and a raster defining the spatial bins may
+##' also be specified.
 ##'
 ##' The \code{slice} function generates the binned locations for a
 ##' single time slice as a raster, \code{slice.interval} returns the
