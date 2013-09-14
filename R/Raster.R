@@ -9,7 +9,7 @@
 ##' \code{estelle.metropolis} or \code{stella.metropolis}.
 ##' @param grid raster object that defines the sampling grid
 ##' @param weights weights for each location
-##' @param a raster representing a 2D histogram of locations
+##' @return a raster representing a 2D histogram of locations
 ##' @export
 location.rasterize <- function(s,grid,weights=1) {
   if(length(dim(s))==4) s <- chain.collapse(s)
@@ -74,7 +74,7 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' @param grid raster object that defines the sampling grid
 ##' @param include.lowest parameter to \code{cut.POISXt}.
 ##' @param right parameter to \code{cut.POSIXt}
-##' @param chain NULL, or the subset of chains to bin.
+##' @param chains NULL or the subset of chains to bin.
 ##' @return \code{slice} returns the locations for time slice of the
 ##' track binned into a raster, \code{slices} returns a slices
 ##' object that defines the time slices into which to bin,
