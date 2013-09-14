@@ -2147,21 +2147,27 @@ geolight.convert <- function(tFirst,tSecond,type) {
 ##' @keywords data
 NULL
 
-##' Light data from the foraging trip of a Southern elephant seal.
+##' Light data from the foraging trips of the Southern elephant seal.
 ##'
-##' Light intensity measurements over time from an
-##' archival tag on a Southern elephant seal (\emph{Mirounga
-##' leonina}).  The seal was tagged at the isthmus on Macquarie Island (158.950E, 54.5S),
-##' with data from a time-depth-recorder (Mk9 TDR; Wildlife Computers, Seattle, WA, USA).
-##' This tag provides regular time series of measurements of depth, water temperature, and
-##' ambient light level. The original data were processed to remove values at depths greater than 15m and to classify periods of twilight. The seal makes one single foraging trip, returning to the isthmus where it was tagged.
-##' Data recorded while the seal is at the isthmus are used for calibration (\code{\link{ellie1calib}}).
+##' Light intensity measurements over time from an archival tag on a
+##' Southern elephant seal (\emph{Mirounga leonina}).  The seal was
+##' tagged at the isthmus on Macquarie Island (158.950E, 54.5S), with
+##' data from a time-depth-recorder (Mk9 TDR; Wildlife Computers,
+##' Seattle, WA, USA).  These tags provides regular time series of
+##' measurements of depth, water temperature, and ambient light
+##' level. The original data for "ellie1" were processed to remove
+##' values at depths greater than 15m and to classify periods of
+##' twilight. The data for "ellie2" have also been processed for
+##' twilight periods. The seals makes one single foraging trip,
+##' returning to the isthmus where they were tagged.  Data recorded while
+##' the seal is at the isthmus are used for calibration
+##' (\code{\link{ellie1calib}}).
 ##'
-##' These data supplied courtesy of Mark Hindell,
-##' Institute of Marine and Antarctic Studies, University of
-##' Tasmania.
+##' These data supplied courtesy of Mark Hindell, Institute of Marine
+##' and Antarctic Studies, University of Tasmania. \code{ellie1} is
+##' B362_99 and \code{ellie2} is C026_99
 ##' @name ellie1
-##' @aliases ellie1calib
+##' @aliases ellie1calib ellie2 ellie2calib
 ##' @docType data
 ##' @title Southern Elephant seal tag data
 ##' @format \code{ellie1} A data frame with 3 columns.  The columns
@@ -2171,7 +2177,12 @@ NULL
 ##' \code{light} \tab  (log) light values \cr
 ##' \code{segment} \tab integer indicating sequence of twilight periods \cr
 ##' }
-##'  \code{ellie1calib} A data frame with 2 columns.  The columns represent
+##' \code{ellie2} This tag is similar to \code{ellie1} but also has columns
+##' \tabular{rl}{
+##' \code{depth} \tab depth in the water column in metres (positive) \cr
+##' \code{temp} \tab temperature in the water column in degrees celcius \cr
+##' }
+##'  \code{ellie1calib} and \code{elliecalib2} A data frame with 2 columns.  The columns represent
 ##' \tabular{rl}{
 ##' \code{zenith} \tab zenith values \cr
 ##' \code{light} \tab  (log) light values \cr
