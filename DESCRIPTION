@@ -19,3 +19,4 @@ License: GPL-3
 Collate:
     'Pimage.R'
     'SGAT.R'
+    'Raster.R'
