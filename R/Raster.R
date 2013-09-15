@@ -9,9 +9,10 @@
 ##' \code{estelle.metropolis} or \code{stella.metropolis}.
 ##' @param grid raster object that defines the sampling grid
 ##' @param weights weights for each location
+##' @param zero.is.na if \code{TRUE}, zero counts are returned as \code{NA}.
 ##' @return a raster representing a 2D histogram of locations
 ##' @export
-location.rasterize <- function(s,grid,weights=1) {
+location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   if(length(dim(s))==4) s <- chain.collapse(s)
   weights <- rep(weights,length=dim(s)[1])
   r <- if(is.null(grid)) raster() else raster(grid)
@@ -40,6 +41,7 @@ location.rasterize <- function(s,grid,weights=1) {
       factor((ny+1)-.bincode(s[k,2,],ybin,TRUE,TRUE),levels=1:ny),
       factor(.bincode(s[k,1,],xbin,TRUE,TRUE),levels=1:nx))
   }
+  if(zero.is.na) A[A==0] <- NA
   values(r) <- A
   r
 }
@@ -77,6 +79,7 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' @param include.lowest parameter to \code{cut.POISXt}.
 ##' @param right parameter to \code{cut.POSIXt}
 ##' @param chains NULL or the subset of chains to bin.
+##' @param zero.is.na if \code{TRUE}, zero counts are returned as \code{NA}.
 ##' @return \code{slice} returns the locations for time slice of the
 ##' track binned into a raster, \code{slices} returns a slices
 ##' object that defines the time slices into which to bin,
@@ -84,7 +87,8 @@ location.rasterize <- function(s,grid,weights=1) {
 ##' slice, and \code{slice.indices} returns the valid set of indices
 ##' that will yield a raster.
 ##' @export
-slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,chains=NULL) {
+slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,
+                  chains=NULL,,zero.is.na=TRUE) {
   ## Split times
   time <- mcmc$model$time
   if(!is.null(slices$breaks))
@@ -110,7 +114,7 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,chains=NULL) {
       s <- s[k,,,drop=FALSE]
     }
     ## Convert
-    location.rasterize(s,grid,w)
+    location.rasterize(s,grid,w,zero.is.na)
   }
 }
 
@@ -156,4 +160,5 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
   else
     1:length(time)
 }
+
 
