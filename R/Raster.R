@@ -14,11 +14,12 @@
 location.rasterize <- function(s,grid,weights=1) {
   if(length(dim(s))==4) s <- chain.collapse(s)
   weights <- rep(weights,length=dim(s)[1])
-  r <- if(is.NULL(grid)) raster() else raster(grid)
+  r <- if(is.null(grid)) raster() else raster(grid)
 
   ## Project coords
   if(!isLonLat(r)) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+    to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1,]+180)%%360-180),as.vector(s[,2,]))
     p <- coordinates(spTransform(SpatialPoints(p),from),to)
     s[,1,] <- p[,1]
@@ -33,10 +34,11 @@ location.rasterize <- function(s,grid,weights=1) {
   ybin <- seq(bb[2,1],bb[2,2],length=ny+1)
 
   A <- 0
-  for(k in seq(length=length(dim(s)[1]))) {
-    A <- A+weights[k]*table(
-      factor(.bincode(s[k,2,],ybin),levels=1:ny),
-      factor(.bincode(s[k,1,],xbin),levels=1:nx))
+  W <- prod(dim(s)[-(1:2)])
+  for(k in seq(length=dim(s)[1])) {
+    A <- A+weights[k]/W*table(
+      factor((ny+1)-.bincode(s[k,2,],ybin,TRUE,TRUE),levels=1:ny),
+      factor(.bincode(s[k,1,],xbin,TRUE,TRUE),levels=1:nx))
   }
   values(r) <- A
   r
@@ -86,14 +88,14 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,chains=NULL) {
   ## Split times
   time <- mcmc$model$time
   if(!is.null(slices$breaks))
-    k <- which(k==unclass(cut(if(type=="z") time[-length(time)] else time,
+    k <- which(k==unclass(cut(if(slices$type=="z") time[-length(time)] else time,
                  slices$breaks,
                  include.lowest=slices$include.lowest,
                  right=slices$right)))
   if(length(k)>0) {
     ## Select x or z
     if(slices$type=="z") {
-      w <- diff(as.numeric(time))
+      w <- diff(as.numeric(time)/(60*60))
       s <- mcmc$z
     } else {
       w <- rep(1,length(time))
@@ -134,19 +136,19 @@ slices <- function(type=c("x","z"),breaks=NULL,
 slice.interval <- function(slices,k,mcmc=slices$mcmc) {
   time <- mcmc$model$time
   if(!is.null(slices$breaks))
-    k <- which(k==unclass(cut(if(type=="z") time[-length(time)] else time,
+    k <- which(k==unclass(cut(if(slices$type=="z") time[-length(time)] else time,
                  slices$breaks,
                  include.lowest=slices$include.lowest,
                  right=slices$right)))
-  if(length(k)>0) range(time[if(slice$type=="z") c(k,k+1) else k])
+  if(length(k)>0) range(time[if(slices$type=="z") c(k,k+1) else k])
 }
 
 ##' @rdname slice
 ##' @export
-slice.indices <- function(slices,k,mcmc=slices$mcmc) {
+slice.indices <- function(slices,mcmc=slices$mcmc) {
   time <- mcmc$model$time
-  if(type=="z") time <- time[-length(time)]
-  if(!is.null(breaks))
+  if(slices$type=="z") time <- time[-length(time)]
+  if(!is.null(slices$breaks))
     unique(unclass(cut(time,
                        slices$breaks,
                        include.lowest=slices$include.lowest,
