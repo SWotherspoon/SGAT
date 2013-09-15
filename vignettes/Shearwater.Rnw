@@ -5,7 +5,7 @@
 
 \SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
 %\VignetteIndexEntry{Worked Geolocation examples}
-%\VignetteDepends{geosphere,GeoLight,SGAT,raster,maptools}
+%\VignetteDepends{GeoLight,SGAT,raster,maptools}
 %\VignettePackage{SGAT}
 %\VignetteKeyword{Geolocation}
 \begin{document}
@@ -202,8 +202,7 @@ The midpoints of the $x$ locations are used as the initial $z$
 locations
 <<>>=
 ## Initial z locations
-library(geosphere)
-z0 <- midPoint(x0[-nrow(x0),],x0[-1,])
+z0 <- trackMidpts(x0)
 @
 
 
@@ -331,13 +330,13 @@ Means and credible intervals for the twilight locations are easily
 computed and visualized (Figure~\ref{fig:meanci})
 <<label=meanci,eval=F>>=
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
-s <- location.summary(fit$x,twilight=model$twilight)
-matplot(s$Time,s[,c("lon.mean","lon.2.5%","lon.97.5%")],type="l",lty=1,
+s <- location.summary(fit$x,time=model$time)
+matplot(s$time,s[,c("lon.mean","lon.2.5%","lon.97.5%")],type="l",lty=1,
           col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon",xaxt="n")
-axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
-matplot(s$Time,s[,c("lat.mean","lat.2.5%","lat.97.5%")],type="l",lty=1,
+axis.POSIXct(1,at=seq(round(min(s$time),"day"),round(max(s$time),"day"),"weeks"),format="%d %b")
+matplot(s$time,s[,c("lat.mean","lat.2.5%","lat.97.5%")],type="l",lty=1,
           col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat",xaxt="n")
-axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
+axis.POSIXct(1,at=seq(round(min(s$time),"day"),round(max(s$time),"day"),"weeks"),format="%d %b")
 par(opar)
 @
 \begin{figure}[ht]

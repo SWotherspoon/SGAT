@@ -40,6 +40,8 @@ NULL
 ##' @export
 solar <- function(tm) {
 
+  rad <- pi/180
+
   ## Time as Julian day (R form)
   Jd <- as.numeric(tm)/86400.0+2440587.5
 
@@ -57,16 +59,16 @@ solar <- function(tm) {
   e <- 0.016708634-Jc*(0.000042037+0.0000001267*Jc)
 
   ## Equation of centre for the sun (degrees) [L]
-  eqctr <- sin(pi/180*M)*(1.914602-Jc*(0.004817+0.000014*Jc))+
-    sin(pi/180*2*M)*(0.019993-0.000101*Jc)+
-      sin(pi/180*3*M)*0.000289
+  eqctr <- sin(rad*M)*(1.914602-Jc*(0.004817+0.000014*Jc))+
+    sin(rad*2*M)*(0.019993-0.000101*Jc)+
+      sin(rad*3*M)*0.000289
 
   ## The true longitude of the sun (degrees) [M]
   lambda0 <- L0 + eqctr
 
   ## The apparent longitude of the sun (degrees) [P]
   omega <- 125.04-1934.136*Jc
-  lambda <- lambda0-0.00569-0.00478*sin(pi/180*omega)
+  lambda <- lambda0-0.00569-0.00478*sin(rad*omega)
 
 
   ## The mean obliquity of the ecliptic (degrees) [Q]
@@ -75,18 +77,18 @@ solar <- function(tm) {
 
   ## The corrected obliquity of the ecliptic (degrees) [R]
   omega <- 125.04-1934.136*Jc
-  obliq <- obliq0 + 0.00256*cos(pi/180*omega)
+  obliq <- obliq0 + 0.00256*cos(rad*omega)
 
   ## The equation of time (minutes of time) [U,V]
-  y <- tan(pi/180*obliq/2)^2
-  eqnTime <- 180/pi*4*(y*sin(pi/180*2*L0) -
-                      2*e*sin(pi/180*M) +
-                      4*e*y*sin(pi/180*M)*cos(pi/180*2*L0) -
-                      0.5*y^2*sin(pi/180*4*L0) -
-                      1.25*e^2*sin(pi/180*2*M))
+  y <- tan(rad*obliq/2)^2
+  eqnTime <- 4/rad*(y*sin(rad*2*L0) -
+                      2*e*sin(rad*M) +
+                      4*e*y*sin(rad*M)*cos(rad*2*L0) -
+                      0.5*y^2*sin(rad*4*L0) -
+                      1.25*e^2*sin(rad*2*M))
 
   ## The sun's declination (radians) [T]
-  solarDec <- asin(sin(pi/180*obliq)*sin(pi/180*lambda))
+  solarDec <- asin(sin(rad*obliq)*sin(rad*lambda))
   sinSolarDec <- sin(solarDec)
   cosSolarDec <- cos(solarDec)
 
@@ -129,20 +131,22 @@ solar <- function(tm) {
 ##' @export
 zenith <- function(sun,lon,lat) {
 
+  rad <- pi/180
+
   ## Suns hour angle (degrees) [AC!!]
   hourAngle <- sun$solarTime+lon-180
   #hourAngle <- sun$solarTime%%360+lon-180
 
   ## Cosine of sun's zenith [AD]
-  cosZenith <- (sin(pi/180*lat)*sun$sinSolarDec+
-                cos(pi/180*lat)*sun$cosSolarDec*cos(pi/180*hourAngle))
+  cosZenith <- (sin(rad*lat)*sun$sinSolarDec+
+                cos(rad*lat)*sun$cosSolarDec*cos(rad*hourAngle))
 
   ## Limit to [-1,1] [!!]
   cosZenith[cosZenith > 1] <- 1
   cosZenith[cosZenith < -1] <- -1
 
   ## Ignore refraction correction
-  180/pi*acos(cosZenith)
+  acos(cosZenith)/rad
 }
 
 
@@ -169,8 +173,9 @@ zenith <- function(sun,lon,lat) {
 ##' unrefracted(refracted(90))
 ##' @export
 refracted <- function(zenith) {
+  rad <- pi/180
   elev <- 90-zenith
-  te <- tan((pi/180)*elev)
+  te <- tan((rad)*elev)
   ## Atmospheric Refraction [AF]
   r <- ifelse(elev>85,0,
               ifelse(elev>5,58.1/te-0.07/te^3+0.000086/te^5,
@@ -211,10 +216,11 @@ unrefracted <- function(zenith)
 ##' @seealso \code{\link{twilight}}
 ##' @export
 twilight.solartime <- function(solar,lon,lat,rise,zenith=96) {
-  cosz <- cos(pi/180*zenith)
-  cosHA <- (cosz-sin(pi/180*lat)*solar$sinSolarDec)/(cos(pi/180*lat)*solar$cosSolarDec)
+  rad <- pi/180
+  cosz <- cos(rad*zenith)
+  cosHA <- (cosz-sin(rad*lat)*solar$sinSolarDec)/(cos(rad*lat)*solar$cosSolarDec)
   ## Compute the sun's hour angle from its declination for this location
-  hourAngle <- ifelse(rise,360,0)+ifelse(rise,-180/pi,180/pi)*suppressWarnings(acos(cosHA))
+  hourAngle <- ifelse(rise,360,0)+ifelse(rise,-1,1)*suppressWarnings(acos(cosHA)/rad)
   ## Solar time of sunrise at this zenith angle, lon and lat
   #(hourAngle+180-lon)%%360
   #360*(solar$solarTime%/%360)+solarTime
@@ -293,6 +299,69 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
   twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
 
 
+##' Midpoints of a path
+##'
+##' Compute the midpoints of a sequence of locations along path.
+##' @title Path Midpoints
+##' @param p a two column matrix of (lon,lat) locations along the path.
+##' @param fold should the longitudes be folded into [-180,180).
+##' @return a two column matrix of (lon,lat) midpoints.
+##' @export
+trackMidpts <- function(p,fold=FALSE) {
+  n <- nrow(p)
+  rad <- pi/180
+  p <- rad*p
+  dlon <- diff(p[,1])
+  lon1 <- p[-n,1]
+  lat1 <- p[-n,2]
+  lat2 <- p[-1,2]
+  bx <- cos(lat2)*cos(dlon)
+  by <- cos(lat2)*sin(dlon)
+  lat <- atan2(sin(lat1)+sin(lat2),sqrt((cos(lat1)+bx)^2+by^2))/rad
+  lon <- (lon1+atan2(by,cos(lat1)+bx))/rad
+  if(fold) lon <- (lon+180)%%360-180
+  cbind(lon,lat)
+}
+
+
+##' Distances along a path
+##'
+##' The \code{trackDist} computes the great circle distances (in km)
+##' between successive locations along path. The \code{trackDist2}
+##' accepts a second sequence of intermediate points, and computes the
+##' great circle distances along the dog leg paths from \code{x[i,]}
+##' to \code{z[i,]} to \code{x[i+1,]}.
+##'
+##' @title Distance along a path
+##' @param x a two column matrix of (lon,lat) locations along the path.
+##' @param z a two column matrix of (lon,lat) intermediate locations along the path.
+##' @return vector of interpoint distances (km)
+##' @export
+trackDist <- function(x) {
+  n <- nrow(x)
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2])
+  sinx2 <- sin(rad*x[,2])
+
+  6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(rad*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
+}
+
+
+##' @rdname trackDist
+trackDist2 <- function(x,z) {
+    n <- nrow(x)
+    rad <- pi/180
+    cosx2 <- cos(rad*x[,2])
+    sinx2 <- sin(rad*x[,2])
+    cosz2 <- cos(rad*z[,2])
+    sinz2 <- sin(rad*z[,2])
+
+    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(rad*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
+              acos(pmin.int(cosx2[-1]*cosz2*cos(rad*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
+  }
+
+
+
 ##' Convert streams of twilights to sunrise/sunset pairs
 ##'
 ##' This function converts the twilight, rise format used by Stella
@@ -345,6 +414,17 @@ twilight.pairs <- function(twilight,rise) {
 ##' sine of the solar declination is less than \code{tol}, the
 ##' latitude estimates are returned as \code{NA}.
 ##'
+##' The \code{threshold.path} function interpolates the estimates
+##' generated by \code{threshold.location} to produce estimates at the
+##' arbitrary set of times specified the by the \code{time} argument.
+##' If \code{time} is \code{NULL}, \code{threshold.path} returns the
+##' estimates generated by \code{threshold.location}. If
+##' \code{unfold=TRUE}, \code{threshold.path} attempts to construct a
+##' continuous path that does not wrap longitudes into
+##' (-180,180]. However, this process can fail if the observer crosses
+##' the dateline near an equinox, and it may be necessary to make
+##' manual adjustments.
+##'
 ##' These functions provides the same basic functionality of the
 ##' \code{coord} function from \pkg{GeoLight}, but are based on
 ##' different astronomical approximations.
@@ -356,6 +436,7 @@ twilight.pairs <- function(twilight,rise) {
 ##' @param time times for which locations are required.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param tol tolerance on the sine of the solar declination.
+##' @param unfold if \code{TRUE}, unfold longitudes across the dateline.
 ##' @return \code{threshold.estimate} returns estimated locations as a
 ##' two column (lon,lat) matrix.  \code{threshold.location} and
 ##' \code{threshold.path} return a list with components
@@ -364,25 +445,26 @@ twilight.pairs <- function(twilight,rise) {
 ##' @seealso \code{\link{zenith}}
 ##' @export
 threshold.estimate <- function(trise,tset,zenith=96,tol=0) {
+  rad <- pi/180
   sr <- solar(trise)
   ss <- solar(tset)
-  cosz <- cos(pi/180*zenith)
+  cosz <- cos(rad*zenith)
   lon <- -(sr$solarTime+ss$solarTime+ifelse(sr$solarTime<ss$solarTime,360,0))/2
   lon <- (lon+180)%%360-180
 
   ## Compute latitude from sunrise
   hourAngle <- sr$solarTime+lon-180
   a <- sr$sinSolarDec
-  b <- sr$cosSolarDec*cos(pi/180*hourAngle)
+  b <- sr$cosSolarDec*cos(rad*hourAngle)
   x <- (a*cosz-sign(a)*b*suppressWarnings(sqrt(a^2+b^2-cosz^2)))/(a^2+b^2)
-  lat1 <- ifelse(abs(a)>tol,180/pi*asin(x),NA)
+  lat1 <- ifelse(abs(a)>tol,asin(x)/rad,NA)
 
   ## Compute latitude from sunset
   hourAngle <- ss$solarTime+lon-180
   a <- ss$sinSolarDec
-  b <- ss$cosSolarDec*cos(pi/180*hourAngle)
+  b <- ss$cosSolarDec*cos(rad*hourAngle)
   x <- (a*cosz-sign(a)*b*suppressWarnings(sqrt(a^2+b^2-cosz^2)))/(a^2+b^2)
-  lat2 <- ifelse(abs(a)>tol,180/pi*asin(x),NA)
+  lat2 <- ifelse(abs(a)>tol,asin(x)/rad,NA)
 
   ## Average latitudes
   cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=TRUE))
@@ -405,16 +487,21 @@ threshold.location <- function(twilight,rise,zenith=96,tol=0.08) {
 
 ##' @rdname threshold.estimate
 ##' @export
-threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08) {
+threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=TRUE) {
   ## Estimate locations
   ls <- threshold.location(twilight,rise,zenith=zenith,tol=tol)
-  if(!is.null(ts)) {
-    ## Interpolate
-    ts <- ls$time
+  if(!is.null(time)) {
+    ## Interpolate the non-missing longitudes
     keep <- !is.na(ls$x[,1])
-    lon <- approx(x=ts[keep],y=ls$x[keep,1],xout=time,rule=2)$y
+    ts <- ls$time[keep]
+    lon <- ls$x[keep,1]
+    if(unfold) lon <- cumsum(c(lon[1],(diff(lon)+180)%%360-180))
+    lon <- approx(x=ts,y=lon,xout=time,rule=2)$y
+    ## Interpolate the non-missing latitudes
     keep <- !is.na(ls$x[,2])
-    lat <- approx(x=ts[keep],y=ls$x[keep,2],xout=time,rule=2)$y
+    ts <- ls$time[keep]
+    lat <- ls$x[keep,2]
+    lat <- approx(x=ts,y=lat,xout=time,rule=2)$y
     ls <- list(time=time,x=cbind(lon,lat))
   }
   ls
@@ -466,12 +553,14 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.proposal,ss.proposal,
                                   n.thin=10,n.iters=1000) {
 
+
   ## Great circle distance (km)
   gcdist <- function(a,b) {
+    rad <- pi/180
     6378.137*acos(pmin.int(
-      cos(pi/180*a[2])*cos(pi/180*b[2])*
-      cos(pi/180*(b[1]-a[1]))+sin(pi/180*a[2])*
-      sin(pi/180*b[2]),
+      cos(rad*a[2])*cos(rad*b[2])*
+      cos(rad*(b[1]-a[1]))+sin(rad*a[2])*
+      sin(rad*b[2]),
       1))
   }
 
@@ -691,10 +780,14 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##'
 ##' Both Estelle and Stella variants of the model assume that the
 ##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.
+##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
+##' default, the speed of travel is calculated based on the time
+##' intervals between the twilights (in hours), but the intervals of
+##' time actually available for travel can be specified directly with
+##' the \code{dt} argument.
 ##'
 ##' @title Satellite Model Structures
-##' @param tm the times of the satellite determined locations.
+##' @param time the times of the satellite determined locations.
 ##' @param X the satellite determined locations.
 ##' @param location.model the model for the errors in satellite locations.
 ##' @param sd a vector or two column matrix of dispersions for the location model.
@@ -704,8 +797,9 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for the satellite locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logicial vector indicating which satellite locations
+##' @param fixedx logical vector indicating which satellite locations
 ##' to hold fixed.
+##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
 ##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
 ##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
@@ -714,41 +808,21 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{X}}{the times of the satellite determined locations.}
+##' \item{\code{time}}{the times of the satellite determined locations.}
 ##' \item{\code{X}}{the satellite determined locations.}
 ##' @export
-satellite.model <- function(tm,X,
+satellite.model <- function(time,X,
                             location.model=c("Normal","T"),
                             sd,df=NULL,beta,
-                            logp.x=function(x) rep.int(0,nrow(x)),
-                            logp.z=function(z) rep.int(0,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE) {
+                            logp.x=function(x) rep.int(0L,nrow(x)),
+                            logp.z=function(z) rep.int(0L,nrow(z)),
+                            x0,z0=NULL,fixedx=FALSE,dt=NULL) {
 
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
-  ## Times (hours) between observations
-  dt <- diff(as.numeric(tm)/3600)
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(time)/3600)
 
   ## Contribution to log posterior from each x location
   location.model <- match.arg(location.model)
@@ -776,12 +850,12 @@ satellite.model <- function(tm,X,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -800,7 +874,7 @@ satellite.model <- function(tm,X,
        x0=x0,
        z0=z0,
        ## Data
-       tm=tm,
+       time=time,
        X=X)
 }
 
@@ -848,7 +922,18 @@ satellite.model <- function(tm,X,
 ##'
 ##' Both Estelle and Stella variants of the model assume that the
 ##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.
+##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
+##' default, the speed of travel is calculated based on the time
+##' intervals between the twilights (in hours), but the intervals of
+##' time actually available for travel can be specified directly with
+##' the \code{dt} argument.
+##'
+##' The \code{polar.threshold.model} function is experimental.  It is
+##' identical to \code{threshold.model} except that it allows for the
+##' case where the tag is so far North or South that twilight is not
+##' observed.  In these cases, an approximate time of twilight may be
+##' supplied, and the logical vector \code{polar} is used to indicate
+##' which twilights are approximate and which are actual.
 ##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -862,7 +947,9 @@ satellite.model <- function(tm,X,
 ##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logicial vector indicating which twilight locations to hold fixed.
+##' @param fixedx logical vector indicating which twilight locations to hold fixed.
+##' @param polar logical vector indicating which twilights were unobserved
+##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
 ##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
@@ -873,48 +960,26 @@ satellite.model <- function(tm,X,
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{twilight}}{the twilight times.}
+##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{group}}{the grouping vector.}
 ##' @export
 threshold.model <- function(twilight,rise,
                             twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                             alpha,beta,
-                            logp.x=function(x) rep.int(0,nrow(x)),
-                            logp.z=function(z) rep.int(0,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE,
-                            zenith=96) {
-
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
+                            logp.x=function(x) rep.int(0L,nrow(x)),
+                            logp.z=function(z) rep.int(0L,nrow(z)),
+                            x0,z0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
   ## Sign for residuals
   sgn <- ifelse(rise,1,-1)
-  ## Times (hours) between observations
-  dt <- diff(as.numeric(twilight)/3600)
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(twilight)/3600)
 
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
@@ -932,9 +997,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -943,9 +1006,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -954,9 +1015,7 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -967,9 +1026,7 @@ threshold.model <- function(twilight,rise,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
-             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
+             logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -980,9 +1037,7 @@ threshold.model <- function(twilight,rise,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -1.0E8
-             logp[!is.na(twilight) & !is.finite(r)] <- -1.0E8
+             logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -995,12 +1050,12 @@ threshold.model <- function(twilight,rise,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -1019,7 +1074,7 @@ threshold.model <- function(twilight,rise,
        x0=x0,
        z0=z0,
        ## Data
-       twilight=twilight,
+       time=twilight,
        rise=rise)
 }
 
@@ -1029,43 +1084,23 @@ threshold.model <- function(twilight,rise,
 grouped.threshold.model <- function(twilight,rise,group,
                                     twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                                     alpha,beta,
-                                    logp.x=function(x) rep.int(0,nrow(x)),
-                                    logp.z=function(z) rep.int(0,nrow(z)),
-                                    x0,z0=NULL,fixedx=FALSE,
+                                    logp.x=function(x) rep.int(0L,nrow(x)),
+                                    logp.z=function(z) rep.int(0L,nrow(z)),
+                                    x0,z0=NULL,fixedx=FALSE,dt=NULL,
                                     zenith=96) {
-
-  ## Calculate dog-leg distances along an x-z track
-  trkdist.xz <- function(x,z) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-    cosz2 <- cos(pi/180*z[,2])
-    sinz2 <- sin(pi/180*z[,2])
-
-    6378.137*(acos(pmin.int(cosx2[-n]*cosz2*cos(pi/180*(z[,1]-x[-n,1]))+sinx2[-n]*sinz2,1))+
-              acos(pmin.int(cosx2[-1]*cosz2*cos(pi/180*(z[,1]-x[-1,1]))+sinx2[-1]*sinz2,1)))
-  }
-
-  ## Calculate distances along an x track
-  trkdist.x <- function(x) {
-    n <- nrow(x)
-    cosx2 <- cos(pi/180*x[,2])
-    sinx2 <- sin(pi/180*x[,2])
-
-    6378.137*acos(pmin.int(cosx2[-n]*cosx2[-1]*cos(pi/180*(x[-1,1]-x[-n,1]))+sinx2[-n]*sinx2[-1],1))
-  }
-
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
   ## Sign for residuals
   sgn <- ifelse(rise,1,-1)
-  ## Times (hours) between twilight groups
-  tmin <- tapply(as.numeric(twilight)/3600,group,min)
-  tmax <- tapply(as.numeric(twilight)/3600,group,max)
-  dt <- tmin[-1]-tmax[-max(group)]
   ## Fixed x locations
   fixedx <- rep(fixedx,length=nrow(x0))
+  if(is.null(dt)) {
+    ## Times (hours) between twilight groups
+    tmin <- tapply(as.numeric(twilight)/3600,group,min)
+    tmax <- tapply(as.numeric(twilight)/3600,group,max)
+    dt <- tmin[-1]-tmax[-max(group)]
+  }
 
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
@@ -1083,9 +1118,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1094,9 +1127,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1105,9 +1136,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x[group,])
              logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1118,9 +1147,7 @@ grouped.threshold.model <- function(twilight,rise,group,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
                             dgamma(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1131,9 +1158,7 @@ grouped.threshold.model <- function(twilight,rise,group,
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=TRUE),
                             dlnorm(r,alpha[1],alpha[2],log=TRUE))
-             logp[is.na(twilight) & !is.finite(r)] <- 0
-             logp[is.na(twilight) &  is.finite(r)] <- -Inf
-             logp[!is.na(twilight) & !is.finite(r)] <- -Inf
+             logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
              logp
@@ -1146,12 +1171,12 @@ grouped.threshold.model <- function(twilight,rise,group,
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trkdist.xz(x,z), 1e-06)/dt
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
   stella.logpb <- function(x) {
-    spd <- pmax.int(trkdist.x(x), 1e-06)/dt
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[1],beta[2],log=TRUE)
   }
 
@@ -1170,9 +1195,270 @@ grouped.threshold.model <- function(twilight,rise,group,
        x0=x0,
        z0=z0,
        ## Data
-       twilight=twilight,
+       time=twilight,
        rise=rise,
        group=group)
+}
+
+
+
+##' @rdname threshold.model
+##' @export
+polar.threshold.model <- function(twilight,rise,
+                                  twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
+                                  alpha,beta,
+                                  logp.x=function(x) rep.int(0L,nrow(x)),
+                                  logp.z=function(z) rep.int(0L,nrow(z)),
+                                  x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+
+  ## Convert twilights to solar time.
+  s <- solar(twilight)
+  ## Sign for residuals
+  sgn <- ifelse(rise,1,-1)
+  ## Fixed x locations
+  fixedx <- rep(fixedx,length=nrow(x0))
+  ## Polar locations indicator
+  if(is.null(polar))
+    polar <- logical(length(twilight))
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(twilight)/3600)
+
+  ## Discrepancy in expected and observed times of twilight, with sign
+  ## selected so that a positive value corresponds to the observed
+  ## sunrise occurring after the expected time of sunrise, and the
+  ## observed sunset occurring before the expected time of sunset
+  residuals <- function(x) {
+    4*sgn*(s$solarTime-twilight.solartime(s,x[,1],x[,2],rise,zenith))
+  }
+
+  ## Contribution to log posterior from each x location
+  twilight.model <- match.arg(twilight.model)
+  logpx <-
+    switch(twilight.model,
+           Gamma=
+           function(x) {
+             r <- residuals(x)
+             logp <- dgamma(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           LogNormal=
+           function(x) {
+             r <- residuals(x)
+             logp <- dlnorm(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           Normal=
+           function(x) {
+             r <- residuals(x)
+             logp <- dnorm(r,alpha[1],alpha[2],log=TRUE)
+             logp[!polar & !is.finite(r)] <- -Inf
+             logp[polar & is.finite(r)] <- -Inf
+             logp[polar & !is.finite(r)] <- 0
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           ModifiedGamma=
+           function(x) {
+             r <- residuals(x)
+             logp <- ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dgamma(alpha[1]/alpha[2],alpha[1],alpha[2],log=TRUE),
+                            dgamma(r,alpha[1],alpha[2],log=TRUE))
+             logp[!polar & !is.finite(r)] <- -1.0E8
+             logp[polar & is.finite(r)] <- -1.0E8
+             logp[polar & !is.finite(r)] <- 0
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           },
+           ModifiedLogNormal=
+           function(x) {
+             r <- residuals(x)
+             logp <- ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dlnorm(exp(alpha[1]+alpha[2]^2/2),alpha[1],alpha[2],log=T),
+                            dlnorm(r,alpha[1],alpha[2],log=TRUE))
+             logp[!polar & !is.finite(r)] <- -1.0E8
+             logp[polar & is.finite(r)] <- -1.0E8
+             logp[polar & !is.finite(r)] <- 0
+             logp <- logp + logp.x(x)
+             logp[fixedx] <- 0
+             logp
+           })
+
+  ## Contribution to log posterior from each z location
+  logpz <- function(z) {
+    logp.z(z)
+  }
+
+  ## Contribution to log posterior from the movement
+  estelle.logpb <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  stella.logpb <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+
+  list(## Positional contribution to the log posterior
+       logpx=logpx,
+       logpz=logpz,
+       ## Behavioural contribution to the log posterior
+       estelle.logpb=estelle.logpb,
+       stella.logpb=stella.logpb,
+       ## Residuals
+       residuals=residuals,
+       ## Locations to be held fixed
+       fixedx=fixedx,
+       ## Suggested starting points
+       x0=x0,
+       z0=z0,
+       ## Data
+       time=twilight,
+       rise=rise)
+}
+
+
+
+
+
+##' Light Curve Model Structures for Stella and Estelle
+##'
+##' Stella and Estelle require a model structure that describes the
+##' model being fitted. These function generate basic model structures
+##' for curve fitting methods that should provide a suitable
+##' starting point for most analyses.
+##'
+##' The \code{curve.model} function constructs a model structure
+##' assuming that each twilight profile is associated with a single
+##' location.  The errors in observed log light level are assumed to
+##' be Normally distributed about their expected value.
+##'
+##' The initialization locations \code{x0} and \code{z0} must be
+##' consistent with the chosen twilight model.  That is, if
+##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
+##' yield negative twilight errors.
+##'
+##' Both Estelle and Stella variants of the model assume that the
+##' speed of travel between successive (x) locations is gamma
+##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
+##' default, the speed of travel is calculated based on the time
+##' intervals between the twilights (in hours), but the intervals of
+##' time actually available for travel can be specified directly with
+##' the \code{dt} argument.
+##'
+##' @title Curve Model Structure
+##' @param time vector of sample times as POSIXct.
+##' @param light vector of observed (log) light levels.
+##' @param segment vector of integers that assign observations to twilight segments.
+##' @param calibration function that maps zenith angles to expected light levels.
+##' @param alpha parameters of the twilight model.
+##' @param beta parameters of the behavioural model.
+##' @param logp.x function to evaluate any additional contribution to the log posterior from the twilight locations.
+##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param x0 suggested starting points for twilight locations.
+##' @param z0 suggested starting points for intermediate locations.
+##' @param fixedx logical vector indicating which twilight locations to hold fixed.
+##' @param dt time intervals for speed calculation in hours.
+##' @return a list with components
+##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
+##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
+##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
+##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
+##' \item{\code{fitted}}{function to evaluate the fitted values for a given set of lcoations.}
+##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
+##' \item{\code{x0}}{an array of initial twilight locations.}
+##' \item{\code{z0}}{an array of initial intermediate locations.}
+##' \item{\code{time}}{the sample times.}
+##' \item{\code{light}}{the recorded light levels.}
+##' \item{\code{segment}}{vector of integers that assign observations to twilight segments.}
+##' @export
+curve.model <- function(time,light,segment,
+                        calibration,alpha,beta,
+                        logp.x=function(x) rep.int(0L,nrow(x)),
+                        logp.z=function(z) rep.int(0L,nrow(z)),
+                        x0=NULL,z0=NULL,fixedx=FALSE,dt=NULL) {
+
+  ## Convert to solar time.
+  sun <- solar(time)
+  ## Median time in each segment
+  tm <- .POSIXct(sapply(split(time,segment),median),"GMT")
+  ## Fixed x locations
+  fixedx <- rep(fixedx,length=length(tm))
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(tm)/3600)
+
+  ## Return a dataframe of the fitted zenith and light observations
+  ## for a set of estimated locations.
+  fitted <- function(x) {
+    xs <- x[segment,]
+    zenith <- zenith(sun,xs[,1],xs[,2])
+    fitted <- calibration(zenith)+xs[,3]
+    ## Contributions to log posterior
+    logp <- dnorm(light,fitted,alpha[1],log=TRUE)
+    data.frame(time=time,
+               segment=segment,
+               zenith=zenith,
+               fitted=fitted,
+               light=light,
+               logl=logp)
+  }
+
+  ## Contribution to log posterior from each x location
+  logpx <- function(x) {
+    xs <- x[segment,]
+    zenith <- zenith(sun,xs[,1],xs[,2])
+    fitted <- calibration(zenith)+xs[,3]
+    ## Contributions to log posterior
+    logp <- dnorm(light,fitted,alpha[1],log=TRUE)
+    sapply(split(logp,segment),sum)+dnorm(x[,3],0,alpha[2],log=TRUE)
+  }
+
+  ## Contribution to log posterior from each z location
+  logpz <- function(z) {
+    logp.z(z)
+  }
+
+  ## Contribution to log posterior from the movement
+  estelle.logpb <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  stella.logpb <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    dgamma(spd,beta[1],beta[2],log=TRUE)
+  }
+
+  list(## Positional contribution to the log posterior
+       logpx=logpx,
+       logpz=logpz,
+       ## Behavioural contribution to the log posterior
+       estelle.logpb = estelle.logpb,
+       stella.logpb=stella.logpb,
+       ## Fitted values
+       fitted=fitted,
+       ## Locations to be held fixed
+       fixedx=fixedx,
+       ## Suggested starting points
+       x0=x0,
+       z0=z0,
+       ## Median time of twilights
+       time = tm)
 }
 
 
@@ -1218,6 +1504,8 @@ estelle.metropolis <- function(model,
 
   ## Number of locations
   n <- dim(x0)[1]
+  ## Number of parameters
+  m <- dim(x0)[2]
 
   ## Extract model components
   logpx <- model$logpx
@@ -1226,7 +1514,7 @@ estelle.metropolis <- function(model,
   fixedx <- model$fixedx
 
   ## Allocate storage for the samples
-  ch.x <- array(0,c(n,2,iters,chains))
+  ch.x <- array(0,c(n,m,iters,chains))
   ch.z <- array(0,c(n-1,2,iters,chains))
 
   ## PARALLEL - parallelise this loop
@@ -1364,6 +1652,8 @@ stella.metropolis <- function(model,
 
   ## Number of locations
   n <- dim(x0)[1]
+  ## Number of parameters
+  m <- dim(x0)[2]
 
   ## Extract model components
   logpx <- model$logpx
@@ -1371,7 +1661,7 @@ stella.metropolis <- function(model,
   fixedx <- model$fixedx
 
   ## Allocate storage for the samples
-  ch.x <- array(0,c(n,2,iters,chains))
+  ch.x <- array(0,c(n,m,iters,chains))
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
@@ -1478,19 +1768,22 @@ stella.metropolis <- function(model,
 
 ##' Summarize a set of location samples
 ##'
-##' These functions compute various summaries of an array of location samples generated by \code{metropolis}.
+##' These functions compute various summaries of an array of location
+##' samples generated by \code{estelle.metropolis} or
+##' \code{stella.metropolis}.
 ##'
 ##' @rdname location.summary
 ##' @title Summaries of Location Samples
-##' @param s an array of location samples generated by \code{metropolis}.
-##' @param twilight the twilight times used to generate the sample.
+##' @param s an array of location samples generated by
+##' \code{estelle.metropolis} or \code{stella.metropolis}.
+##' @param time the times corresponding to the x locations
 ##' @param alpha coverage of the credible intervals calculated by \code{location.summary}.
 ##' @param discard number of initial samples to discard.
 ##' @return
 ##' \code{location.summary} returns a dataframe of summary quantities for each location
 ##' \code{location.mean} returns an array of the means of the samples for each location
 ##' @export
-location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
+location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
   if(discard>0) s <- chain.tail(s,discard)
   if(length(dim(s))==4) s <- chain.collapse(s)
   smry <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
@@ -1499,13 +1792,13 @@ location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
   lat <- t(apply(s[,2,],1,smry))
   colnames(lat) <- paste("lat",colnames(lat),sep=".")
   d <- as.data.frame(cbind(lon,lat))
-  if(!is.null(twilight)) {
+  if(!is.null(time)) {
     ## Add timing information
     n <- nrow(d)
-    if(length(twilight)==n)
-      d <- cbind(Time=twilight,d)
+    if(length(time)==n)
+      d <- cbind(time=time,d)
     else
-      d <- cbind(T1=twilight[1:n],Time2=twilight[2:(n+1)],d)
+      d <- cbind(time1=time[1:n],time2=time[2:(n+1)],d)
   }
   d
 }
@@ -1515,6 +1808,46 @@ location.summary <- function(s,twilight=NULL,discard=0,alpha=0.95) {
 location.mean <- function(s,discard=0) {
   if(discard>0) s <- chain.tail(s,discard)
   apply(s,1:2,mean)
+}
+
+
+
+##' Bin locations to form a 2D density image
+##'
+##' Bins the samples for a sequence of locations to produce 2D array
+##' suitable for plotting with \code{image}.  Optionally, a vector of
+##' weights can be provided to differentially weight samples by
+##' location.
+##'
+##' @title Location Density Image
+##' @param s an array of location samples generated by
+##' \code{estelle.metropolis} or \code{stella.metropolis}.
+##' @param xlim range of the first coordinate
+##' @param ylim range of the second coordinate
+##' @param nx number of cells in the first coordinate
+##' @param ny number of cells in the second coordinate
+##' @param weight weights for each location
+##' @param discard number of initial samples to discard.
+##' @return A list with elesments
+##' \item{\code{x}}{the x-ordinates that bound the bins}
+##' \item{\code{y}}{the y-ordinates that bound the bins}
+##' \item{\code{W}}{the weighted image.}
+##' @export
+location.image <- function(s,xlim,ylim,nx,ny,weight=rep(1,dim(s)[1]),discard=0) {
+  if(discard>0) s <- chain.tail(s,discard)
+  if(length(dim(s))==4) s <- chain.collapse(s)
+
+  xbin <- seq(xlim[1],xlim[2],length=nx+1)
+  ybin <- seq(ylim[1],ylim[2],length=ny+1)
+
+  W <- 0
+  for(k in 1:dim(s)[1]) {
+     W <- W+weight[k]*table(
+      factor(.bincode(s[k,1,],xbin),levels=1:nx),
+      factor(.bincode(s[k,2,],ybin),levels=1:ny))
+  }
+  W[W==0] <- NA
+  list(x=xbin,y=ybin,W=W)
 }
 
 
@@ -1624,6 +1957,34 @@ chain.acceptance <- function(s) {
 }
 
 
+##' Map projection and datum transformation for Metropolis samples.
+##'
+##' This function transforms samples generated by
+##' \code{estelle.metropolis} or \code{stella.metropolis} to a new map
+##' projection or datum.
+##'
+##' @title Coordinate transformation
+##' @param s an array of location samples generated by
+##' \code{estelle.metropolis} or \code{stella.metropolis}.
+##' @param to.crs an object of class \code{CRS} defining the projection to be transformed to.
+##' @param from.crs \code{NULL} or an object of class \code{CRS} defining the original projection.
+##' @return an array of location samples with projected coordinates.
+##' @export
+chain.project <- function(s,to.crs,from.crs=NULL) {
+  if(is.null(from)) from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+
+  if(length(dim(s))==4) {
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,,]),as.vector(s[,2,,])),from),to.crs))
+    s[,1,,] <- p[,1]
+    s[,2,,] <- p[,2]
+  } else {
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,]),as.vector(s[,2,])),from),to.crs))
+    s[,1,] <- p[,1]
+    s[,2,] <- p[,2]
+  }
+  s
+}
+
 
 ##' Calculate shape and rate parameters of the Gamma distribution
 ##'
@@ -1717,7 +2078,7 @@ mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
     z <- rnorm(m*n)*S
     dim(z) <- c(m,m*n)
     z <- colSums(z)
-    dim(z) <- c(n,2)
+    dim(z) <- c(n, m)
     mu+z
   }
 }
@@ -1760,8 +2121,8 @@ geolight.convert <- function(tFirst,tSecond,type) {
 
 ##' Twilight times from a flight of a Short-tailed Shearwater.
 ##'
-##' Twilight times derived from light intensity measurements from a
-##' archval tag on a Short-tailed Shearwater (\emph{Puffinus
+##' Twilight times derived from light intensity measurements from an
+##' archival tag on a Short-tailed Shearwater (\emph{Puffinus
 ##' tenuirostris}).  The bird was tagged at its burrow on Wedge
 ##' Island, Tasmania Australia (147.670E 43.133S).  The bird makes two
 ##' foraging trips, returning to its burrow after each trip.
@@ -1771,7 +2132,7 @@ geolight.convert <- function(tFirst,tSecond,type) {
 ##' twilights Wedge Island when solar zenith is 95 degrees.
 ##'
 ##' These data supplied courtesy of Delphi Ward and Mark Hindell,
-##' Intstitute of Marine and Antarctic Studies, University of
+##' Institute of Marine and Antarctic Studies, University of
 ##' Tasmania.
 ##' @name Shearwater
 ##' @docType data
@@ -1785,3 +2146,47 @@ geolight.convert <- function(tFirst,tSecond,type) {
 ##' }
 ##' @keywords data
 NULL
+
+##' Light data from the foraging trips of the Southern elephant seal.
+##'
+##' Light intensity measurements over time from an archival tag on a
+##' Southern elephant seal (\emph{Mirounga leonina}).  The seal was
+##' tagged at the isthmus on Macquarie Island (158.950E, 54.5S), with
+##' data from a time-depth-recorder (Mk9 TDR; Wildlife Computers,
+##' Seattle, WA, USA).  These tags provides regular time series of
+##' measurements of depth, water temperature, and ambient light
+##' level. The original data for "ellie1" were processed to remove
+##' values at depths greater than 15m and to classify periods of
+##' twilight. The data for "ellie2" have also been processed for
+##' twilight periods. The seals makes one single foraging trip,
+##' returning to the isthmus where they were tagged.  Data recorded while
+##' the seal is at the isthmus are used for calibration
+##' (\code{\link{ellie1calib}}).
+##'
+##' These data supplied courtesy of Mark Hindell, Institute of Marine
+##' and Antarctic Studies, University of Tasmania. \code{ellie1} is
+##' B362_99 and \code{ellie2} is C026_99
+##' @name ellie1
+##' @aliases ellie1calib ellie2 ellie2calib
+##' @docType data
+##' @title Southern Elephant seal tag data
+##' @format \code{ellie1} A data frame with 3 columns.  The columns
+##' represent
+##' \tabular{rl}{
+##' \code{time} \tab times of measurement \cr
+##' \code{light} \tab  (log) light values \cr
+##' \code{segment} \tab integer indicating sequence of twilight periods \cr
+##' }
+##' \code{ellie2} This tag is similar to \code{ellie1} but also has columns
+##' \tabular{rl}{
+##' \code{depth} \tab depth in the water column in metres (positive) \cr
+##' \code{temp} \tab temperature in the water column in degrees celcius \cr
+##' }
+##'  \code{ellie1calib} and \code{elliecalib2} A data frame with 2 columns.  The columns represent
+##' \tabular{rl}{
+##' \code{zenith} \tab zenith values \cr
+##' \code{light} \tab  (log) light values \cr
+##' }
+##' @keywords data
+NULL
+

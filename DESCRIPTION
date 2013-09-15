@@ -4,9 +4,18 @@ Title: Solar/Satellite Geolocation for Animal Tracking
 Version: 0.0-2
 Author: Simon Wotherspoon, Michael Sumner and Simeon Lisovski
 Maintainer: Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au>
-Suggests: GeoLight, geosphere, maptools
-Depends: raster, sp
-Description: Facilities for estimating the broadscale animal motions from archival or satellite tags.
+Suggests:
+    GeoLight,
+    geosphere,
+    maptools
+Depends:
+    raster,
+    sp
+Description: Facilities for estimating the broadscale animal motions from
+    archival or satellite tags.
 NeedsCompilation: no
 ByteCompile: yes
 License: GPL-3
+Collate:
+    'Pimage.R'
+    'SGAT.R'

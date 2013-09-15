@@ -1,0 +1,184 @@
+\documentclass[a4paper]{article}
+\usepackage{a4wide}
+\usepackage[authoryear]{natbib}
+\usepackage{amsmath}
+
+\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
+%\VignetteIndexEntry{Worked Geolocation examples with curve methods}
+%\VignetteDepends{GeoLight,SGAT,raster,maptools}
+%\VignettePackage{SGAT}
+%\VignetteKeyword{Curve}
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\title{Light-curve methods}
+\date{}
+\author{\textbf{Michael Sumner\footnote{Australian Antarctic Division}} and
+\textbf{Simon Wotherspoon}\footnote{Australian Antarctic Division,
+Institute for Marine and Antarctic Studies
+University of Tasmania}}
+\maketitle
+
+\begin{abstract}
+  The \textbf{SGAT} package provides facilities for Geolocation
+  estimation with light curve methods. This document demonstrates
+  building an running a light curve model with a Southern elephant
+  seal data set.
+
+\end{abstract}
+
+
+<<first,echo=FALSE,results=hide>>=
+set.seed(42)
+library(SGAT)
+@
+
+\section{Introduction}
+\label{sec:introduction}
+This document demonstrates the use of the Curve model applied to a
+Southern elephant seal data set.
+
+\section{Southern elephant seal}
+\label{sec:ses}
+The \texttt{ellie1} data set contains light intensities recorded over
+time by an archival tag on a Southern elephant seal (\emph{Mirounga
+  leonina}). The seal was tagged on the isthmus at Macquarie Island
+($158.950^{\circ}$E, $54.50^{\circ}$S) and makes one foraging trip
+beginning November 1999, then returns to the isthmus in January 2000.
+
+
+<<load,echo=TRUE>>=
+library(SGAT)
+data(ellie1)
+head(ellie1)
+tail(ellie1)
+@
+
+The original data also include depth and temperature. This data set
+has been processed to identify individual twilight \emph{segments} and
+removed any records where the depth was greater than 15m. Each segment
+represents the time of day where the light is changing most quickly
+around sunrise and sunset.
+
+\begin{figure}[ht]
+  \centering
+<<plotsegs,fig=TRUE>>=
+with(subset(ellie1, segment %in% c(9, 10)),
+     plot(time, light, col = c("dodgerblue", "firebrick")[(segment %% 2L)+1L]))
+@
+  \caption{Plot of two twilight segments.}
+  \label{fig:plotsegs}
+\end{figure}
+
+
+<<calib>>=
+data(ellie1calib)
+calibration <- with(ellie1calib, approxfun(zenith, light, rule = 2))
+
+@
+
+
+The \texttt{land.mask} function constructs a land mask based on
+an input polygon layer.
+<<>>=
+## Construct a land mask
+library(raster)
+library(maptools)
+data(wrld_simpl)
+land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
+  r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
+              xmn = xlim[1L], xmx = xlim[2L],
+              ymn= ylim[1L], ymx = ylim[2L],
+              crs = projection(poly))
+  r <- rasterize(poly, r)
+  r <- as.matrix(is.na(r))[nrow(r):1L, ]
+  if(land) r <- !r
+  xbin <- seq(xlim[1L], xlim[2L], length=ncol(r) + 1L)
+  ybin <- seq(ylim[1L], ylim[2L], length=nrow(r) + 1L)
+
+  function(p) {
+    r[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin))]
+  }
+}
+lonlim <- c(140, 220)
+latlim <- c(-80, -50)
+is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
+@
+<<model>>=
+model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
+                     alpha = c(7, 10), beta = c(8, 3.5)/10)
+@
+
+<<init>>=
+## find starting points
+nx <- 30L
+ny <- 25L
+grid <- list(x = seq(lonlim[1L], lonlim[2L], length = nx),
+             y = seq(latlim[1L], latlim[2L], length = ny),
+             z = array(0, c(nx, ny, length(model$time))))
+for (i in seq_along(grid$x)) {
+        for (j in seq_along(grid$y)) {
+            grid$z[i,j,] <- model$logpx(cbind(rep(grid$x[i], length(model$time)), grid$y[j], 0))
+        }
+    }
+
+x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3, which.max), ]), 0)
+@
+
+<<proposals>>=
+x.proposal <- mvnorm(S=diag(c(0.005,0.005, 0.05)),n=nrow(x0))
+z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
+@
+
+<<run1>>=
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
+fit0 <- fit
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+k <- sample(nrow(x0),20)
+matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="firebrick",ylab="Lat")
+par(opar)
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+
+
+@
+
+
+
+\section{Data preparation}
+\label{sec:dataprep}
+Filter and prepare raw data. Fixed points.
+
+\section{Calibration data}
+\label{sec:calibration}
+
+\section{Defining twilight segments}
+\label{sec:segments}
+
+
+\section{Masks}
+\label{sec:masks}
+
+
+\section{Movement model}
+\label{sec:movement}
+Stella or Estelle, constraints on movements.
+
+\section{Initialization}
+\label{sec:init}
+
+\nocite{Sumner2009}
+\bibliographystyle{apalike}
+\bibliography{SGAT}
+
+\end{document}
