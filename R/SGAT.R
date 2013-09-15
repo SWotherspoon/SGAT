@@ -1970,15 +1970,15 @@ chain.acceptance <- function(s) {
 ##' @param from.crs \code{NULL} or an object of class \code{CRS} defining the original projection.
 ##' @return an array of location samples with projected coordinates.
 ##' @export
-chain.project <- function(s,to.crs,from.crs=NULL) {
-  if(is.null(from)) from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+chain.project <- function(s,to.crs,
+                          from.crs=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")) {
 
   if(length(dim(s))==4) {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,,]),as.vector(s[,2,,])),from),to))
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,,]),as.vector(s[,2,,])),from.crs),to.crs))
     s[,1,,] <- p[,1]
     s[,2,,] <- p[,2]
   } else {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,]),as.vector(s[,2,])),from),to))
+    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1,]),as.vector(s[,2,])),from.crs),to.crs))
     s[,1,] <- p[,1]
     s[,2,] <- p[,2]
   }
@@ -2060,15 +2060,26 @@ gperm <- function(x,perm) {
 ##' given by its first argument.
 ##' @export
 mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
+
+  ## Fault tolerant cholesky
+  fchol <- function(V) {
+    d <- pmax.int(diag(V),tol)
+    tryCatch(chol(V),
+             error=function(e) {
+               d <- diag(V)
+               V <- V/4
+               diag(V) <- pmax.int(d/2,tol)
+               chol(V)
+             })
+  }
+
   m <- dim(S)[1]
   if(length(dim(S))==2) {
-    diag(S) <- pmax.int(diag(S),tol)
-    S <- array(s*chol(S),c(m,m,n))
+    S <- array(s*fchol(S),c(m,m,n))
   } else {
     n <- dim(S)[3]
     for(k in 1:n) {
-      diag(S[,,k]) <- pmax.int(diag(S[,,k]),tol)
-      S[,,k] <- s*chol(S[,,k])
+      S[,,k] <- s*fchol(S[,,k])
     }
   }
   S <- aperm(S,c(1,3,2))
