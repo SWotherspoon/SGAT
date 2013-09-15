@@ -88,7 +88,7 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
 ##' that will yield a raster.
 ##' @export
 slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,
-                  chains=NULL,,zero.is.na=TRUE) {
+                  chains=NULL,zero.is.na=TRUE) {
   ## Split times
   time <- mcmc$model$time
   if(!is.null(slices$breaks))
