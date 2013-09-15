@@ -162,3 +162,44 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 }
 
 
+##' Extract longitude and latitude of raster cells.
+##'
+##' Extract the longitude and latitude of the center of the requested
+##' cells of a Raster* object, similar to \code{xyFromCell}.
+##' @title Raster cell longitude and latitudes
+##' @param raster a raster object
+##' @param cells the cell numbers
+##' @param spatial return locations as SpatialPoints object instead of a matrix.
+##' @return the long,lat locations for the requested cells.
+##' @export
+longlatFromCell <- function(raster,cells,spatial=FALSE) {
+  if(isLonLat(raster)) {
+    xyFromCell(raster,cells,spatial=spatial)
+  } else {
+    p <- spTransform(xyFromCell(raster,cells,spatial=TRUE),
+                     CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+    if(spatial) p else coordinates(p)
+  }
+}
+
+##' Spatial maps of twilight residuals
+##'
+##' This function calculates the twilight residuals corresponding to
+##' an observed twilight across a grid of locations.
+##'
+##' @title Twilight Residuals
+##' @param twilight an observed time of twilight
+##' @param rise \code{TRUE} if twilight is a sunrise
+##' @param grid raster object that define the sampling grid.
+##' @param zenith the solar zenith angle that defines twilight.
+##' @return a raster of twilight residuals (in minutes).
+##' @export
+solar.residuals <- function(twilight,rise,grid,zenith=96) {
+  p <- longlatFromCell(grid,1:ncells(grid))
+  legal <- !(is.na(p[,1]) | is.na(p[,2]))
+  sgn <- if(rise) 1 else -1
+  s <- solar(twilight)
+  r <- raster(grid)
+  r[legal] <- 4*sgn*(s$solarTime-twilight.solartime(s,p[legal,1],p[legal,2],rise,zenith))
+  r
+}
