@@ -23,6 +23,7 @@
 ##' @param grid a specification for the grid extent and resolution, see Details
 ##' @return \code{\link{Pimage}}
 ##' @export
+##' @import raster sp
 model.bin <- function(fit, bin = c("primary", "intermediate"),
                       pimg = NULL, grid =NULL, proj = NULL) {
   ##TODO:
@@ -101,7 +102,7 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
   for (k in seq_along(weights)) {
       binx <- t(chain[k, 1:2, ])
       if (projected) binx <- projfun(binx)
-    pimg[[k]] <- bin.pimg(pimg[[k]], binx, weight = weights[k])
+    pimg[[k]] <- chain.bin(pimg[[k]], binx, weight = weights[k])
   }
   ## should also have a flag for whether this is initialized/scaled, so iter number is independent
   attr(pimg, "itersbin") <- attr(pimg, "itersbin") + dim(chain)[3]
@@ -164,7 +165,7 @@ as.pimg.raster <- function(x) {
 
 }
 
-##' importsFrom MASS kde2d bandwidth.nrd
+##' @importFrom MASS kde2d bandwidth.nrd
 chain.bin <-
   function(pimg, xy, weight = 1, type = c("bin", "kde"), hscale = 0.7) {
 

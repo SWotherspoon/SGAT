@@ -11,6 +11,8 @@ Suggests:
 Depends:
     raster,
     sp
+Imports:
+    MASS
 Description: Facilities for estimating the broadscale animal motions from
     archival or satellite tags.
 NeedsCompilation: no
