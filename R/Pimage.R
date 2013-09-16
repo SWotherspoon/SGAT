@@ -23,6 +23,7 @@
 ##' @param grid a specification for the grid extent and resolution, see Details
 ##' @return \code{\link{Pimage}}
 ##' @export
+##' @import raster sp
 model.bin <- function(fit, bin = c("primary", "intermediate"),
                       pimg = NULL, grid =NULL, proj = NULL) {
   ##TODO:
