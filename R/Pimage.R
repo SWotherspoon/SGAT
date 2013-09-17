@@ -47,7 +47,9 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
         rextent <- .chaingrid(chain)
         if (!isLonLat(proj)) {
             .check_rgdal()
-            proj <-  .process_proj(proj, rextent)
+            proj1 <-  .process_proj(proj, rextent)
+            if (is.null(proj1)) stop(sprintf("cannot process PROJ.4 from \"%s\"", proj))
+            proj <- proj1
             projected <- TRUE ## check for both longlat in rextent and proj, otherwise check rgdal avail and
             grid <- projectExtent(rextent, proj)
       } else {
@@ -119,10 +121,12 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     ## what if it's a proj, but there's no leading "+"
     if (!iscrs) {
         ## this is not robust to "lonlat", "latlon" aliases of "longlat", sp says no
-        check <- grep(tokens[1], rgdal::projInfo()$name)
-        if (!length(check) > 0) return(NULL)
+        ## no good, projInfo only defined in rgdal: check <- grep(tokens[1], rgdal::projInfo()$name)
+        ##if (!length(check) > 0) return(NULL)
         x <- sprintf("+proj=%s", tokens[1])
     }
+    check <- try(CRS(x), silent = TRUE)
+    if (inherits(check, "try-error")) return(NULL)
     ## so we get this far, lazy wants central coordinates from ext
     ## just the centre in long/lat
     sprintf("%s +lon_0=%s +lat_0=%s", x, round(mean(c(xmin(ext), xmax(ext)))),
