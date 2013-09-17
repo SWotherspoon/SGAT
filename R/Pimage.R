@@ -47,7 +47,7 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
         rextent <- .chaingrid(chain)
         if (!isLonLat(proj)) {
             .check_rgdal()
-            ## .process_proj(proj, rextent)
+            proj <-  .process_proj(proj, rextent)
             projected <- TRUE ## check for both longlat in rextent and proj, otherwise check rgdal avail and
             grid <- projectExtent(rextent, proj)
       } else {
@@ -119,7 +119,7 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     ## what if it's a proj, but there's no leading "+"
     if (!iscrs) {
         ## this is not robust to "lonlat", "latlon" aliases of "longlat", sp says no
-        check <- grep(tokens[1], projInfo()$name)
+        check <- grep(tokens[1], rgdal::projInfo()$name)
         if (!length(check) > 0) return(NULL)
         x <- sprintf("+proj=%s", tokens[1])
     }
