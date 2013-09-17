@@ -125,8 +125,8 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     }
     ## so we get this far, lazy wants central coordinates from ext
     ## just the centre in long/lat
-    sprintf("%s +lon_0=%s +lat_0=%s", x, mean(c(xmin(ext), xmax(ext))),
-            mean(c(ymin(ext), ymax(ext))))
+    sprintf("%s +lon_0=%s +lat_0=%s", x, round(mean(c(xmin(ext), xmax(ext)))),
+            round(mean(c(ymin(ext), ymax(ext)))))
 }
 
 ##' Create object to store binned images.
