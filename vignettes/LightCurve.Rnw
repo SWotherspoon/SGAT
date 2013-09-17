@@ -40,7 +40,7 @@ Southern elephant seal data set.
 
 \section{Southern elephant seal}
 \label{sec:ses}
-The \texttt{ellie1} data set contains light intensities recorded over
+The \texttt{ElephantSeal1} data set contains light intensities recorded over
 time by an archival tag on a Southern elephant seal (\emph{Mirounga
   leonina}). The seal was tagged on the isthmus at Macquarie Island
 ($158.950^{\circ}$E, $54.50^{\circ}$S) and makes one foraging trip
@@ -49,9 +49,9 @@ beginning November 1999, then returns to the isthmus in January 2000.
 
 <<load,echo=TRUE>>=
 library(SGAT)
-data(ellie1)
-head(ellie1)
-tail(ellie1)
+data(ElephantSeal1)
+head(ElephantSeal1)
+tail(ElephantSeal1)
 @
 
 The original data also include depth and temperature. This data set
@@ -63,7 +63,7 @@ around sunrise and sunset.
 \begin{figure}[ht]
   \centering
 <<plotsegs,fig=TRUE>>=
-with(subset(ellie1, segment %in% c(9, 10)),
+with(subset(ElephantSeal1, segment %in% c(9, 10)),
      plot(time, light, col = c("dodgerblue", "firebrick")[(segment %% 2L)+1L]))
 @
   \caption{Plot of two twilight segments.}
@@ -72,8 +72,8 @@ with(subset(ellie1, segment %in% c(9, 10)),
 
 
 <<calib>>=
-data(ellie1calib)
-calibration <- with(ellie1calib, approxfun(zenith, light, rule = 2))
+data(ElephantSeal1calib)
+calibration <- with(ElephantSeal1calib, approxfun(zenith, light, rule = 2))
 
 @
 
@@ -105,7 +105,7 @@ latlim <- c(-80, -50)
 is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 @
 <<model>>=
-model <- curve.model(ellie1$time, ellie1$light, ellie1$segment, calibration,
+model <- curve.model(ElephantSeal1$time, ElephantSeal1$light, ElephantSeal1$segment, calibration,
                      alpha = c(7, 10), beta = c(8, 3.5)/10)
 @
 

@@ -2166,34 +2166,34 @@ NULL
 ##' data from a time-depth-recorder (Mk9 TDR; Wildlife Computers,
 ##' Seattle, WA, USA).  These tags provides regular time series of
 ##' measurements of depth, water temperature, and ambient light
-##' level. The original data for "ellie1" were processed to remove
+##' level. The original data for \code{ElephantSeal1} were processed to remove
 ##' values at depths greater than 15m and to classify periods of
-##' twilight. The data for "ellie2" have also been processed for
+##' twilight. The data for \code{ElephantSeal2} have also been processed for
 ##' twilight periods. The seals makes one single foraging trip,
 ##' returning to the isthmus where they were tagged.  Data recorded while
 ##' the seal is at the isthmus are used for calibration
-##' (\code{\link{ellie1calib}}).
+##' (\code{\link{ElephantSeal1calib}}).
 ##'
 ##' These data supplied courtesy of Mark Hindell, Institute of Marine
-##' and Antarctic Studies, University of Tasmania. \code{ellie1} is
-##' B362_99 and \code{ellie2} is C026_99
-##' @name ellie1
-##' @aliases ellie1calib ellie2 ellie2calib
+##' and Antarctic Studies, University of Tasmania. \code{ElephantSeal1} is
+##' B362_99 and \code{ElephantSeal2} is C026_99
+##' @name ElephantSeal1
+##' @aliases ElephantSeal1calib ElephantSeal2 ElephantSeal2calib
 ##' @docType data
 ##' @title Southern Elephant seal tag data
-##' @format \code{ellie1} A data frame with 3 columns.  The columns
+##' @format \code{ElephantSeal1} A data frame with 3 columns.  The columns
 ##' represent
 ##' \tabular{rl}{
 ##' \code{time} \tab times of measurement \cr
 ##' \code{light} \tab  (log) light values \cr
 ##' \code{segment} \tab integer indicating sequence of twilight periods \cr
 ##' }
-##' \code{ellie2} This tag is similar to \code{ellie1} but also has columns
+##' \code{ElephantSeal2} This tag is similar to \code{ElephantSeal1} but also has columns
 ##' \tabular{rl}{
 ##' \code{depth} \tab depth in the water column in metres (positive) \cr
 ##' \code{temp} \tab temperature in the water column in degrees celcius \cr
 ##' }
-##'  \code{ellie1calib} and \code{elliecalib2} A data frame with 2 columns.  The columns represent
+##'  \code{ElephantSeal1calib} and \code{ElephantSealcalib2} A data frame with 2 columns.  The columns represent
 ##' \tabular{rl}{
 ##' \code{zenith} \tab zenith values \cr
 ##' \code{light} \tab  (log) light values \cr
