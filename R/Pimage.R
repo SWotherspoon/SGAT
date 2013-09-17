@@ -12,7 +12,13 @@
 ##' the details from the fit object.
 ##'
 ##' The \code{proj} argument should be a PROJ.4 string, see
-##' \code{\link[raster]{projection}} and \code{\link[sp]{CRS}}
+##' \code{\link[raster]{projection}} and \code{\link[sp]{CRS}}, or an
+##' incomplete PROJ.4 name string. If the string consists only of the
+##' projection family name then a central coordinate is calculated
+##' from the samples.See \code{rgdal::projInfo("proj")$name} for
+##' candidate strings, and \url{http://www.spatialreference.org} for
+##' more details.
+##'
 ##' @title Bin MCMC samples
 ##' @param fit object with model and samples
 ##' @param bin samples to bin, "primary" or "intermediate"
@@ -370,7 +376,7 @@ c.Pimage <- function(..., recursive = FALSE) {
     if (!length(unique(Zs)) == 1L) stop("inputs have non-matching bin types")
 
     class(x) <- "Pimage"
-    SGAT:::.times(x) <- sapply(obj, attr, "times")
+    .times(x) <- sapply(obj, attr, "times")
     attr(x, "projection") <- unique(projections)
     x
 }
