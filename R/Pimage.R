@@ -86,6 +86,8 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     types <- c("primary", "intermediate")
     check <- .isZ(pimg) == Zarg
     if (!check) stop(sprintf("bin type is \"%s\" but input Pimage is \"%s\"", types[Zarg + 1], types[.isZ(pimg) + 1]))
+    check <- dim(chain)[1] == length(pimg)
+    if (!check) stop(sprintf("dimensions of chain, nrow = %i do not match the length of Pimage, length = %i", dim(chain)[1], length(pimg)))
     if (Zarg) {
         weights <- diff(times)
         units(weights) <- "hours"  ## could allow user control here
@@ -327,6 +329,7 @@ print.Pimage <- function(x, ...) {
 }
 
 ##' @rdname Pimage-methods
+##' @param recursive ignored
 ##' @method c Pimage
 ##' @S3method c Pimage
 ##' @export
