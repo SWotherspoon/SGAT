@@ -12,7 +12,13 @@
 ##' the details from the fit object.
 ##'
 ##' The \code{proj} argument should be a PROJ.4 string, see
-##' \code{\link[raster]{projection}} and \code{\link[sp]{CRS}}
+##' \code{\link[raster]{projection}} and \code{\link[sp]{CRS}}, or an
+##' incomplete PROJ.4 name string. If the string consists only of the
+##' projection family name then a central coordinate is calculated
+##' from the samples.See \code{rgdal::projInfo("proj")$name} for
+##' candidate strings, and \url{http://www.spatialreference.org} for
+##' more details.
+##'
 ##' @title Bin MCMC samples
 ##' @param fit object with model and samples
 ##' @param bin samples to bin, "primary" or "intermediate"
@@ -47,6 +53,9 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
         rextent <- .chaingrid(chain)
         if (!isLonLat(proj)) {
             .check_rgdal()
+            proj1 <-  .process_proj(proj, rextent)
+            if (is.null(proj1)) stop(sprintf("cannot process PROJ.4 from \"%s\"", proj))
+            proj <- proj1
             projected <- TRUE ## check for both longlat in rextent and proj, otherwise check rgdal avail and
             grid <- projectExtent(rextent, proj)
       } else {
@@ -105,6 +114,30 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
   pimg
 }
 
+
+.process_proj <- function(x, ext) {
+    check <- try(CRS(x), silent = TRUE)
+    iscrs <- !inherits(check, "try-error")
+    tokens <- strsplit(x, " ")[[1]]
+    tokens <- tokens[nchar(tokens) > 0]
+    ## succeeds CRS, and is more than just a projname
+    if (iscrs & length(tokens) > 1) return(x)
+    ## fails CRS, but isn't just a proj name
+    if (!iscrs & length(tokens) > 1) return(NULL)
+    ## what if it's a proj, but there's no leading "+"
+    if (!iscrs) {
+        ## this is not robust to "lonlat", "latlon" aliases of "longlat", sp says no
+        ## no good, projInfo only defined in rgdal: check <- grep(tokens[1], rgdal::projInfo()$name)
+        ##if (!length(check) > 0) return(NULL)
+        x <- sprintf("+proj=%s", tokens[1])
+    }
+    check <- try(CRS(x), silent = TRUE)
+    if (inherits(check, "try-error")) return(NULL)
+    ## so we get this far, lazy wants central coordinates from ext
+    ## just the centre in long/lat
+    sprintf("%s +lon_0=%s +lat_0=%s", x, round(mean(c(xmin(ext), xmax(ext)))),
+            round(mean(c(ymin(ext), ymax(ext)))))
+}
 
 ##' Create object to store binned images.
 ##'
@@ -343,7 +376,7 @@ c.Pimage <- function(..., recursive = FALSE) {
     if (!length(unique(Zs)) == 1L) stop("inputs have non-matching bin types")
 
     class(x) <- "Pimage"
-    SGAT:::.times(x) <- sapply(obj, attr, "times")
+    .times(x) <- sapply(obj, attr, "times")
     attr(x, "projection") <- unique(projections)
     x
 }
