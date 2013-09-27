@@ -16,7 +16,7 @@ The package is easily built with RStudio
 
 4. Install [devtools](http://cran.r-project.org/web/packages/devtools/index.html) and [roxygen2](http://cran.r-project.org/web/packages/roxygen2/index.html) packages and dependencies in R
 
-5. Install [geosphere](http://cran.r-project.org/web/packages/geosphere/index.html), [GeoLight](http://cran.r-project.org/web/packages/GeoLight/index.html) packages and dependencies.
+5. Install [geosphere](http://cran.r-project.org/web/packages/geosphere/index.html), [GeoLight](http://cran.r-project.org/web/packages/GeoLight/index.html), [sp](http://cran.r-project.org/web/packages/sp/index.html), [raster](http://cran.r-project.org/web/packages/raster/index.html), [maptools](http://cran.r-project.org/web/packages/maptools/index.html) packages and dependencies.
 
 6. Clone the repository from GitHub (https://github.com/SWotherspoon/SGAT).
 
