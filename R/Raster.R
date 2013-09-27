@@ -33,12 +33,12 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   bb <- bbox(r)
   nx <- ncol(r)
   ny <- nrow(r)
-  xbin <- seq.int(bb[1L,1L],bb[1L,2L],length.out=nx+1)
-  ybin <- seq.int(bb[2L,1L],bb[2L,2L],length.out=ny+1)
+  xbin <- seq.int(bb[1L,1L],bb[1L,2L],length.out=nx+1L)
+  ybin <- seq.int(bb[2L,1L],bb[2L,2L],length.out=ny+1L)
 
   A <- 0
   W <- dim(s)[3L]
-  for(k in seq_len(dim(s)[1])) {
+  for(k in seq_len(dim(s)[1L])) {
     A <- A+(weights[k]/W)*table(
       factor((ny+1)-.bincode(s[k,2L,],ybin,TRUE,TRUE),levels=1:ny),
       factor(.bincode(s[k,1L,],xbin,TRUE,TRUE),levels=1:nx))
@@ -79,7 +79,7 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL,zero.is.na=TRUE) {
 
   A <- 0
   W <-dim(s)[3L]*prod(bw)
-  for(k in seq_len(dim(s)[1])) {
+  for(k in seq_len(dim(s)[1L])) {
       A <- A+(weights[k]/W)*tcrossprod(dnorm(outer(xcell,s[k,1L,],"-")/bw[1L]),
                                        dnorm(outer(ycell,s[k,2L,],"-")/bw[2L]))
   }
@@ -186,7 +186,7 @@ slice.interval <- function(slices,k,mcmc=slices$mcmc) {
                  slices$breaks,
                  include.lowest=slices$include.lowest,
                  right=slices$right)))
-  if(length(k)>0) range(time[if(slices$type=="z") c(k,k+1) else k])
+  if(length(k)>0) range(time[if(slices$type=="z") c(k,k+1L) else k])
 }
 
 ##' @rdname slice
@@ -237,7 +237,7 @@ longlatFromCell <- function(raster,cells,spatial=FALSE) {
 ##' @return a raster of twilight residuals (in minutes).
 ##' @export
 solar.residuals <- function(twilight,rise,grid,zenith=96) {
-  p <- longlatFromCell(grid,1:ncells(grid))
+  p <- longlatFromCell(grid,1:ncell(grid))
   legal <- !(is.na(p[,1L]) | is.na(p[,2L]))
   sgn <- if(rise) 1 else -1
   s <- solar(twilight)
