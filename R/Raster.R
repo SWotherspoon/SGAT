@@ -195,7 +195,7 @@ longlatFromCell <- function(raster,cells,spatial=FALSE) {
 ##' @return a raster of twilight residuals (in minutes).
 ##' @export
 solar.residuals <- function(twilight,rise,grid,zenith=96) {
-  p <- longlatFromCell(grid,1:ncells(grid))
+  p <- longlatFromCell(grid,1:ncell(grid))
   legal <- !(is.na(p[,1]) | is.na(p[,2]))
   sgn <- if(rise) 1 else -1
   s <- solar(twilight)
