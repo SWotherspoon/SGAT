@@ -2063,7 +2063,7 @@ mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
 
   ## Fault tolerant cholesky
   fchol <- function(V) {
-    d <- pmax.int(diag(V),tol)
+    diag(V) <- pmax.int(diag(V),tol)
     tryCatch(chol(V),
              error=function(e) {
                d <- diag(V)
