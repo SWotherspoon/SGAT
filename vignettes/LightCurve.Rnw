@@ -106,7 +106,7 @@ is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 @
 <<model>>=
 model <- curve.model(ElephantSeal2$time, ElephantSeal2$light, ElephantSeal2$segment, calibration,
-                     alpha = c(5, 2), beta = c(5, 3.5))
+                     alpha = c(5, 2), beta = c(10, 3.5))
 @
 
 <<init>>=
