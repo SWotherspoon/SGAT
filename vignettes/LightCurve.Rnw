@@ -22,7 +22,7 @@ University of Tasmania}}
 \begin{abstract}
   The \textbf{SGAT} package provides facilities for Geolocation
   estimation with light curve methods. This document demonstrates
-  building an running a light curve model with a Southern elephant
+  buildingd an running a light curve model with a Southern elephant
   seal data set.
 
 \end{abstract}
@@ -49,9 +49,9 @@ beginning November 1999, then returns to the isthmus in January 2000.
 
 <<load,echo=TRUE>>=
 library(SGAT)
-data(ElephantSeal1)
-head(ElephantSeal1)
-tail(ElephantSeal1)
+data(ElephantSeal2)
+head(ElephantSeal2)
+tail(ElephantSeal2)
 @
 
 The original data also include depth and temperature. This data set
@@ -63,7 +63,7 @@ around sunrise and sunset.
 \begin{figure}[ht]
   \centering
 <<plotsegs,fig=TRUE>>=
-with(subset(ElephantSeal1, segment %in% c(9, 10)),
+with(subset(ElephantSeal2, segment %in% c(9, 10)),
      plot(time, light, col = c("dodgerblue", "firebrick")[(segment %% 2L)+1L]))
 @
   \caption{Plot of two twilight segments.}
@@ -72,8 +72,8 @@ with(subset(ElephantSeal1, segment %in% c(9, 10)),
 
 
 <<calib>>=
-data(ElephantSeal1calib)
-calibration <- with(ElephantSeal1calib, approxfun(zenith, light, rule = 2))
+data(ElephantSeal2calib)
+calibration <- with(ElephantSeal2calib, approxfun(zenith, light, rule = 2))
 
 @
 
@@ -100,13 +100,13 @@ land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
     r[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin))]
   }
 }
-lonlim <- c(140, 220)
+lonlim <- c(100, 180)
 latlim <- c(-80, -50)
 is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 @
 <<model>>=
-model <- curve.model(ElephantSeal1$time, ElephantSeal1$light, ElephantSeal1$segment, calibration,
-                     alpha = c(7, 10), beta = c(8, 3.5)/10)
+model <- curve.model(ElephantSeal2$time, ElephantSeal2$light, ElephantSeal2$segment, calibration,
+                     alpha = c(5, 2), beta = c(5, 3.5))
 @
 
 <<init>>=
@@ -122,7 +122,7 @@ for (i in seq_along(grid$x)) {
         }
     }
 
-x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3, which.max), ]), 0)
+x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3L, which.max), ]), 0)
 @
 
 <<proposals>>=
