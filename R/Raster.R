@@ -129,7 +129,7 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL,zero.is.na=TRUE) {
 ##' slice, and \code{slice.indices} returns the valid set of indices
 ##' that will yield a raster.
 ##' @export
-slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,
+slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,weights=slices$weights,
                   chains=NULL,zero.is.na=TRUE) {
   ## Split times
   time <- mcmc$model$time
@@ -141,10 +141,10 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,
   if(length(k)>0) {
     ## Select x or z
     if(slices$type=="z") {
-      w <- diff(as.numeric(time)/(60*60))
+      w <- if(!is.null(weights)) weights else diff(as.numeric(time)/(60*60))
       s <- mcmc$z
     } else {
-      w <- rep(1,length(time))
+      w <- if(!is.null(weights)) weights else rep(1,length(time))
       s <- mcmc$x
     }
 
@@ -164,12 +164,13 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,
 ##' @rdname slice
 ##' @export
 slices <- function(type=c("x","z"),breaks=NULL,
-                   mcmc=NULL,grid=raster(),
+                   mcmc=NULL,grid=raster(),weights=NULL,
                    include.lowest=TRUE,right=FALSE) {
   r <- list(type=match.arg(type),
             breaks=breaks,
             mcmc=mcmc,
             grid=grid,
+            weights=weights,
             include.lowest=include.lowest,
             right=right)
   class(r) <- "slices"
