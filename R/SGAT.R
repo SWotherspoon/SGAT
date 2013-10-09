@@ -348,6 +348,7 @@ trackDist <- function(x) {
 
 
 ##' @rdname trackDist
+##'@export
 trackDist2 <- function(x,z) {
     n <- nrow(x)
     rad <- pi/180
@@ -1101,13 +1102,14 @@ grouped.threshold.model <- function(twilight,rise,group,
     tmax <- tapply(as.numeric(twilight)/3600,group,max)
     dt <- tmin[-1L]-tmax[-max(group)]
   }
+  time <- .POSIXct(tapply(twilight,group,median),"GMT")
 
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
   ## observed sunset occurring before the expected time of sunset
   residuals <- function(x) {
-    4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise,zenith))
+    4*sgn*(s$solarTime-twilight.solartime(s,x[group,1L],x[group,2L],rise,zenith))
   }
 
   ## Contribution to log posterior from each x location
@@ -1116,7 +1118,7 @@ grouped.threshold.model <- function(twilight,rise,group,
     switch(twilight.model,
            Gamma=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1125,7 +1127,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            LogNormal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1134,7 +1136,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            Normal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1143,7 +1145,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            ModifiedGamma=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
                             dgamma(r,alpha[1L],alpha[2L],log=TRUE))
@@ -1154,7 +1156,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            ModifiedLogNormal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=TRUE),
                             dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
@@ -1181,6 +1183,8 @@ grouped.threshold.model <- function(twilight,rise,group,
   }
 
 
+
+
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
@@ -1195,9 +1199,10 @@ grouped.threshold.model <- function(twilight,rise,group,
        x0=x0,
        z0=z0,
        ## Data
-       time=twilight,
+       twilight=twilight,
        rise=rise,
-       group=group)
+       group=group,
+       time=time)
 }
 
 
