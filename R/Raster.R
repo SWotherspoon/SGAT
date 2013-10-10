@@ -55,6 +55,7 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
 location.kernelize <- function(s,grid,weights=1,bw=NULL,zero.is.na=TRUE) {
 
   bandwidth <- function (x) {
+    x <- as.vector(x)
     1.06*min(sqrt(var(x)),diff(quantile(x,c(0.25,0.75)))/1.34)*length(x)^(-1/5)
   }
 
@@ -80,8 +81,8 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL,zero.is.na=TRUE) {
   A <- 0
   W <-dim(s)[3L]*prod(bw)
   for(k in seq_len(dim(s)[1L])) {
-      A <- A+(weights[k]/W)*tcrossprod(dnorm(outer(xcell,s[k,1L,],"-")/bw[1L]),
-                                       dnorm(outer(ycell,s[k,2L,],"-")/bw[2L]))
+      A <- A+(weights[k]/W)*tcrossprod(dnorm(outer(ycell,s[k,2L,],"-")/bw[2L]),
+                                       dnorm(outer(xcell,s[k,1L,],"-")/bw[1L]))
   }
   if(zero.is.na) A[A==0] <- NA
   values(r) <- A
