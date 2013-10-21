@@ -134,11 +134,13 @@ slice <- function(slices,k,mcmc=slices$mcmc,grid=slices$grid,weights=slices$weig
                   chains=NULL,zero.is.na=TRUE) {
   ## Split times
   time <- mcmc$model$time
-  if(!is.null(slices$breaks))
-    k <- which(k==unclass(cut(if(slices$type=="z") time[-length(time)] else time,
-                 slices$breaks,
-                 include.lowest=slices$include.lowest,
-                 right=slices$right)))
+  if(!is.null(slices$breaks)) {
+    ks <- unclass(cut(if(slices$type=="z") time[-length(time)] else time,
+                      slices$breaks,
+                      include.lowest=slices$include.lowest,
+                      right=slices$right))
+    k <- which(ks %in% k)
+  }
   if(length(k)>0) {
     ## Select x or z
     if(slices$type=="z") {
@@ -183,11 +185,13 @@ slices <- function(type=c("x","z"),breaks=NULL,
 ##' @export
 slice.interval <- function(slices,k,mcmc=slices$mcmc) {
   time <- mcmc$model$time
-  if(!is.null(slices$breaks))
-    k <- which(k==unclass(cut(if(slices$type=="z") time[-length(time)] else time,
+  if(!is.null(slices$breaks)) {
+    ks <- unclass(cut(if(slices$type=="z") time[-length(time)] else time,
                  slices$breaks,
                  include.lowest=slices$include.lowest,
-                 right=slices$right)))
+                 right=slices$right))
+    k <- which(ks %in% k)
+  }
   if(length(k)>0) range(time[if(slices$type=="z") c(k,k+1L) else k])
 }
 
