@@ -1,75 +1,14 @@
-\documentclass[a4paper]{article}
-\usepackage{a4wide}
-\usepackage[authoryear]{natbib}
-\usepackage{amsmath}
+### R code from vignette source 'Movement.Rnw'
 
-\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
-%\VignetteIndexEntry{Identifying Residency}
-%\VignetteDepends{SGAT}
-%\VignettePackage{SGAT}
-%\VignetteKeyword{Geolocation}
-\begin{document}
-
-
-\title{Threshold Movement}
-\date{2013}
-\author{\textbf{Simeon Lisovski} \\
-%EndAName
-Centre for Integrative Ecology\\
-Deakin University\\
-\and \textbf{Michael Sumner} \\
-%EndAName
-Australian Antarctic Division\\
-\and \textbf{Simon Wotherspoon} \\
-%EndAName
-Australian Antarctic Division,\\
-Institute for Marine and Antarctic Studies\\
-University of Tasmania}
-\maketitle
-
-\begin{abstract}
-  The \textbf{SGAT} package provides facilities for Geolocation
-  estimation.  This document examines the ability of the Estelle and
-  Stella models to distinguish periods of residency and migration.
-\end{abstract}
-
-
-<<echo=FALSE>>=
+###################################################
+### code chunk number 1: Movement.Rnw:37-38
+###################################################
 set.seed(32)
-@
 
 
-\section{Introduction}
-\label{sec:introduction}
-
-There is simply not enough information in a single time of twilight
-from which to determine the location of the tag. Any threshold based
-Geolocation method derives location estimates by either assuming the
-tag is stationary between twilights, or by assuming the tag has moved
-but restricting the range of the motion.  The Stella and Estelle
-models fall into this second category, and this raises questions as to
-the degree to which these models can actually detect when a tag is
-stationary.
-
-To investigate this issue, we simulate data from a tag that is
-intermittently stationary to test the ability of Estelle distinguish
-periods of residency from periods of large scale migration.
-
-\section{Low Frequency Intermittent Motion}
-\label{sec:low-freq}
-
-This example examines low frequency intermittent motion, in which the
-tagged individual alternates between $30$ day periods of residency and
-$30$ day periods of mobility.
-
-\subsection{Simulated Path}
-\label{sec:LFsimulated}
-
-
-The true path of the individual is represented by bezier curves from
-\texttt{p0} to \texttt{p1} to \texttt{p2}, with control points
-\texttt{c0}, \texttt{c1}, \texttt{c2}, and \texttt{c3}.
-<<>>=
+###################################################
+### code chunk number 2: Movement.Rnw:72-100
+###################################################
 ## Construct a single bezier spline from (t1,p1) to (t2,p2) with
 ## control points c1 and c2.
 bezier <- function(t1,p1,c1,t2,p2,c2) {
@@ -98,40 +37,38 @@ ps <- rbind(cbind(rep(p0[1],30),rep(p0[2],30)),
             cbind(rep(p1[1],30),rep(p1[2],30)),
             f2(91:120),
             cbind(rep(p2[1],30),rep(p2[2],30)))
-@
-This coarse track is resampled to two minute intervals, and the
-solar zenith angle at each point is calculated
-<<>>=
+
+
+###################################################
+### code chunk number 3: Movement.Rnw:104-109
+###################################################
 library(SGAT)
 ## Resample to two minute intervals and compute zenith angles
 tms <- as.POSIXct("2013-04-01","GMT")+(24*60*60)*days
 tms.out <- seq(min(tms),max(tms),by=2*60)
 d <- zenith.simulate(tms,ps[,1],ps[,2],tms.out)
-@
-To focus on the inherent lack of identifiability in the model
-associated with motion, these dates have been selected to avoid
-equinoxal effects.  From these zenith angles, the precise times and
-locations at which the tagged individual would observe twilight are
-calculated.
-<<>>=
+
+
+###################################################
+### code chunk number 4: Movement.Rnw:116-119
+###################################################
 ## Compute times and locations at which twilight is observed.
 twl <- twilight.simulate(d)
 twl <- twilight.perturb(twl,rlnorm(nrow(twl),0.3,0.6))
-@
 
 
-\subsection{Estelle}
-\label{sec:LFestelle}
-
-A set of initial $x$ locations are estimated
-<<>>=
+###################################################
+### code chunk number 5: Movement.Rnw:127-131
+###################################################
 ## Initial x locations
 x0 <- threshold.path(twl$Twilight,twl$Rise)$x
 ## Initial z locations
 z0 <- trackMidpts(x0)
-@
-and adjusted to meet the requirements of the Log Normal model
-<<>>=
+
+
+###################################################
+### code chunk number 6: Movement.Rnw:134-146
+###################################################
 ## Construct model and use residuals to adjust x0
 model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
@@ -144,22 +81,26 @@ model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=x0,z0=z0)
-@
 
 
-Proposal distributions are defined
-<<>>=
+###################################################
+### code chunk number 7: Movement.Rnw:151-154
+###################################################
 ## Define initial proposals
 x.proposal <- mvnorm(S=diag(c(0.002,0.002)),n=nrow(twl))
 z.proposal <- mvnorm(S=diag(c(0.002,0.002)),n=nrow(twl)-1)
-@
-and a short sequence of samples is drawn and examined for problems.
-<<>>=
+
+
+###################################################
+### code chunk number 8: Movement.Rnw:157-159
+###################################################
 ## Short test run
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=300,thin=20)
-@
-The proposal distributions are ``tuned'' to the posterior
-<<>>=
+
+
+###################################################
+### code chunk number 9: Movement.Rnw:162-174
+###################################################
 ## Tune proposals based on previous run
 x.proposal <- mvnorm(chain.cov(fit$x,discard=100),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z,discard=100),s=0.3)
@@ -172,47 +113,57 @@ z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
-@
-and the sampled locations are examined to determine if the chains
-are mixing adequately (Figure~\ref{fig:LFtrace1}).
-<<label=LFtrace1,eval=F>>=
+
+
+###################################################
+### code chunk number 10: LFtrace1 (eval = FALSE)
+###################################################
+## opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+## matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+##         xlab="",ylab=expression(x[150]))
+## matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+##         xlab="",ylab=expression(z[150]))
+## par(opar)
+
+
+###################################################
+### code chunk number 11: Movement.Rnw:188-189
+###################################################
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(x[150]))
 matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(z[150]))
 par(opar)
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<LFtrace1>>
-@
-  \caption{Example traces that show the mixing of the chain after
-    tuning the proposal distributions.}
-  \label{fig:LFtrace1}
-\end{figure}
 
 
-<<>>=
+###################################################
+### code chunk number 12: Movement.Rnw:197-203
+###################################################
 ## Draw final sample
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=2000,thin=50)
-@
-and the sampled locations should be examined to ensure the
-chains are mixing adequately.
-
-When a satisfactory sample is drawn, the sampled locations can then be
-summarized as required.
 
 
-Figure~\ref{fig:LFci} show the posterior means and credible intervals
-for the sequence of estimated twilight locations, overlaid on the
-true track.
-<<label=LFci,eval=F>>=
+###################################################
+### code chunk number 13: LFci (eval = FALSE)
+###################################################
+## ## Plot time series of lat and lon
+## opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+## s <- location.summary(fit$x)
+## matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
+##         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon")
+## matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
+##         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
+## par(opar)
+
+
+###################################################
+### code chunk number 14: Movement.Rnw:227-228
+###################################################
 ## Plot time series of lat and lon
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 s <- location.summary(fit$x)
@@ -221,21 +172,25 @@ matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
 matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
 par(opar)
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<LFci>>
-@
-\caption{The posterior means (red) and $95\%$ credible intervals
-  (blue) for the sequence estimated locations for the fit of the Log
-  Normal model to the simulated dataset, overlaid on the true locations
-  (grey).}
-  \label{fig:LFci}
-\end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
-the samples for a several twilight and several intermediate locations.
-<<label=LFpath,eval=F>>=
+
+
+###################################################
+### code chunk number 15: LFpath (eval = FALSE)
+###################################################
+## ## Plot sequence of mean x's
+## plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
+## points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
+## points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
+## points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
+## lines(twl$Lon,twl$Lat,col="grey50")
+
+
+###################################################
+### code chunk number 16: Movement.Rnw:251-252
+###################################################
 ## Plot sequence of mean x's
 plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
 points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
@@ -245,45 +200,17 @@ points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
 lines(twl$Lon,twl$Lat,col="grey50")
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<LFpath>>
-@
-\caption{The posterior mean twilight locations (grey) calculated under
-  the Log Normal model, overlaid with the samples for three
-  twilight location (blue) and three intermediate locations (red),
-  and the true track (line).}
-  \label{fig:LFpath}
-\end{figure}
-
-These results suggest that for this example at least, periods of long
-term localized residency can be distinguished from migration, but the
-time of transition between migration and residency is poorly estimated
-due to the large error in individual locations.
 
 
-\section{High Frequency Intermittent Motion}
-\label{sec:high-freq}
-
-This example examines low frequency intermittent motion, in which the
-tagged individual remains stationary for $2$ days and moves on every
-third.
-
-
-\subsection{Simulated Path}
-\label{sec:HFsimulated}
-
-
-The path of the individual is based on the same path as before, but
-the locations are grouped into groups of three, and each group is
-replaced with its average.
-<<>>=
+###################################################
+### code chunk number 17: Movement.Rnw:282-283
+###################################################
 ps <- cbind(ave(ps[,1],rep(1:50,each=3)),ave(ps[,2],rep(1:50,each=3)))
-@
-Twilight times are caculated from this track as before
-<<>>=
+
+
+###################################################
+### code chunk number 18: Movement.Rnw:286-294
+###################################################
 library(SGAT)
 ## Resample to two minute intervals and compute zenith angles
 tms <- as.POSIXct("2013-04-01","GMT")+(24*60*60)*days
@@ -292,18 +219,18 @@ d <- zenith.simulate(tms,ps[,1],ps[,2],tms.out)
 ## Compute times and locations at which twilight is observed.
 twl <- twilight.simulate(d)
 twl <- twilight.perturb(twl,rlnorm(nrow(twl),0.3,0.6))
-@
 
-\subsection{Estelle}
-\label{sec:HFestelle}
 
-A set of initial $x$ locations are estimated
-<<>>=
+###################################################
+### code chunk number 19: Movement.Rnw:301-303
+###################################################
 ## Initial x locations
 x0 <- threshold.path(twl$Twilight,twl$Rise)$x
-@
-and adjusted to meet the requirements of the Log Normal model
-<<>>=
+
+
+###################################################
+### code chunk number 20: Movement.Rnw:306-317
+###################################################
 model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
@@ -315,21 +242,26 @@ model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=x0,z0=z0)
-@
 
-Proposal distributions are defined
-<<>>=
+
+###################################################
+### code chunk number 21: Movement.Rnw:321-324
+###################################################
 ## Define initial proposals
 x.proposal <- mvnorm(S=diag(c(0.002,0.002)),n=nrow(twl))
 z.proposal <- mvnorm(S=diag(c(0.002,0.002)),n=nrow(twl)-1)
-@
-and a short sequence of samples is drawn and examined for problems.
-<<>>=
+
+
+###################################################
+### code chunk number 22: Movement.Rnw:327-329
+###################################################
 ## Short test run
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=300,thin=20)
-@
-The proposal distributions are ``tuned'' to the posterior
-<<>>=
+
+
+###################################################
+### code chunk number 23: Movement.Rnw:332-344
+###################################################
 ## Tune proposals based on previous run
 x.proposal <- mvnorm(chain.cov(fit$x,discard=100),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z,discard=100),s=0.3)
@@ -342,47 +274,57 @@ z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
-@
-and the sampled locations are examined to determine if the chains
-are mixing adequately (Figure~\ref{fig:HFtrace1}).
-<<label=HFtrace1,eval=F>>=
+
+
+###################################################
+### code chunk number 24: HFtrace1 (eval = FALSE)
+###################################################
+## opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+## matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+##         xlab="",ylab=expression(x[150]))
+## matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+##         xlab="",ylab=expression(z[150]))
+## par(opar)
+
+
+###################################################
+### code chunk number 25: Movement.Rnw:358-359
+###################################################
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(x[150]))
 matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(z[150]))
 par(opar)
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<HFtrace1>>
-@
-  \caption{Example traces that show the mixing of the chain after
-    tuning the proposal distributions.}
-  \label{fig:HFtrace1}
-\end{figure}
 
 
-<<>>=
+###################################################
+### code chunk number 26: Movement.Rnw:367-373
+###################################################
 ## Draw final sample
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=2000,thin=50)
-@
-and the sampled locations should be examined to ensure the
-chains are mixing adequately.
-
-When a satisfactory sample is drawn, the sampled locations can then be
-summarized as required.
 
 
-Figure~\ref{fig:HFci} show the posterior means and credible intervals
-for the sequence of estimated twilight locations, overlaid on the
-true track.
-<<label=HFci,eval=F>>=
+###################################################
+### code chunk number 27: HFci (eval = FALSE)
+###################################################
+## ## Plot time series of lat and lon
+## opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+## s <- location.summary(fit$x)
+## matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
+##         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon")
+## matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
+##         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
+## par(opar)
+
+
+###################################################
+### code chunk number 28: Movement.Rnw:397-398
+###################################################
 ## Plot time series of lat and lon
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 s <- location.summary(fit$x)
@@ -391,21 +333,25 @@ matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
 matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
 par(opar)
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<HFci>>
-@
-\caption{The posterior means (red) and $95\%$ credible intervals
-  (blue) for the sequence estimated locations for the fit of the Log
-  Normal model to the simulated dataset, overlaid on the true locations
-  (grey).}
-  \label{fig:HFci}
-\end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
-the samples for a several twilight and several intermediate locations.
-<<label=HFpath,eval=F>>=
+
+
+###################################################
+### code chunk number 29: HFpath (eval = FALSE)
+###################################################
+## ## Plot sequence of mean x's
+## plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
+## points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
+## points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
+## points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
+## points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
+## lines(twl$Lon,twl$Lat,col="grey50")
+
+
+###################################################
+### code chunk number 30: Movement.Rnw:421-422
+###################################################
 ## Plot sequence of mean x's
 plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
 points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
@@ -415,29 +361,5 @@ points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
 lines(twl$Lon,twl$Lat,col="grey50")
-@
-\begin{figure}[ht]
-  \centering
-<<fig=T,echo=F>>=
-<<HFpath>>
-@
-\caption{The posterior mean twilight locations (grey) calculated under
-  the Log Normal model, overlaid with the samples for three
-  twilight location (blue) and three intermediate locations (red),
-  and the true track (line).}
-  \label{fig:HFpath}
-\end{figure}
-
-It is clear from Figure~\ref{fig:HFci} that while it is possible to
-distinguish long term, localized residence from migration, short term
-residency cannot be resolved as a consequence of the large errors in
-individual locations.
-
-\clearpage
-\nocite{Sumner2009}
-\nocite{Lisovski2012}
-\bibliographystyle{apalike}
-\bibliography{SGAT}
 
 
-\end{document}

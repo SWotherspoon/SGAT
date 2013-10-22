@@ -331,12 +331,12 @@ computed and visualized (Figure~\ref{fig:meanci})
 <<label=meanci,eval=F>>=
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 s <- location.summary(fit$x,time=model$time)
-matplot(s$time,s[,c("lon.mean","lon.2.5%","lon.97.5%")],type="l",lty=1,
-          col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon",xaxt="n")
-axis.POSIXct(1,at=seq(round(min(s$time),"day"),round(max(s$time),"day"),"weeks"),format="%d %b")
-matplot(s$time,s[,c("lat.mean","lat.2.5%","lat.97.5%")],type="l",lty=1,
-          col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat",xaxt="n")
-axis.POSIXct(1,at=seq(round(min(s$time),"day"),round(max(s$time),"day"),"weeks"),format="%d %b")
+matplot(s$Time,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")],type="l",lty=1,
+        col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon",xaxt="n")
+axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
+matplot(s$Time,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")],type="l",lty=1,
+        col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat",xaxt="n")
+axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
 par(opar)
 @
 \begin{figure}[ht]
