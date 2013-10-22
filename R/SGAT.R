@@ -301,7 +301,7 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
 
 ##' Midpoints of a path
 ##'
-##' Compute the midpoints of a sequence of locations along path.
+##' Compute the midpoints of a sequence of locations along a path.
 ##' @title Path Midpoints
 ##' @param p a two column matrix of (lon,lat) locations along the path.
 ##' @param fold should the longitudes be folded into [-180,180).
