@@ -1812,7 +1812,8 @@ location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
 ##' @export
 location.mean <- function(s,discard=0) {
   if(discard>0) s <- chain.tail(s,discard)
-  apply(s,1:2,mean)
+  s <- chain.collapse(s)
+  apply(s[,1:2,],1:2,mean)
 }
 
 
