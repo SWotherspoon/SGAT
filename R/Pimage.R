@@ -126,16 +126,17 @@ model.bin <- function(fit, bin = c("primary", "intermediate"),
     if (!iscrs & length(tokens) > 1) return(NULL)
     ## what if it's a proj, but there's no leading "+"
     if (!iscrs) {
-        ## this is not robust to "lonlat", "latlon" aliases of "longlat", sp says no
-        ## no good, projInfo only defined in rgdal: check <- grep(tokens[1], rgdal::projInfo()$name)
-        ##if (!length(check) > 0) return(NULL)
+
+        ## this is otherwise not robust to "lonlat", "latlon" aliases of "longlat", sp says no
+        if (tokens[1L] %in% c("lonlat", "latlon")) tokens[1L] <- "longlat"
+
         x <- sprintf("+proj=%s", tokens[1])
     }
     check <- try(CRS(x), silent = TRUE)
     if (inherits(check, "try-error")) return(NULL)
     ## so we get this far, lazy wants central coordinates from ext
     ## just the centre in long/lat
-    sprintf("%s +lon_0=%s +lat_0=%s", x, round(mean(c(xmin(ext), xmax(ext)))),
+    sprintf("%s +lon_0=%s +lat_0=%s +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0", x, round(mean(c(xmin(ext), xmax(ext)))),
             round(mean(c(ymin(ext), ymax(ext)))))
 }
 
