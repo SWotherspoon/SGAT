@@ -890,7 +890,7 @@ satellite.model <- function(time,X,
 ##'
 ##' The \code{threshold.model} function constructs a model structure
 ##' assuming that each twilight time is associated with a single
-##' location, while the \code{group.threshold.model} function allows
+##' location, while the \code{grouped.threshold.model} function allows
 ##' multiple twilight times to be associated with a single location.
 ##'
 ##' One of several models models may be selected for the errors in
@@ -944,12 +944,16 @@ satellite.model <- function(time,X,
 ##' @param twilight.model the model for the errors in twilight times.
 ##' @param alpha parameters of the twilight model.
 ##' @param beta parameters of the behavioural model.
-##' @param logp.x function to evaluate any additional contribution to the log posterior from the twilight locations.
-##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param logp.x function to evaluate any additional contribution to
+##' the log posterior from the twilight locations.
+##' @param logp.z function to evaluate any additional contribution to
+##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logical vector indicating which twilight locations to hold fixed.
-##' @param polar logical vector indicating which twilights were unobserved
+##' @param fixedx logical vector indicating which twilight locations
+##' to hold fixed.
+##' @param polar logical vector indicating which twilights were
+##' unobserved
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
