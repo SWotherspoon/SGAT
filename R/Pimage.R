@@ -184,6 +184,30 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
 }
 
 
+## functions for merging global datasets with pimage
+## .aligned(p[], global)
+## plot(parent)
+## points(xyFromCell(parent, cn.pimg(p[[i]])), pch = ".")
+## plot(extent(trim(p[i], value = 0)), add = TRUE)
+
+## check that extents do align, otherwise hint at rebuilding Pimage
+## to match
+.aligned <- function(x, y, ...) {
+    all.equal(extent(x), alignExtent(extent(x), y, snap = "out"))
+}
+## function to convert pimg offset to cellnumbers of PARENT
+## (then we can crop global to match parent)
+cn.pimg <- function(x) {
+    xbnd <- x$xbound
+    ybnd <- x$ybound
+    offs <- x$offset
+    tl <- ((ybnd[3L] - (offs[2L] + ncol(x$image))) + 1L) * xbnd[3L] + offs[1L]
+     lhs <- seq(tl, by = xbnd[3L], length = ncol(x$image))
+    sort(sapply(lhs, seq, length = nrow(x$image)))
+
+}
+
+
 pimg <- function (xmin, xmax, ymin, ymax, xydim) {
         res <- list(xbound = c(xmin, xmax, xydim[1L]),
                     ybound = c(ymin, ymax, xydim[2L]),
