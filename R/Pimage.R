@@ -196,16 +196,16 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     all.equal(extent(x), alignExtent(extent(x), y, snap = "out"))
 }
 ## function to convert pimg offset to cellnumbers of PARENT
-## (then we can crop global to match parent)
+## (then we can crop global to match parent and do direct transfers)
 cn.pimg <- function(x) {
     xbnd <- x$xbound
     ybnd <- x$ybound
     offs <- x$offset
     tl <- ((ybnd[3L] - (offs[2L] + ncol(x$image))) + 1L) * xbnd[3L] + offs[1L]
-     lhs <- seq(tl, by = xbnd[3L], length = ncol(x$image))
-    sort(sapply(lhs, seq, length = nrow(x$image)))
-
+    sort(rep(seq(tl, by = xbnd[3], length = ncol(x$image)), each = nrow(x$image)) +
+         rep(seq_len(nrow(x$image)) - 1, ncol(x$image)))
 }
+
 
 
 pimg <- function (xmin, xmax, ymin, ymax, xydim) {
