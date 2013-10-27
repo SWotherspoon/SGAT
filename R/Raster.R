@@ -1,6 +1,6 @@
 ##' Bin locations to form a 2D density raster
 ##'
-##' Constucts either a 2D histogram or kernel density estimate from
+##' Constructs either a 2D histogram or kernel density estimate from
 ##' the samples for a sequence of locations.  Optionally, a vector of
 ##' weights can be provided to differentially weight samples by
 ##' location.
