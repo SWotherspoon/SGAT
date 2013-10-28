@@ -392,7 +392,7 @@ the time intervals between twilights. To prevent the burrow
 location from dominating the fixed $z$ locations must be weighted out
 (Figure~\ref{fig:wbin})
 <<label=wbin,eval=F>>=
-dt <- ifelse(fixedz,0,diff(as.numeric(model$twilight)/3600))
+dt <- ifelse(fixedz,0,diff(as.numeric(model$time)/3600))
 b <- bin.weighted(fit$z,w=dt,xlim=c(80,170),ylim=c(-70,-10),n=4)
 image(b$x,b$y,b$W,xlab="Lon",ylab="Lat")
 plot(wrld_simpl,add=T,col="grey80")
