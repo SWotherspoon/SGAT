@@ -233,7 +233,7 @@ par(opar)
   (grey).}
   \label{fig:LFci}
 \end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
+Figure~\ref{fig:LFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=LFpath,eval=F>>=
 ## Plot sequence of mean x's
@@ -403,7 +403,7 @@ par(opar)
   (grey).}
   \label{fig:HFci}
 \end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
+Figure~\ref{fig:HFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=HFpath,eval=F>>=
 ## Plot sequence of mean x's
