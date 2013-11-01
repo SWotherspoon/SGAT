@@ -1434,7 +1434,7 @@ curve.model <- function(time,light,segment,
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
     logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
-    sapply(split(logp,segment),sum)+dnorm(x[,3L],0,alpha[2L],log=TRUE)
+    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha[2L],log=TRUE)
   }
 
   ## Contribution to log posterior from each z location
