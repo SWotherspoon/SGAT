@@ -767,12 +767,6 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' unit variance, or}
 ##' \item{'T'}{t distributed with degrees of freedom df.}
 ##' }
-##' Note that the 'LogNormal' and 'Gamma' models forbid negative
-##' errors, that is, the observed light cannot be brighter than
-##' expected.  There are modified variants of these models for which
-##' negative errors are extremely unlikely, but not forbidden, and can
-##' be used to generate suitable initialization locations for their
-##' unmodified counterparts.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
 ##' consistent with the chosen twilight model.  That is, if
