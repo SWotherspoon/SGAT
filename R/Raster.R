@@ -260,3 +260,70 @@ solar.residuals <- function(twilight,rise,grid,zenith=96) {
   r[legal] <- 4*sgn*(s$solarTime-twilight.solartime(s,p[legal,1L],p[legal,2L],rise,zenith))
   r
 }
+
+
+
+##' Simple Land Mask Example
+##'
+##' This function provides a low resolution land/sea mask based on
+##' wrld_simpl from \package{maptools}.  While this provides a good
+##' general starting point for many analyses, users are encouraged to
+##' develop higher resolution masks specific to their analyses.
+##'
+##' This implementation discretizes wrld_simpl onto a simple grid in
+##' longitude and latitude. The bounding box is set by \code{xlim} and
+##' \code{ylim}, unless \code{wrap360=TRUE} in which case the mask
+##' spans the globe in longitude.  When \code{wrap360=FALSE},
+##' \code{xlim} must be contained in the interval [-540,540].
+##'
+##' For points outside the bounding box, the function returns
+##' \code{NA}. For points inside the bounding box, the function
+##' returns \code{land} for points on land (within the resolution of
+##' the grid) and \code{!land} for points at sea.
+##'
+##' @title Example Land Mask
+##' @param xlim the longitude range when \code{wrap360=FALSE}.
+##' @param ylim the latitude range.
+##' @param n number of grid cells per degree.
+##' @param land mask for land or sea?
+##' @param wrap360 if \code{TRUE}, the mask spans the entire globe in
+##' longitude.
+##' @return A vectorized function that determines (approximately)
+##' whether a location is land or sea.
+##' @examples
+##'
+##'
+##' ## Define mask for sea
+##' is.sea <- land.mask(xlim=c(80,170),ylim=c(-70,-10),n=4,land=F)
+##' ## Land
+##' is.sea(cbind(120,-30))
+##' ## Sea
+##' is.sea(cbind(120,-60))
+##' ## Out of bounding box
+##' is.sea(cbind(0,0))
+##' @export
+land.mask <- function(xlim,ylim,n=4,land=TRUE,wrap360=FALSE) {
+  data("wrld_simpl",package="maptools",envir=environment())
+  r <- raster(nrows=n*diff(ylim),ncols=n*diff(xlim),
+              xmn=if(wrap360) -180 else xlim[1],
+              xmx=if(wrap360) 180 else xlim[2],
+              ymn=ylim[1],ymx=ylim[2],
+              crs=proj4string(wrld_simpl))
+  r <- cover(rasterize(elide(wrld_simpl,shift=c(-360,0)),r,1,silent=TRUE),
+	     rasterize(wrld_simpl,r,1,silent=TRUE),
+             rasterize(elide(wrld_simpl,shift=c(360,0)),r,1,silent=TRUE))
+  r <- as.matrix(is.na(r))[nrow(r):1,]
+  if(land) r <- !r
+  xbin <- seq(xlim[1],xlim[2],length=ncol(r)+1)
+  ybin <- seq(ylim[1],ylim[2],length=nrow(r)+1)
+
+  if(wrap360) {
+    function(p) {
+      r[cbind(.bincode(p[,2],ybin),.bincode((p[,1]-180)%%360+180,xbin))]
+    }
+  } else {
+    function(p) {
+      r[cbind(.bincode(p[,2],ybin),.bincode(p[,1],xbin))]
+    }
+  }
+}
