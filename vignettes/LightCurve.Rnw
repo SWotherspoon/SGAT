@@ -106,8 +106,38 @@ land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
   }
 }
 
-is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
+##is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 
+##log.prior <- function(p)  {
+##  f <- is.sea(p)
+##  ifelse(f|is.na(f),0,-1000)
+##}
+
+library(raadtools)
+tm <- with(ElephantSeal2, tapply(time, segment, mean)) + ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "GMT")
+sst <- readsst(tm, xylim = extent(lonlim[1], lonlim[2], latlim[1], latlim[2]))
+
+    a <- as.array(sst)[,,rep(1:nlayers(sst), each = 2)]
+
+
+for (i in seq_along(tm)) a[,,i] <- dnorm(a[,,i], mean(c(tmin[i], tmax[i])), sd(ElephantSeal2$temp[ElephantSeal2$segment == i]), log = TRUE)
+a <- brick(a, xmn = xmin(sst), ymn = ymin(sst), xmx = xmax(sst), ymx = ymax(sst), crs = projection(sst))
+
+rlookup <- function(x) {
+    xbin <- seq(xmin(x), xmax(x), length = ncol(x) + 1L)
+    ybin <- seq(ymin(x), ymax(x), length = nrow(x) + 1L)
+    x <- as.array(x)[nrow(x):1L,,]
+    function(p) {
+           x[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin), 1:nrow(p))]
+    }
+
+}
+sst.lookup <- rlookup(a)
+
+sst.prior <- function(x) {
+    f <- sst.lookup(x)
+    ifelse(!is.finite(f), -1000, f)
+}
 @
 <<model>>=
 
@@ -117,10 +147,10 @@ d$segment <- unclass(factor(d$segment))
 
 
 model <- curve.model(d$time, d$light, d$segment, calibration,
-                     logp.x = log.prior,
-                     logp.z = log.prior,
+                     logp.x = sst.prior,
+                     logp.z = sst.prior,
                      alpha = c(7, 10), beta = c(8, 3.5))
-                     alpha = c(5, 2), beta = c(10, 3.5))
+
 @
 
 <<init>>=
@@ -153,9 +183,6 @@ z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
 
 <<run1>>=
 
-###################################################
-### code chunk number 9: run1
-###################################################
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=20,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
 
 
@@ -174,7 +201,7 @@ lastx <- chain.last(fit$x)
 
 }
 
-
+fit0 <- fit
 plot(chain.last(fit$x), type = "l")
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
@@ -182,7 +209,7 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
 plot(chain.last(fit$x), type = "l")
-fit0 <- fit
+
 
 
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
