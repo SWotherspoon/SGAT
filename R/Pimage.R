@@ -183,7 +183,7 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     ymn <- ymin(grid) + res[2L]/2L
     ymx <- ymax(grid) - res[2L]/2L
 
-    for (i in seq_along(pim)) pim[[i]] <- pimg(xmn, xmx, ymn, ymx, rev(dims), time = tm[i], duration = dur[i])
+    for (i in seq_along(pim)) pim[[i]] <- pimg(xmn, xmx, ymn, ymx, rev(dims), tmin = tm[i], tdur = dur[i])
 
     attr(pim, "Z") <- Z
     attr(pim, "itersbin") <- 0
@@ -221,7 +221,7 @@ pimg <- function (xmin, xmax, ymin, ymax, xydim, tmin, tdur) {
         res <- list(xbound = c(xmin, xmax, xydim[1L]),
                     ybound = c(ymin, ymax, xydim[2L]),
                     offset = c(1L, 1L), image = NULL,
-                    tbound = c(unclass(tmin), tdur)
+                    tbound = c(unclass(tmin), tdur))
         res
     }
 
@@ -240,6 +240,7 @@ chain.bin <-
     type <- match.arg(type)
     xbnd <- pimg$xbound
     ybnd <- pimg$ybound
+    tbnd <- pimg$tbound
 
     ## Bin the locations into the global image coords
     i <- ceiling(xbnd[3]*(xy[,1]-xbnd[1])/(xbnd[2]-xbnd[1]))
@@ -285,7 +286,9 @@ chain.bin <-
       pimg <- list(xbound=xbnd,
                    ybound=ybnd,
                    offset=off,
-                   image=img1)
+                   image=img1,
+                   tmin = tbnd[1L],
+                   tdur = tbnd[2L])
       if (type == "kde") {
           x <- as.local.pimg(pimg)
           kde <- kde2d(xy[,1], xy[,2], h = pmax(1, c(bandwidth.nrd(xy[,1]), bandwidth.nrd(xy[,2]))) * hscale,
