@@ -287,8 +287,8 @@ chain.bin <-
                    ybound=ybnd,
                    offset=off,
                    image=img1,
-                   tmin = tbnd[1L],
-                   tdur = tbnd[2L])
+                   tbound = tbnd)
+
       if (type == "kde") {
           x <- as.local.pimg(pimg)
           kde <- kde2d(xy[,1], xy[,2], h = pmax(1, c(bandwidth.nrd(xy[,1]), bandwidth.nrd(xy[,2]))) * hscale,
