@@ -214,6 +214,8 @@ pimg <- function (xmin, xmax, ymin, ymax, xydim) {
                     offset = c(1L, 1L), image = NULL)
         res
     }
+
+
 as.pimg.raster <- function(x) {
     dims <- dim(x)
     res <- res(x)
@@ -329,6 +331,7 @@ chain.bin <-
   .times(val) <- timeobject
 ##  attr(val, "times") <- timeobject
   val <- as.image.Pimage(val)
+  val$z[!val$z > 0] <- NA
   raster(val, crs = .projection(x))
 
 }
@@ -379,7 +382,7 @@ print.Pimage <- function(x, ...) {
     ext <- extent(x[])
     trange <- format(range(.times(x)))
     Z <- .isZ(x)
-    cat("Class    :", class(x), c("(Primary/X)", "(Intermediate/Z)")[Z + 1], "\nLength    :", length(x),  "\nTemporal Extent :", trange, "\n")
+    cat("Class    :", class(x), c("(Primary/X)", "(Intermediate/Z)")[Z + 1], "\nLength    :", length(x),  "\ntime :", trange, "\n")
     ##cat("Time Steps   :")
     ##str(attr(x, "times"))
     print(ext)
