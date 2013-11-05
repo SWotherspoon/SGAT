@@ -390,13 +390,18 @@ cut.Pimage <- function(x, breaks, ...) {
 ##' @export
 print.Pimage <- function(x, ...) {
   ## this needs to know the x/y/time range, and possibly the sizes of all images, whether any are NULL or funny
-    ext <- extent(x[1L])
+    a <- x[1L]
+    ext <- extent(a)
     trange <- format(range(.times(x)))
     Z <- .isZ(x)
-    cat("Class    :", class(x), c("(Primary/X)", "(Intermediate/Z)")[Z + 1], "\nLength    :", length(x),  "\ntime :", trange, "\n")
+    cat("class   :", class(x), c("(Primary/X)", "(Intermediate/Z)")[Z + 1], "\nlength  :", length(x),  "\ntime    :", trange, "\n")
     ##cat("Time Steps   :")
     ##str(attr(x, "times"))
-    print(ext)
+     e <- bbox(a)
+     cat("extent  : ", e[1, 1], ", ", e[1, 2], ", ", e[2,
+        1], ", ", e[2, 2], "  (xmin, xmax, ymin, ymax)\n", sep = "")
+    cat("CRS     :", projection(a))
+    cat("\n")
     invisible(NULL)
 }
 
