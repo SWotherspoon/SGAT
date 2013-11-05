@@ -157,7 +157,6 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
     if(!all(diff(unclass(tm)) > 0)) warning("input time stamps are not monotonically increasing, i.e. they contain duplicates and/or are out of temporal order")
     stopifnot(length(tm) >= 2)
 
-
     if (is.null(grid)) {
         grid <- raster()
     } else {
@@ -165,16 +164,26 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
         grid <- raster(grid)
     }
 
-    n <- length(tm) - Z
+
+    n <- length(tm)
+    dur <- rep(0, n)
+    if (Z) {
+        n <- n - 1L
+        dur <- diff(unclass(tm))
+    }
 
     dims <- dim(grid)
-  res <- res(grid)
-    pbase <- pimg(xmin(grid) + res[1L]/2L, xmax(grid) - res[1L]/2L,
-                ymin(grid) + res[2L]/2L, ymax(grid) - res[2L]/2L, dims[2L:1L])
+    res <- res(grid)
+
+    ## raw list of internal pimg objects
     pim <- vector("list", n)
-    for (i in seq_along(pim)) pim[[i]] <- pbase
-    .times(pim) <- tm
-    ##attr(pim, "times") <- tm
+    ## offset to cell centres
+    xmn <- xmin(grid) + res[1L]/2L
+    xmx <- xmax(grid) - res[1L]/2L
+    ymn <- ymin(grid) + res[2L]/2L
+    ymx <- ymax(grid) - res[2L]/2L
+
+    for (i in seq_along(pim)) pim[[i]] <- pimg(xmn, xmx, ymn, ymx, rev(dims), time = tm[i], duration = dur[i])
 
     attr(pim, "Z") <- Z
     attr(pim, "itersbin") <- 0
@@ -208,21 +217,21 @@ cn.pimg <- function(x) {
 
 
 
-pimg <- function (xmin, xmax, ymin, ymax, xydim) {
+pimg <- function (xmin, xmax, ymin, ymax, xydim, tmin, tdur) {
         res <- list(xbound = c(xmin, xmax, xydim[1L]),
                     ybound = c(ymin, ymax, xydim[2L]),
-                    offset = c(1L, 1L), image = NULL)
+                    offset = c(1L, 1L), image = NULL,
+                    tbound = c(unclass(tmin), tdur)
         res
     }
 
 
-as.pimg.raster <- function(x) {
-    dims <- dim(x)
-    res <- res(x)
-     pimg(xmin(x) + res[1L]/2L, xmax(x) - res[1L]/2L,
-                ymin(x) + res[2L]/2L, ymax(x) - res[2L]/2L, dims[2L:1L])
-
-}
+##as.pimg.raster <- function(x) {
+##    dims <- dim(x)
+##    res <- res(x)
+##     pimg(xmin(x) + res[1L]/2L, xmax(x) - res[1L]/2L,
+##                ymin(x) + res[2L]/2L, ymax(x) - res[2L]/2L, dims[2L:1L])
+##}
 
 ##' @importFrom MASS kde2d bandwidth.nrd
 chain.bin <-
@@ -328,8 +337,7 @@ chain.bin <-
   ##browser()
   class(val) <- "Pimage"
 
-  .times(val) <- timeobject
-##  attr(val, "times") <- timeobject
+
   val <- as.image.Pimage(val)
   val$z[!val$z > 0] <- NA
   raster(val, crs = .projection(x))
@@ -379,7 +387,7 @@ cut.Pimage <- function(x, breaks, ...) {
 ##' @export
 print.Pimage <- function(x, ...) {
   ## this needs to know the x/y/time range, and possibly the sizes of all images, whether any are NULL or funny
-    ext <- extent(x[])
+    ext <- extent(x[1L])
     trange <- format(range(.times(x)))
     Z <- .isZ(x)
     cat("Class    :", class(x), c("(Primary/X)", "(Intermediate/Z)")[Z + 1], "\nLength    :", length(x),  "\ntime :", trange, "\n")
@@ -404,7 +412,7 @@ c.Pimage <- function(..., recursive = FALSE) {
     if (!length(unique(Zs)) == 1L) stop("inputs have non-matching bin types")
 
     class(x) <- "Pimage"
-    .times(x) <- sapply(obj, attr, "times")
+##    .times(x) <- sapply(obj, attr, "times")
     attr(x, "projection") <- unique(projections)
     x
 }
@@ -484,21 +492,18 @@ as.image.Pimage <-
   }
 
 .isZ <- function(x) {
-    attr(x, "Z")
+    x[[1L]]$tbound[2] > 0
 }
-## apply "units" and store times as offset/difftime, allow user to set
 
 .times <- function(x) {
-    ## this should be an as.POSIXct method
-   res <- attr(x, "times")
-    ## if (Z) res <- res[-length(res)] + diff(unclass(res))/2
-    res
+    .POSIXct(sapply(x, function(x) x[["tbound"]][1L]))
 }
 
-".times<-" <- function(x, value) {
-    attr(x, "times") <- value
-    x
-}
+## not required
+##".times<-" <- function(x, value) {
+##    attr(x, "times") <- value
+##    x
+##}
 .chaingrid <- function(x) {
   xrange <- range(x[,1,])
   yrange <- range(x[,2,])
