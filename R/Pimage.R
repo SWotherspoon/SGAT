@@ -172,7 +172,7 @@ Pimage <- function(tm, grid = NULL, Z = TRUE) {
         dur <- diff(unclass(tm))
     }
 
-    dims <- dim(grid)
+    dims <- dim(grid)[c(1L, 2L)]
     res <- res(grid)
 
     ## raw list of internal pimg objects
