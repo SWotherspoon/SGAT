@@ -126,21 +126,21 @@ twl <- twilight.perturb(twl,rlnorm(nrow(twl),0.3,0.6))
 A set of initial $x$ locations are estimated
 <<>>=
 ## Initial x locations
-x0 <- threshold.path(twl$twilight,twl$rise)$x
+x0 <- threshold.path(twl$Twilight,twl$Rise)$x
 ## Initial z locations
 z0 <- trackMidpts(x0)
 @
 and adjusted to meet the requirements of the Log Normal model
 <<>>=
 ## Construct model and use residuals to adjust x0
-model <- threshold.model(twl$twilight,twl$rise,
+model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=x0,z0=z0)
 r <- model$residuals(x0)
-x0 <- cbind(x0[,1]-ifelse(twl$rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
+x0 <- cbind(x0[,1]-ifelse(twl$Rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
 z0 <- trackMidpts(x0)
-model <- threshold.model(twl$twilight,twl$rise,
+model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=x0,z0=z0)
@@ -216,9 +216,9 @@ true track.
 ## Plot time series of lat and lon
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 s <- location.summary(fit$x)
-matplot(cbind(twl$lon,s[,c("lon.mean","lon.2.5%","lon.97.5%")]),type="l",lty=1,
+matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon")
-matplot(cbind(twl$lat,s[,c("lat.mean","lat.2.5%","lat.97.5%")]),type="l",lty=1,
+matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
 par(opar)
 @
@@ -233,7 +233,7 @@ par(opar)
   (grey).}
   \label{fig:LFci}
 \end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
+Figure~\ref{fig:LFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=LFpath,eval=F>>=
 ## Plot sequence of mean x's
@@ -244,7 +244,7 @@ points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
 points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
-lines(twl$lon,twl$lat,col="grey50")
+lines(twl$Lon,twl$Lat,col="grey50")
 @
 \begin{figure}[ht]
   \centering
@@ -300,18 +300,18 @@ twl <- twilight.perturb(twl,rlnorm(nrow(twl),0.3,0.6))
 A set of initial $x$ locations are estimated
 <<>>=
 ## Initial x locations
-x0 <- threshold.path(twl$twilight,twl$rise)$x
+x0 <- threshold.path(twl$Twilight,twl$Rise)$x
 @
 and adjusted to meet the requirements of the Log Normal model
 <<>>=
-model <- threshold.model(twl$twilight,twl$rise,
+model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=NULL,z0=NULL)
 r <- model$residuals(x0)
-x0 <- cbind(x0[,1]-ifelse(twl$rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
+x0 <- cbind(x0[,1]-ifelse(twl$Rise,1,-1)*pmin(0,r-0.1)/1440*360,x0[,2])
 z0 <- trackMidpts(x0)
-model <- threshold.model(twl$twilight,twl$rise,
+model <- threshold.model(twl$Twilight,twl$Rise,
                          twilight.model="LogNormal",
                          alpha=c(0.3,0.6),beta=c(8,3.5),
                          x0=x0,z0=z0)
@@ -386,9 +386,9 @@ true track.
 ## Plot time series of lat and lon
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 s <- location.summary(fit$x)
-matplot(cbind(twl$lon,s[,c("lon.mean","lon.2.5%","lon.97.5%")]),type="l",lty=1,
+matplot(cbind(twl$Lon,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon")
-matplot(cbind(twl$lat,s[,c("lat.mean","lat.2.5%","lat.97.5%")]),type="l",lty=1,
+matplot(cbind(twl$Lat,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")]),type="l",lty=1,
         col=c("grey70","firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat")
 par(opar)
 @
@@ -403,7 +403,7 @@ par(opar)
   (grey).}
   \label{fig:HFci}
 \end{figure}
-Figure~\ref{fig:Mpath} shows the mean twilight locations together with
+Figure~\ref{fig:HFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=HFpath,eval=F>>=
 ## Plot sequence of mean x's
@@ -414,7 +414,7 @@ points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
 points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
 points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
-lines(twl$lon,twl$lat,col="grey50")
+lines(twl$Lon,twl$Lat,col="grey50")
 @
 \begin{figure}[ht]
   \centering

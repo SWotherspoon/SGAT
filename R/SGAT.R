@@ -301,7 +301,7 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
 
 ##' Midpoints of a path
 ##'
-##' Compute the midpoints of a sequence of locations along path.
+##' Compute the midpoints of a sequence of locations along a path.
 ##' @title Path Midpoints
 ##' @param p a two column matrix of (lon,lat) locations along the path.
 ##' @param fold should the longitudes be folded into [-180,180).
@@ -348,6 +348,7 @@ trackDist <- function(x) {
 
 
 ##' @rdname trackDist
+##'@export
 trackDist2 <- function(x,z) {
     n <- nrow(x)
     rad <- pi/180
@@ -370,10 +371,10 @@ trackDist2 <- function(x,z) {
 ##' @param twilight the observed times of twilight as POSIXct.
 ##' @param rise logical vector indicating which twilights are sunrise.
 ##' @return A dataframe with columns
-##' \item{\code{twilight1}}{times of earlier twilight as POSIXct objects}
-##' \item{\code{twilight2}}{times of later twilight as POSIXct objects}
-##' \item{\code{day}}{logical vector indicating whether the twilights span a day.}
-##' \item{\code{mid}}{the midpont of the two twilights.}
+##' \item{\code{Twilight1}}{times of earlier twilight as POSIXct objects}
+##' \item{\code{Twilight2}}{times of later twilight as POSIXct objects}
+##' \item{\code{Day}}{logical vector indicating whether the twilights span a day.}
+##' \item{\code{Mid}}{the midpont of the two twilights.}
 ##' @export
 twilight.pairs <- function(twilight,rise) {
   n <- length(twilight)
@@ -384,10 +385,10 @@ twilight.pairs <- function(twilight,rise) {
   ## hours apart.
   keep <- (r1!=rise[-1L]) & (as.numeric(t2)-as.numeric(t1) < 86400)
   mid <- .POSIXct(as.numeric(t1)+(as.numeric(t2)-as.numeric(t1))/2,"GMT")
-  data.frame(twilight1=t1[keep],
-             twilight2=t2[keep],
-             day=r1[keep],
-             mid=mid[keep])
+  data.frame(Twilight1=t1[keep],
+             Twilight2=t2[keep],
+             Day=r1[keep],
+             Mid=mid[keep])
 }
 
 
@@ -478,10 +479,10 @@ threshold.location <- function(twilight,rise,zenith=96,tol=0.08) {
   ## Convert to sunrise/sunset pairs
   pr <- twilight.pairs(twilight,rise)
   ## Estimate locations
-  ps <- threshold.estimate(ifelse(pr$day,pr$twilight1,pr$twilight2),
-                           ifelse(pr$day,pr$twilight2,pr$twilight1),
+  ps <- threshold.estimate(ifelse(pr$Day,pr$Twilight1,pr$Twilight2),
+                           ifelse(pr$Day,pr$Twilight2,pr$Twilight1),
                            zenith=zenith,tol=tol)
-  list(time=pr$mid,x=ps)
+  list(time=pr$Mid,x=ps)
 }
 
 
@@ -659,15 +660,15 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
 ##' @param err a vector of adjustments (in minutes) to the twilight times.
 ##' @return \code{zenith.simulate} returns a data frame with
 ##' components
-##' \item{\code{tm}}{times along the simulated track}
-##' \item{\code{lon}}{longitudes along the simulated track}
-##' \item{\code{lat}}{latitudes along the simulated track}
-##' \item{\code{zenith}}{zenith angles along the simulated track}
+##' \item{\code{Date}}{times along the simulated track}
+##' \item{\code{Lon}}{longitudes along the simulated track}
+##' \item{\code{Lat}}{latitudes along the simulated track}
+##' \item{\code{Zenith}}{zenith angles along the simulated track}
 ##' \code{twilight.simulate} returns a data frame of twilights with components
-##' \item{\code{twilight}}{times of twilight}
-##' \item{\code{rise}}{is this a sunrise}
-##' \item{\code{lon}}{longitude at twilight}
-##' \item{\code{lat}}{latitude at twilight}
+##' \item{\code{Twilight}}{times of twilight}
+##' \item{\code{Rise}}{is this a sunrise}
+##' \item{\code{Lon}}{longitude at twilight}
+##' \item{\code{Lat}}{latitude at twilight}
 ##' @export
 zenith.simulate <- function(tm,lon,lat,tm.out) {
   ## unwrap longitudes
@@ -679,10 +680,10 @@ zenith.simulate <- function(tm,lon,lat,tm.out) {
   lat.out <- approx(tm[keep],lat[keep],tm.out,rule=2)$y
   ## Compute zenith angles
   z <- zenith(solar(tm.out),lon.out,lat.out)
-  data.frame(tm=tm.out,
-             lon=lon.out,
-             lat=lat.out,
-             zenith=z)
+  data.frame(Date=tm.out,
+             Lon=lon.out,
+             Lat=lat.out,
+             Zenith=z)
 }
 
 
@@ -694,27 +695,27 @@ twilight.simulate <- function(dfz,zenith=96) {
   n <- nrow(dfz)
 
   ## Compute indexes for sunrise and sunset
-  sr.k <- which(dfz$zenith[-n] >= zenith & dfz$zenith[-1L] < zenith)
-  ss.k <- which(dfz$zenith[-n] < 96 & dfz$zenith[-1L] >= 96)
+  sr.k <- which(dfz$Zenith[-n] >= zenith & dfz$Zenith[-1L] < zenith)
+  ss.k <- which(dfz$Zenith[-n] < 96 & dfz$Zenith[-1L] >= 96)
   ## Interleave sunrise and sunset
   ord <- order(c(sr.k,ss.k))
   k <- c(sr.k,ss.k)[ord]
   rise <- rep(c(T,F),c(length(sr.k),length(ss.k)))[ord]
   ## Interpolation weights
-  w <- (zenith-dfz$zenith[k])/(dfz$zenith[k+1L]-dfz$zenith[k])
+  w <- (zenith-dfz$Zenith[k])/(dfz$Zenith[k+1L]-dfz$Zenith[k])
 
   ## Interplated times and locations of twilight
-  data.frame(twilight=dfz$tm[k] + w*(as.vector(dfz$tm[k+1L])-as.vector(dfz$tm[k])),
-             rise=rise,
-             lon=dfz$lon[k] + w*(dfz$lon[k+1L]-dfz$lon[k]),
-             lat=dfz$lat[k] + w*(dfz$lat[k+1L]-dfz$lat[k]))
+  data.frame(Twilight=dfz$Date[k] + w*(as.vector(dfz$Date[k+1L])-as.vector(dfz$Date[k])),
+             Rise=rise,
+             Lon=dfz$Lon[k] + w*(dfz$Lon[k+1L]-dfz$Lon[k]),
+             Lat=dfz$Lat[k] + w*(dfz$Lat[k+1L]-dfz$Lat[k]))
 }
 
 
 ##' @rdname zenith.simulate
 ##' @export
 twilight.perturb <- function(dft,err) {
-  dft$twilight <- dft$twilight + ifelse(dft$rise,60*err,-60*err)
+  dft$Twilight <- dft$Twilight + ifelse(dft$Rise,60*err,-60*err)
   dft
 }
 
@@ -766,12 +767,6 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' unit variance, or}
 ##' \item{'T'}{t distributed with degrees of freedom df.}
 ##' }
-##' Note that the 'LogNormal' and 'Gamma' models forbid negative
-##' errors, that is, the observed light cannot be brighter than
-##' expected.  There are modified variants of these models for which
-##' negative errors are extremely unlikely, but not forbidden, and can
-##' be used to generate suitable initialization locations for their
-##' unmodified counterparts.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
 ##' consistent with the chosen twilight model.  That is, if
@@ -889,7 +884,7 @@ satellite.model <- function(time,X,
 ##'
 ##' The \code{threshold.model} function constructs a model structure
 ##' assuming that each twilight time is associated with a single
-##' location, while the \code{group.threshold.model} function allows
+##' location, while the \code{grouped.threshold.model} function allows
 ##' multiple twilight times to be associated with a single location.
 ##'
 ##' One of several models models may be selected for the errors in
@@ -943,12 +938,16 @@ satellite.model <- function(time,X,
 ##' @param twilight.model the model for the errors in twilight times.
 ##' @param alpha parameters of the twilight model.
 ##' @param beta parameters of the behavioural model.
-##' @param logp.x function to evaluate any additional contribution to the log posterior from the twilight locations.
-##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param logp.x function to evaluate any additional contribution to
+##' the log posterior from the twilight locations.
+##' @param logp.z function to evaluate any additional contribution to
+##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logical vector indicating which twilight locations to hold fixed.
-##' @param polar logical vector indicating which twilights were unobserved
+##' @param fixedx logical vector indicating which twilight locations
+##' to hold fixed.
+##' @param polar logical vector indicating which twilights were
+##' unobserved
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -1101,13 +1100,14 @@ grouped.threshold.model <- function(twilight,rise,group,
     tmax <- tapply(as.numeric(twilight)/3600,group,max)
     dt <- tmin[-1L]-tmax[-max(group)]
   }
+  time <- .POSIXct(tapply(twilight,group,median),"GMT")
 
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
   ## observed sunset occurring before the expected time of sunset
   residuals <- function(x) {
-    4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise,zenith))
+    4*sgn*(s$solarTime-twilight.solartime(s,x[group,1L],x[group,2L],rise,zenith))
   }
 
   ## Contribution to log posterior from each x location
@@ -1116,7 +1116,7 @@ grouped.threshold.model <- function(twilight,rise,group,
     switch(twilight.model,
            Gamma=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1125,7 +1125,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            LogNormal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1134,7 +1134,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            Normal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
@@ -1143,7 +1143,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            ModifiedGamma=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
                             dgamma(r,alpha[1L],alpha[2L],log=TRUE))
@@ -1154,7 +1154,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            },
            ModifiedLogNormal=
            function(x) {
-             r <- residuals(x[group,])
+             r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
                             60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=TRUE),
                             dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
@@ -1181,6 +1181,8 @@ grouped.threshold.model <- function(twilight,rise,group,
   }
 
 
+
+
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
@@ -1195,9 +1197,10 @@ grouped.threshold.model <- function(twilight,rise,group,
        x0=x0,
        z0=z0,
        ## Data
-       time=twilight,
+       twilight=twilight,
        rise=rise,
-       group=group)
+       group=group,
+       time=time)
 }
 
 
@@ -1410,12 +1413,12 @@ curve.model <- function(time,light,segment,
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
     logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
-    data.frame(time=time,
-               segment=segment,
-               zenith=zenith,
-               fitted=fitted,
-               light=light,
-               logl=logp)
+    data.frame(Time=time,
+               Segment=segment,
+               Zenith=zenith,
+               Fitted=fitted,
+               Light=light,
+               LogL=logp)
   }
 
   ## Contribution to log posterior from each x location
@@ -1425,7 +1428,7 @@ curve.model <- function(time,light,segment,
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
     logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
-    sapply(split(logp,segment),sum)+dnorm(x[,3L],0,alpha[2L],log=TRUE)
+    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha[2L],log=TRUE)
   }
 
   ## Contribution to log posterior from each z location
@@ -1788,17 +1791,17 @@ location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
   if(length(dim(s))==4L) s <- chain.collapse(s)
   smry <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
   lon <- t(apply(s[,1L,],1L,smry))
-  colnames(lon) <- paste("lon",colnames(lon),sep=".")
+  colnames(lon) <- paste("Lon",colnames(lon),sep=".")
   lat <- t(apply(s[,2L,],1L,smry))
-  colnames(lat) <- paste("lat",colnames(lat),sep=".")
+  colnames(lat) <- paste("Lat",colnames(lat),sep=".")
   d <- as.data.frame(cbind(lon,lat))
   if(!is.null(time)) {
     ## Add timing information
     n <- nrow(d)
     if(length(time)==n)
-      d <- cbind(time=time,d)
+      d <- cbind(Time=time,d)
     else
-      d <- cbind(time1=time[1:n],time2=time[2:(n+1L)],d)
+      d <- cbind(Time1=time[1:n],Time2=time[2:(n+1L)],d)
   }
   d
 }
@@ -1807,7 +1810,8 @@ location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
 ##' @export
 location.mean <- function(s,discard=0) {
   if(discard>0) s <- chain.tail(s,discard)
-  apply(s,1:2,mean)
+  s <- chain.collapse(s)
+  apply(s[,1:2,],1:2,mean)
 }
 
 
@@ -2126,7 +2130,7 @@ geolight.convert <- function(tFirst,tSecond,type) {
   tm <- tm[keep]
   rise <- c(type==1,type!=1)[keep]
   ord <- order(tm)
-  data.frame(twilight=tm[ord],rise=rise[ord])
+  data.frame(Twilight=tm[ord],Rise=rise[ord])
 }
 
 

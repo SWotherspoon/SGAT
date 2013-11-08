@@ -127,13 +127,13 @@ twl <- twilight.simulate(d)
 and prepare a dataframe of successive pairs for \texttt{coord}
 <<>>=
 ## Separate into pairs
-d <- data.frame(tFirst=as.character(twl$twilight[-nrow(twl)]),
-                tSecond=as.character(twl$twilight[-1]),
-                type=ifelse(twl$rise[-nrow(twl)],1,2),
-                lonFirst=twl$lon[-nrow(twl)],
-                latFirst=twl$lat[-nrow(twl)],
-                lonSecond=twl$lon[-1],
-                latSecond=twl$lat[-1])
+d <- data.frame(tFirst=as.character(twl$Twilight[-nrow(twl)]),
+                tSecond=as.character(twl$Twilight[-1]),
+                type=ifelse(twl$Rise[-nrow(twl)],1,2),
+                lonFirst=twl$Lon[-nrow(twl)],
+                latFirst=twl$Lat[-nrow(twl)],
+                lonSecond=twl$Lon[-1],
+                latSecond=twl$Lat[-1])
 @
 
 Finally, estimate locations with \textbf{GeoLight} and \textbf{SGAT},
