@@ -303,18 +303,23 @@ length.Pimage <- function(x, ...) {
 }
 ##' Extract parts of Pimage
 ##'
-##' Extraction can be done in the usual ways by numeric or integer
-##' indexes, the result is returned as a
-##' \code{\link[raster]{raster}}.
+##' Extraction with \code{"["} can be done in the usual ways by
+##' numeric or integer indexes, the result is returned as a
+##' \code{\link[raster]{raster}}. There is no replacement method, this
+##' attemping this is an error.
+##'
+##' Extraction with \code{"[["}
 ##' @name [
 ##' @param x Pimage object
 ##' @param i numeric or logical vector
 ##' @param j ignored
 ##' @param drop ignored
-##' @aliases [.Pimage
+##' @param ... ignored
+##' @param exact ignored
+##' @aliases [.Pimage [[.Pimage subset.Pimage [[<-.Pimage [<-.Pimage
 ##' @docType methods
 ##' @rdname Pimage-methods
-##' @return RasterLayer
+##' @return RasterLayer, or Pimage, see Details
 ##' @method [ Pimage
 ##' @S3method [ Pimage
 ##' @seealso \code{\link{cut.Pimage}} for creating temporal partitions.
@@ -350,8 +355,18 @@ length.Pimage <- function(x, ...) {
 
 }
 
+subset.Pimage <- function(x, ...) {
+    args <- list(...)
+    if (length(args) == 0L) {
 
-"[[.Pimage" <- function(x, i, j, ..., drop = FALSE) {
+    } else {
+        i <- args[[1L]]
+        x$p <- x$p[i]
+    }
+    x
+}
+
+"[[.Pimage" <- function(x, i, ..., exact = TRUE) {
     cl <- oldClass(x)
     class(x) <- NULL
     ## note this has to be the 1-element list, perhaps other i-s should be an error
@@ -364,7 +379,7 @@ length.Pimage <- function(x, ...) {
     x
 }
 
-"[[<-.Pimage" <- function(x, ..., value) {
+"[[<-.Pimage" <- function(x, i, value) {
     ## need further checks that these are equivalent Pimage objects
     if (inherits(value, "Pimage") & length(value) == 1L) {
         x$p[[i]] <- value$p[[1L]]
