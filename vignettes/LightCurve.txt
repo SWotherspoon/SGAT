@@ -22,7 +22,7 @@ University of Tasmania}}
 \begin{abstract}
   The \textbf{SGAT} package provides facilities for Geolocation
   estimation with light curve methods. This document demonstrates
-  building an running a light curve model with a Southern elephant
+  buildingd an running a light curve model with a Southern elephant
   seal data set.
 
 \end{abstract}
@@ -49,9 +49,9 @@ beginning November 1999, then returns to the isthmus in January 2000.
 
 <<load,echo=TRUE>>=
 library(SGAT)
-data(ElephantSeal1)
-head(ElephantSeal1)
-tail(ElephantSeal1)
+data(ElephantSeal2)
+head(ElephantSeal2)
+tail(ElephantSeal2)
 @
 
 The original data also include depth and temperature. This data set
@@ -63,7 +63,7 @@ around sunrise and sunset.
 \begin{figure}[ht]
   \centering
 <<plotsegs,fig=TRUE>>=
-with(subset(ElephantSeal1, segment %in% c(9, 10)),
+with(subset(ElephantSeal2, segment %in% c(9, 10)),
      plot(time, light, col = c("dodgerblue", "firebrick")[(segment %% 2L)+1L]))
 @
   \caption{Plot of two twilight segments.}
@@ -72,8 +72,8 @@ with(subset(ElephantSeal1, segment %in% c(9, 10)),
 
 
 <<calib>>=
-data(ElephantSeal1calib)
-calibration <- with(ElephantSeal1calib, approxfun(zenith, light, rule = 2))
+data(ElephantSeal2calib)
+calibration <- with(ElephantSeal2calib, approxfun(zenith, light, rule = 2))
 
 @
 
@@ -81,10 +81,15 @@ calibration <- with(ElephantSeal1calib, approxfun(zenith, light, rule = 2))
 The \texttt{land.mask} function constructs a land mask based on
 an input polygon layer.
 <<>>=
-## Construct a land mask
 library(raster)
 library(maptools)
 data(wrld_simpl)
+
+
+lonlim <- c(110, 190)
+latlim <- c(-70, -50)
+
+
 land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
   r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
               xmn = xlim[1L], xmx = xlim[2L],
@@ -100,21 +105,60 @@ land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
     r[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin))]
   }
 }
-lonlim <- c(140, 220)
-latlim <- c(-80, -50)
-is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
+
+##is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
+
+##log.prior <- function(p)  {
+##  f <- is.sea(p)
+##  ifelse(f|is.na(f),0,-1000)
+##}
+
+library(raadtools)
+tm <- with(ElephantSeal2, tapply(time, segment, mean)) + ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "GMT")
+sst <- readsst(tm, xylim = extent(lonlim[1], lonlim[2], latlim[1], latlim[2]))
+
+    a <- as.array(sst)[,,rep(1:nlayers(sst), each = 2)]
+
+
+for (i in seq_along(tm)) a[,,i] <- dnorm(a[,,i], mean(c(tmin[i], tmax[i])), sd(ElephantSeal2$temp[ElephantSeal2$segment == i]), log = TRUE)
+a <- brick(a, xmn = xmin(sst), ymn = ymin(sst), xmx = xmax(sst), ymx = ymax(sst), crs = projection(sst))
+
+rlookup <- function(x) {
+    xbin <- seq(xmin(x), xmax(x), length = ncol(x) + 1L)
+    ybin <- seq(ymin(x), ymax(x), length = nrow(x) + 1L)
+    x <- as.array(x)[nrow(x):1L,,]
+    function(p) {
+           x[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin), 1:nrow(p))]
+    }
+
+}
+sst.lookup <- rlookup(a)
+
+sst.prior <- function(x) {
+    f <- sst.lookup(x)
+    ifelse(!is.finite(f), -1000, f)
+}
 @
 <<model>>=
-model <- curve.model(ElephantSeal1$time, ElephantSeal1$light, ElephantSeal1$segment, calibration,
-                     alpha = c(7, 10), beta = c(8, 3.5)/10)
+
+
+d <- ElephantSeal2 ##subset(ElephantSeal2, segment %in% 1:80)
+d$segment <- unclass(factor(d$segment))
+
+
+model <- curve.model(d$time, d$light, d$segment, calibration,
+                     logp.x = sst.prior,
+                     logp.z = sst.prior,
+                     alpha = c(7, 10), beta = c(8, 3.5))
+
 @
 
 <<init>>=
-## find starting points
+
 nx <- 30L
 ny <- 25L
 grid <- list(x = seq(lonlim[1L], lonlim[2L], length = nx),
-             y = seq(latlim[1L], latlim[2L], length = ny),
+             y = seq(latlim[1L] + 10, latlim[2L], length = ny),
              z = array(0, c(nx, ny, length(model$time))))
 for (i in seq_along(grid$x)) {
         for (j in seq_along(grid$y)) {
@@ -123,6 +167,13 @@ for (i in seq_along(grid$x)) {
     }
 
 x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3, which.max), ]), 0)
+
+## the first and last locations are known
+x0[1L, c(1L, 2L) ] <- c(158.950, -54.5)
+x0[nrow(x0), c(1L, 2L)] <- x0[1L, c(1L, 2L)]
+
+fixedx <- seq_len(nrow(x0)) %in% c(1, nrow(x0))
+
 @
 
 <<proposals>>=
@@ -131,24 +182,76 @@ z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
 @
 
 <<run1>>=
-fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
+
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=20,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
+
+
+##segments(x0[,1], x0[,2], chain.last(fit$x)[,1], chain.last(fit$x)[,2])
+plot(chain.last(fit$x), type = "l")
+
+
+lastx <- chain.last(fit$x)
+while((!all(fixedx | log.prior(chain.last(fit$x)) == 0)) | !all(log.prior(chain.last(fit$z)) == 0)) {
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=40,thin=20, x0 = chain.last(fit$x), z0 = chain.last(fit$z))
+##plot(rdist)
+##points(lastx)
+segments(lastx[,1], lastx[,2], chain.last(fit$x)[,1], chain.last(fit$x)[,2])
+lastx <- chain.last(fit$x)
+
+
+}
+
 fit0 <- fit
+plot(chain.last(fit$x), type = "l")
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
+plot(chain.last(fit$x), type = "l")
+
+
+
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 k <- sample(nrow(x0),20)
-matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="dodgerblue",ylab="Lon")
-matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="firebrick",ylab="Lat")
+matplot(t(cbind(fit$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(cbind(fit$x[k,2,], fit$x[k,2,])),type="l",lty=1,col="firebrick",ylab="Lat")
 par(opar)
 
+## Tune proposals based on previous run
+x.proposal <- mvnorm(chain.cov(fit$x,discard=100),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z,discard=100),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+plot(chain.last(fit$x), type = "l")
+## Tune proposals based on previous run
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
+
+
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+        xlab="",ylab=expression(x[150]))
+matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+        xlab="",ylab=expression(z[150]))
+par(opar)
+
+windows()
+plot(chain.last(fit$x))
+apply(fit$z, 3, points, pch = ".")
+## Draw final sample
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=2000,thin=50)
+
+
+
 
 
 @

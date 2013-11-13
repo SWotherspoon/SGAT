@@ -2193,7 +2193,7 @@ NULL
 ##'
 ##' These data supplied courtesy of Mark Hindell, Institute of Marine
 ##' and Antarctic Studies, University of Tasmania. \code{ElephantSeal1} is
-##' B362_99 and \code{ElephantSeal2} is C026_99
+##' B362_99 and \code{ElephantSeal2} is C699_02
 ##' @name ElephantSeal1
 ##' @aliases ElephantSeal1calib ElephantSeal2 ElephantSeal2calib
 ##' @docType data
