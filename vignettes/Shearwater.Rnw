@@ -366,40 +366,31 @@ mean may.
 \end{figure}
 
 A better approach is to focus more directly on the distribution of the
-samples, and either the sampled points or an estimator of their
-density. The following function weights and bins samples to form weighted, two
-dimensional frequency table
-<<>>=
-bin.weighted <- function(s,xlim,ylim,n,w=rep(1,dim(s)[1])) {
-  nrows <- n*diff(ylim)
-  ncols <- n*diff(xlim)
-  xbin <- seq(xlim[1],xlim[2],length=ncols)
-  ybin <- seq(ylim[1],ylim[2],length=nrows)
-
-  W <- 0
-  for(k in 1:dim(s)[1]) {
-     W <- W+w[k]*table(
-      factor(.bincode(s[k,1,],xbin),levels=1:ncols),
-      factor(.bincode(s[k,2,],ybin),levels=1:nrows+1))
-  }
-  W[W==0] <- NA
-  list(x=xbin,y=ybin,W=W)
-}
-@
-This function can be used to compute the posterior distribution of
-time spent at a location by binning the $z$ locations weighted by
-the time intervals between twilights. To prevent the burrow
-location from dominating the fixed $z$ locations must be weighted out
-(Figure~\ref{fig:wbin})
+samples through either a two dimensional histogram or kernel density
+estimate.  The \texttt{slices} function defines time intervals into
+which the track will be split, and the \texttt{slice} function bins
+the samples for each interval to form a density estimate. Binning the
+$z$ locations weighted by the time intervals between twilights
+estimates the distribution of time spent.  Usually an appropriate
+weighting is computed by default, but in this case it is necessary to
+weight out the fixed $z$ locations to prevent them dominating (Figure~\ref{fig:wbin})
 <<label=wbin,eval=F>>=
+r <- raster(nrows=180,ncols=160,xmn=80,xmx=170,ymn=-70,ymx=-10)
 dt <- ifelse(fixedz,0,diff(as.numeric(model$time)/3600))
-b <- bin.weighted(fit$z,w=dt,xlim=c(80,170),ylim=c(-70,-10),n=4)
-image(b$x,b$y,b$W,xlab="Lon",ylab="Lat")
-plot(wrld_simpl,add=T,col="grey80")
+s <- slices(type="intermediate",breaks="weeks",mcmc=fit,grid=r,weights=dt)
+opar <- par(mfrow=c(3,2),mar=c(3,4,3,2)+0.1)
+for(k in slice.indices(s)) {
+  tm <- slice.interval(s,k)
+  sk <- slice(s,k)
+  plot(sk,useRaster=F,main=sprintf("%s - %s",as.Date(tm[1]),as.Date(tm[2])))
+  plot(wrld_simpl,add=T,col="grey80")
+  plot(elide(wrld_simpl,shift=c(360,0)),add=T,col="grey80")
+}
+par(opar)
 @
 \begin{figure}[ht]
   \centering
-<<fig=T,echo=F>>=
+<<fig=T,echo=F,height=8>>=
 <<wbin>>
 @
 \caption{Posterior distribution of time spent by location.}
