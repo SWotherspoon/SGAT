@@ -1798,8 +1798,7 @@ stella.metropolis <- function(model,
 ##' \code{location.mean} returns an array of the means of the samples for each location
 ##' @export
 location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
-  if(discard>0) s <- chain.tail(s,discard)
-  if(length(dim(s))==4L) s <- chain.collapse(s)
+  s <- chain.collapse(s,collapse=T,discard=discard)
   smry <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
   lon <- t(apply(s[,1L,],1L,smry))
   colnames(lon) <- paste("Lon",colnames(lon),sep=".")
@@ -1820,8 +1819,7 @@ location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
 ##' @rdname location.summary
 ##' @export
 location.mean <- function(s,discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  s <- chain.collapse(s)
+  s <- chain.collapse(s,collapse=T,discard=discard)
   apply(s[,1:2,],1:2,mean)
 }
 
@@ -1849,9 +1847,7 @@ location.mean <- function(s,discard=0) {
 ##' \item{\code{W}}{the weighted image.}
 ##' @export
 location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  if(length(dim(s))==4L) s <- chain.collapse(s)
-
+  s <- chain.collapse(s,collapse=T,discard=discard)
   xbin <- seq.int(xlim[1L],xlim[2L],length.out=nx+1L)
   ybin <- seq.int(ylim[1L],ylim[2L],length.out=ny+1L)
 
@@ -1883,7 +1879,6 @@ location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),discar
 ##' \code{chain.summary} returns a summary of the sample
 ##' \code{chain.tail} discards the initial samples from each chain
 ##' \code{chain.last} returns the last sample for each location in each chain
-##' \code{chain.thin} returns the thinned sample
 ##' \code{chain.collapse} collapses multiple chains into a single sample
 ##' \code{chain.cov} returns the covariance of the parameters location by location as a pxpxn array.
 ##' \code{chain.bcov} returns the joint covariance of the parameters as an (np)x(np) array.
@@ -1896,12 +1891,12 @@ chain.summary <- function(s) {
 
 ##' @rdname chain.summary
 ##' @export
-chain.tail <- function(s,discard=0) {
+chain.tail <- function(s,discard=0,thin=1) {
   dm <- dim(s)
   if(length(dm)==4L)
-    s[,,seq.int(to=dm[3L],length.out=max(0,dm[3L]-discard)),]
+    s[,,seq.int(from=1+max(discard,0),to=dm[3L],by=thin),]
   else
-    s[,,seq.int(to=dm[3L],length.out=max(0,dm[3L]-discard))]
+    s[,,seq.int(from=1+max(discard,0),to=dm[3L],by=thin)]
 }
 
 ##' @rdname chain.summary
@@ -1911,23 +1906,23 @@ chain.last <- function(s) {
   if(length(dm)==4L) s[,,dm[3L],] else s[,,dm[3L]]
 }
 
-##' @rdname chain.summary
-##' @export
-chain.thin <- function(s,thin) {
-  dm <- dim(s)
-  if(length(dm)==4L)
-    s[,,seq.int(1L,dm[3L],by=thin),]
-  else
-    s[,,seq.int(1L,dm[3L],by=thin)]
-}
 
 ##' @rdname chain.summary
 ##' @export
-chain.collapse <- function(s) {
+chain.collapse <- function(s,collapse=T,discard=0,thin=1) {
   dm <- dim(s)
-  dim(s) <- c(dm[1:2],prod(dm[-(1:2)]))
+  if(thin>1 || discard > 0) {
+    if(length(dm)==4L) {
+      s <- s[,,seq.int(from=1+max(discard,0),to=dm[3L],by=thin),]
+    } else {
+      s <- s[,,seq.int(from=1+max(discard,0),to=dm[3L],by=thin)]
+    }
+  }
+  if(collapse && length(dm)==4) dim(s) <- c(dm[1:2],prod(dm[-(1:2)]))
   s
 }
+
+
 
 ##' @rdname chain.summary
 ##' @export
