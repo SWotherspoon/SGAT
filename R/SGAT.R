@@ -1879,7 +1879,8 @@ location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),discar
 ##' \code{chain.summary} returns a summary of the sample
 ##' \code{chain.tail} discards the initial samples from each chain
 ##' \code{chain.last} returns the last sample for each location in each chain
-##' \code{chain.collapse} collapses multiple chains into a single sample
+##' \code{chain.collapse} collapses multiple chains into a single sample, optionally
+##' thinning and discarding the initial samples from each chain.
 ##' \code{chain.cov} returns the covariance of the parameters location by location as a pxpxn array.
 ##' \code{chain.bcov} returns the joint covariance of the parameters as an (np)x(np) array.
 ##' \code{chain.acceptance} returns the acceptance rate in the (thinned) chain
