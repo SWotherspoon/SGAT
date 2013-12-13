@@ -621,7 +621,7 @@ plot.Pimage <- function(x, ...) {
 
 
 .type <- function(x) {
-    c("primary", "intermediate")[all(is.na(sapply(x$p, function(x) x$tbound[2L]))) + 1]
+    c("intermediate", "primary")[all(is.na(sapply(x$p, function(x) x$tbound[2L]))) + 1]
 }
 
 .Xtimes <- function(x) {
