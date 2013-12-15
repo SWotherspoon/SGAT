@@ -177,9 +177,9 @@ and the sampled locations are examined to determine if the chains
 are mixing adequately (Figure~\ref{fig:LFtrace1}).
 <<label=LFtrace1,eval=F>>=
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
-matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+matplot(scale(t(fit$x[[1]][150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(x[150]))
-matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+matplot(scale(t(fit$z[[1]][150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(z[150]))
 par(opar)
 @
@@ -237,13 +237,16 @@ Figure~\ref{fig:LFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=LFpath,eval=F>>=
 ## Plot sequence of mean x's
-plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
-points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
-points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
-points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
+mn <- location.mean(fit$x)
+x <- chain.collapse(fit$x)
+z <- chain.collapse(fit$z)
+plot(mn,pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
+points(t(x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(z[150,,]),pch=16,cex=0.2,col="firebrick1")
+points(t(z[100,,]),pch=16,cex=0.2,col="firebrick1")
+points(t(z[220,,]),pch=16,cex=0.2,col="firebrick1")
 lines(twl$Lon,twl$Lat,col="grey50")
 @
 \begin{figure}[ht]
@@ -347,9 +350,9 @@ and the sampled locations are examined to determine if the chains
 are mixing adequately (Figure~\ref{fig:HFtrace1}).
 <<label=HFtrace1,eval=F>>=
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
-matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+matplot(scale(t(fit$x[[1]][150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(x[150]))
-matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
+matplot(scale(t(fit$z[[1]][150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(z[150]))
 par(opar)
 @
@@ -407,13 +410,16 @@ Figure~\ref{fig:HFpath} shows the mean twilight locations together with
 the samples for a several twilight and several intermediate locations.
 <<label=HFpath,eval=F>>=
 ## Plot sequence of mean x's
-plot(location.mean(fit$x),pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
-points(t(fit$x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
-points(t(fit$z[150,,]),pch=16,cex=0.2,col="firebrick1")
-points(t(fit$z[100,,]),pch=16,cex=0.2,col="firebrick1")
-points(t(fit$z[220,,]),pch=16,cex=0.2,col="firebrick1")
+mn <- location.mean(fit$x)
+x <- chain.collapse(fit$x)
+z <- chain.collapse(fit$z)
+plot(mn,pch=16,cex=0.4,col="grey80",xlab="Lon",ylab="Lat")
+points(t(x[30,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(x[80,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(x[200,,]),pch=16,cex=0.2,col="dodgerblue1")
+points(t(z[150,,]),pch=16,cex=0.2,col="firebrick1")
+points(t(z[100,,]),pch=16,cex=0.2,col="firebrick1")
+points(t(z[220,,]),pch=16,cex=0.2,col="firebrick1")
 lines(twl$Lon,twl$Lat,col="grey50")
 @
 \begin{figure}[ht]

@@ -232,9 +232,9 @@ locations, and all non-fixed locations fall at sea
 <<>>=
 ## Run until model constraints are met
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
-all(fixedx | model$residuals(chain.last(fit$x)) > 0)
-all(fixedx | is.sea(chain.last(fit$x)))
-all(is.sea(chain.last(fit$z)))
+all(fixedx | model$residuals(chain.last(fit$x[[1]])) > 0)
+all(fixedx | is.sea(chain.last(fit$x[[1]])))
+all(is.sea(chain.last(fit$z[[1]])))
 @
 Once a set of initial locations that meet all the model constraints
 is found, these locations are used as initial points for the Log
@@ -275,9 +275,10 @@ whether the chain is mixing adequately.  Figure~\ref{fig:trace1}
 shows traces for a random sample of locations
 <<label=trace1,eval=F>>=
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
-k <- sample(nrow(x0),20)
-matplot(t(fit$x[k,1,]),type="l",lty=1,col="dodgerblue",ylab="Lon")
-matplot(t(fit$x[k,2,]),type="l",lty=1,col="firebrick",ylab="Lat")
+x <- chain.collapse(fit$x)
+k <- sample(dim(x)[1],20)
+matplot(t(x[k,1,]),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(x[k,2,]),type="l",lty=1,col="firebrick",ylab="Lat")
 par(opar)
 @
 \begin{figure}[ht]
@@ -320,8 +321,8 @@ fixed \emph{post hoc}
 <<>>=
 ## Fix the z locations in burrows.
 fixedz <- fixedx[1:(length(fixedx)-1)] & fixedx[2:length(fixedx)]
-fit$z[fixedz,1,] <- 147.670
-fit$z[fixedz,2,] <- -43.133
+fit$z[[1]][fixedz,1,] <- 147.670
+fit$z[[1]][fixedz,2,] <- -43.133
 @
 Alternately, the track could be split at each return to the burrow and
 each trip analysed separately.
@@ -350,9 +351,10 @@ par(opar)
 But even this simple figure is misleading.  Plotting the sampled
 locations for the second twilight (Figure~\ref{fig:twl2})
 <<label=twl2,eval=F>>=
-plot(t(fit$x[2,,]),pch=16,cex=0.7,col="dodgerblue1",xlab="Lon",ylab="Lat")
+x <- chain.collapse(fit$x)
+plot(t(x[2,,]),pch=16,cex=0.7,col="dodgerblue1",xlab="Lon",ylab="Lat")
 plot(wrld_simpl,add=T,col="grey80")
-points(colMeans(t(fit$x[2,,])),pch=16,col="red")
+points(colMeans(t(x[2,,])),pch=16,col="red")
 @
 shows that while the sampled locations do not fall on Tasmania, the
 mean may.
