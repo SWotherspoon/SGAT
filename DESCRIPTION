@@ -18,7 +18,3 @@ Description: Facilities for estimating the broadscale animal motions from
 NeedsCompilation: no
 ByteCompile: yes
 License: GPL-3
-Collate:
-    'Pimage.R'
-    'SGAT.R'
-    'Raster.R'
