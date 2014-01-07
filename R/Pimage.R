@@ -505,8 +505,9 @@ cut.Pimage <- function(x, breaks, ...) {
           resarr[,,i] <- getValues(x[ct == levels(ct)[i]], format='matrix')
       }
 
-  resr <- brick(resarr, xmn=xmin(r1), xmx=xmax(r1), ymn=ymin(r1), ymx=ymax(r1), crs=projection(r1))
-  setZ(resr, as.POSIXct(levels(ct), tz = "GMT"), name = "datetime")
+  dates <- as.POSIXct(levels(ct), tz = "GMT")
+    names(resr) <- format(dates, "%b.%d_%Y")
+    setZ(resr, dates, name = "datetime")
 }
 
 
