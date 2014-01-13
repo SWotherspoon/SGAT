@@ -368,7 +368,7 @@ chain.bin <-
     i <- which(i)
   }
 
-
+proj <- x$projection
   ## this actually messes with x$projection
   if (all(class(i) == "character")) {
       class(x) <- NULL
@@ -381,7 +381,7 @@ chain.bin <-
 
   val <- as.image.Pimage(x)
   val$z[!val$z > 0] <- NA
-   raster(val, crs = projection(x))
+   raster(val, crs = proj)
 
 }
 
@@ -407,7 +407,9 @@ subset.Pimage <- function(x, ...) {
     x
 }
 
-
+projection.Pimage <- function(x, asText = TRUE) {
+    x$projection
+}
 
 #' Sub element replacement is disallowed
 #'
@@ -421,7 +423,7 @@ subset.Pimage <- function(x, ...) {
 #' @export
 "[<-.Pimage" <- function(x, ..., value) {
     ## in the spirit of total clarity
-    stop("of assigment target incoherent")
+    stop("disallowed")
 }
 
 
@@ -505,8 +507,10 @@ cut.Pimage <- function(x, breaks, ...) {
           resarr[,,i] <- getValues(x[ct == levels(ct)[i]], format='matrix')
       }
 
+  dates <- as.POSIXct(levels(ct), tz = "GMT")
   resr <- brick(resarr, xmn=xmin(r1), xmx=xmax(r1), ymn=ymin(r1), ymx=ymax(r1), crs=projection(r1))
-  setZ(resr, as.POSIXct(levels(ct), tz = "GMT"), name = "datetime")
+    names(resr) <- format(dates, "%b.%d_%Y")
+    setZ(resr, dates, name = "datetime")
 }
 
 
