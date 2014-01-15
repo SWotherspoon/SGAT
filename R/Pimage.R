@@ -154,12 +154,11 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
   type <- match.arg(type)
   if(type == "intermediate") {
     if (!tstZ) stop("type intermediate specified no z array found")
-    chain <- x$z
+    chain <- chain.collapse(x$z)
   } else {
     if (!tstX) stop("type primary specified but no x array found")
-    chain <-  x$x
+    chain <-  chain.collapse(x$x)
   }
-  if(length(dim(chain)) == 4L) chain <- chain.collapse(chain)
 
   ## set up tests for map projection, and rgdal availibility
   ## options
@@ -275,13 +274,12 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
 
 
 ##' @importFrom MASS kde2d bandwidth.nrd
-chain.bin <-
-  function(pimg, xy, weight = NULL, method = c("bin", "kde"), hscale = 0.7, previters = 0) {
+chain.bin <- function(pimg, xy, weight = NULL, method = c("bin", "kde"),
+                      hscale = 0.7, previters = 0) {
 
     method <- match.arg(method)
     xbnd <- pimg$xbound
     ybnd <- pimg$ybound
-    tbnd <- pimg$tbound
 
     ## Bin the locations into the global image coords
     i <- ceiling(xbnd[3]*(xy[,1]-xbnd[1])/(xbnd[2]-xbnd[1]))
@@ -363,16 +361,13 @@ chain.bin <-
 ##' partitions.
 ##' @export
 "[.Pimage" <- function(x, i, j, drop = TRUE, ...) {
-  timeobject <- .Xtimes(x)
 
   ## watch out for out of bounds i
   ## i.e. i > length(x) is not checked yet
   n <- length(x)
-  if(nargs() == 1) n2 <-  n
   if (missing(i)) i <- seq_len(n)
 
   if (all(class(i) == "logical")) {
-    n2 <- sum(i)
     i <- which(i)
   }
 
@@ -381,16 +376,12 @@ chain.bin <-
   if (all(class(i) == "character")) {
     class(x) <- NULL
     return(x[i])
-    ##    i <- grep(i, names(x))
   }
 
-  ##oldx <- x
   x$p <- x$p[i]
-
   val <- as.image.Pimage(x)
   val$z[!val$z > 0] <- NA
   raster(val, crs = proj)
-
 }
 
 ##' subset one or more elements from a Pimage, without coercion to
@@ -544,6 +535,8 @@ print.Pimage <- function(x, ...) {
   ##cat("Time Steps   :")
   ##str(attr(x, "times"))
   e <- bbox(a)
+
+  ## QUERY e or ext?
   cat("extent  : ", e[1, 1], ", ", e[1, 2], ", ", e[2, 1], ", ", e[2, 2], "  (xmin, xmax, ymin, ymax)\n", sep = "")
   cat("CRS     :", projection(a))
   cat("\n")
@@ -613,9 +606,6 @@ plot.Pimage <- function(x, ...) {
 }
 
 
-
-
-
 ## internal
 ## S3method [[<- Pimage
 ## method [[<- Pimage
@@ -640,6 +630,8 @@ plot.Pimage <- function(x, ...) {
   .POSIXct(sapply(x$p, function(x) x$tbound[1L]))
 }
 
+
+## QUERY - does this work
 .Ztimes <- function(x) {
   .POSIXct(sapply(x$p, function(x) {xt <- x$tbound; xt[1L] + diff(xt)/2}))
 }
@@ -652,6 +644,7 @@ plot.Pimage <- function(x, ...) {
 
 
 
+## QUERY - should this return matrix of zeros?
 ## workers used by as.image.Pimage and each other
 ## these are old, but they work on new Pimage
 as.matrix.pimg <- function(x) {
