@@ -158,11 +158,11 @@ structure.
 
 It would be possible to completely forbid locations on land by
 returning \texttt{-Inf} for points on land, but this complicates the
-selection of starting locations as they must then satisfy this
+selection of starting locations as they must then also satisfy this
 constraint.  By making the probability that a location falls on the
 land vanishingly small, it is still possible to initialize the sampler
-with locations that fall on the land, but when a location ever leaves
-the land, it will never return there.
+with locations that fall on the land, but when those location leave
+the land they will never return there.
 
 \section{Known Locations}
 \label{sec:known-locations}
@@ -231,10 +231,12 @@ The sampler is run until all the twilight residuals for non-fixed
 locations, and all non-fixed locations fall at sea
 <<>>=
 ## Run until model constraints are met
-fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
-all(fixedx | model$residuals(chain.last(fit$x[[1]])) > 0)
-all(fixedx | is.sea(chain.last(fit$x[[1]])))
-all(is.sea(chain.last(fit$z[[1]])))
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20,chains=1)
+lastx <- chain.last(fit$x)
+lastz <- chain.last(fit$x)
+lapply(lastx,function(x) all(fixedx | model$residuals(x) > 0))
+lapply(lastx,function(x) all(fixedx | is.sea(x)))
+lapply(lastz,function(z) all(is.sea(z)))
 @
 Once a set of initial locations that meet all the model constraints
 is found, these locations are used as initial points for the Log
@@ -258,17 +260,18 @@ and several short runs are conducted to tune the proposal distributions
 <<>>=
 x.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater))
 z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater)-1)
-fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=300,thin=20)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          iters=300,thin=20,chains=2)
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
-                          iters=300,thin=20)
+                          iters=300,thin=20,chains=2)
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
-                          iters=300,thin=20)
+                          iters=300,thin=20,chains=2)
 @
 The output of these runs should be examined thoroughly to establish
 whether the chain is mixing adequately.  Figure~\ref{fig:trace1}
@@ -298,7 +301,7 @@ x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
-                          iters=3000,thin=20)
+                          iters=3000,thin=20,chains=2)
 @
 
 
@@ -321,8 +324,10 @@ fixed \emph{post hoc}
 <<>>=
 ## Fix the z locations in burrows.
 fixedz <- fixedx[1:(length(fixedx)-1)] & fixedx[2:length(fixedx)]
-fit$z[[1]][fixedz,1,] <- 147.670
-fit$z[[1]][fixedz,2,] <- -43.133
+for(k in 1:length(fit$z)) {
+  fit$z[[k]][fixedz,1,] <- 147.670
+  fit$z[[k]][fixedz,2,] <- -43.133
+}
 @
 Alternately, the track could be split at each return to the burrow and
 each trip analysed separately.
