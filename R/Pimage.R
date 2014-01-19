@@ -146,17 +146,19 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
   ## this better be a SGAT fit object
   tstT <- inherits(x$model$time, "POSIXct")
 
-  tstX <- inherits(x$x, "array")
-  tstZ <- inherits(x$z, "array")
+  tstX <- (inherits(x$x, "list") &&
+           all(sapply(x$x,function(x) inherits(x, "array"))))
+  tstZ <- (inherits(x$z, "list") &&
+           all(sapply(x$z,function(z) inherits(z, "array"))))
   if (!tstT | !tstX) stop("this does not appear to an SGAT fit object")
 
   modeltimes <- x$model$time
   type <- match.arg(type)
   if(type == "intermediate") {
-    if (!tstZ) stop("type intermediate specified no z array found")
+    if (!tstZ) stop("type intermediate specified no z array list found")
     chain <- chain.collapse(x$z)
   } else {
-    if (!tstX) stop("type primary specified but no x array found")
+    if (!tstX) stop("type primary specified but no x array list found")
     chain <-  chain.collapse(x$x)
   }
 
@@ -470,6 +472,7 @@ projection.Pimage <- function(x, asText = TRUE) {
 ##' @seealso \code{estelle.metropolis} and \code{Pimage}
 ##' @param x Pimage object
 ##' @param ... ignored
+##' @export
 as.POSIXct.Pimage <- function(x, ...) {
   switch(.type(x),
          primary = .Xtimes(x),

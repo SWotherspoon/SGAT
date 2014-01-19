@@ -1492,9 +1492,9 @@ curve.model <- function(time,light,segment,
 ##' @return If there are r samples drawn for each of q chains of p
 ##' parameters at n locations, Stella will return a list containing
 ##' \item{\code{model}}{the model structure}
-##' \item{\code{x}}{a list of q n x p x r arrays of twilight locations}
+##' \item{\code{x}}{a list of n x p x r arrays of twilight locations from the q chains}
 ##' While in addition Estelle will return
-##' \item{\code{z}}{a list of q (n-1) x p x r arrays of intermediate locations}.
+##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate locations from the q chains}.
 ##' @seealso \code{\link{threshold.model}}
 ##' @export
 estelle.metropolis <- function(model,
@@ -2019,15 +2019,17 @@ chain.coda <- function(s) {
   coda <- function(s) {
       dm <- dim(s)
       dim(s) <- c(prod(dm[1:2]),dm[3])
-      nms <- c("Lon","Lat",paste0("P",seq.int(length.out=dm[2]-2)))
+      nms <- c("Lon","Lat")
+      if(dm[2]>2)
+          nms <- c("Lon","Lat",paste0("P",seq.int(length.out=dm[2]-2)))
       nms <- as.vector(t(outer(nms,1:dm[1],paste,sep=".")))
       rownames(s) <- nms
-      s <- t(s)
+      mcmc(t(s))
   }
   if(is.list(s)) {
-      if(length(s)==1) mcmc(coda(s[[1]])) else do.call(mcmc,lapply(s,coda))
+      if(length(s)==1) coda(s[[1]]) else do.call(mcmc.list,lapply(s,coda))
   } else {
-      mcmc(coda(s))
+      coda(s)
   }
 }
 
