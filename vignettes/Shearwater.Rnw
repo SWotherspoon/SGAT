@@ -233,7 +233,7 @@ locations, and all non-fixed locations fall at sea
 ## Run until model constraints are met
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20,chains=1)
 lastx <- chain.last(fit$x)
-lastz <- chain.last(fit$x)
+lastz <- chain.last(fit$z)
 lapply(lastx,function(x) all(fixedx | model$residuals(x) > 0))
 lapply(lastx,function(x) all(fixedx | is.sea(x)))
 lapply(lastz,function(z) all(is.sea(z)))
