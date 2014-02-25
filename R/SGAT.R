@@ -823,6 +823,10 @@ satellite.model <- function(time,X,
   if(is.null(dt))
     dt <- diff(as.numeric(time)/3600)
 
+  ## Behavioural parameters
+  beta1 <- if(is.matrix(beta)) beta[,1L] else beta[1L]
+  beta2 <- if(is.matrix(beta)) beta[,2L] else beta[2L]
+
   ## Contribution to log posterior from each x location
   location.model <- match.arg(location.model)
   logpx <-
@@ -850,12 +854,12 @@ satellite.model <- function(time,X,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
 
@@ -984,6 +988,15 @@ threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## Twilight parameters
+  alpha1 <- if(is.matrix(alpha)) alpha[,1L] else alpha[1L]
+  alpha2 <- if(is.matrix(alpha)) alpha[,2L] else alpha[2L]
+
+  ## Behavioural parameters
+  beta1 <- if(is.matrix(beta)) beta[,1L] else beta[1L]
+  beta2 <- if(is.matrix(beta)) beta[,2L] else beta[2L]
+
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -999,7 +1012,7 @@ threshold.model <- function(twilight,rise,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1008,7 +1021,7 @@ threshold.model <- function(twilight,rise,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1017,7 +1030,7 @@ threshold.model <- function(twilight,rise,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1027,8 +1040,8 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha1/alpha2,alpha1,alpha2,log=TRUE),
+                            dgamma(r,alpha1,alpha2,log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1038,8 +1051,8 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=T),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha1+alpha2^2/2),alpha1,alpha2,log=T),
+                            dlnorm(r,alpha1,alpha2,log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1054,12 +1067,12 @@ threshold.model <- function(twilight,rise,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
 
@@ -1106,6 +1119,14 @@ grouped.threshold.model <- function(twilight,rise,group,
   }
   time <- .POSIXct(tapply(twilight,group,median),"GMT")
 
+  ## Twilight parameters
+  alpha1 <- if(is.matrix(alpha)) alpha[,1L] else alpha[1L]
+  alpha2 <- if(is.matrix(alpha)) alpha[,2L] else alpha[2L]
+
+  ## Behavioural parameters
+  beta1 <- if(is.matrix(beta)) beta[,1L] else beta[1L]
+  beta2 <- if(is.matrix(beta)) beta[,2L] else beta[2L]
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -1121,7 +1142,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1130,7 +1151,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1139,7 +1160,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha1,alpha2,log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1149,8 +1170,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha1/alpha2,alpha1,alpha2,log=TRUE),
+                            dgamma(r,alpha1,alpha2,log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1160,8 +1181,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=TRUE),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha1+alpha2^2/2),alpha1,alpha2,log=TRUE),
+                            dlnorm(r,alpha1,alpha2,log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1176,15 +1197,13 @@ grouped.threshold.model <- function(twilight,rise,group,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
-
-
 
 
   list(## Positional contribution to the log posterior
@@ -1231,6 +1250,14 @@ polar.threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## Twilight parameters
+  alpha1 <- if(is.matrix(alpha)) alpha[,1L] else alpha[1L]
+  alpha2 <- if(is.matrix(alpha)) alpha[,2L] else alpha[2L]
+
+  ## Behavioural parameters
+  beta1 <- if(is.matrix(beta)) beta[,1L] else beta[1L]
+  beta2 <- if(is.matrix(beta)) beta[,2L] else beta[2L]
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -1246,7 +1273,7 @@ polar.threshold.model <- function(twilight,rise,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha1,alpha2,log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1257,7 +1284,7 @@ polar.threshold.model <- function(twilight,rise,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha1,alpha2,log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1268,7 +1295,7 @@ polar.threshold.model <- function(twilight,rise,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha1,alpha2,log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1280,8 +1307,8 @@ polar.threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha1/alpha2,alpha1,alpha2,log=TRUE),
+                            dgamma(r,alpha1,alpha2,log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
              logp[polar & !is.finite(r)] <- 0
@@ -1293,8 +1320,8 @@ polar.threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=T),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha1+alpha2^2/2),alpha1,alpha2,log=T),
+                            dlnorm(r,alpha1,alpha2,log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
              logp[polar & !is.finite(r)] <- 0
@@ -1311,12 +1338,12 @@ polar.threshold.model <- function(twilight,rise,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
 
@@ -1414,6 +1441,14 @@ curve.model <- function(time,light,segment,
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
 
+  ## Twilight parameters
+  alpha1 <- if(is.matrix(alpha)) alpha[,1L] else alpha[1L]
+  alpha2 <- if(is.matrix(alpha)) alpha[,2L] else alpha[2L]
+
+  ## Behavioural parameters
+  beta1 <- if(is.matrix(beta)) beta[,1L] else beta[1L]
+  beta2 <- if(is.matrix(beta)) beta[,2L] else beta[2L]
+
   ## Return a dataframe of the fitted zenith and light observations
   ## for a set of estimated locations.
   fitted <- function(x) {
@@ -1421,7 +1456,7 @@ curve.model <- function(time,light,segment,
     zenith <- zenith(sun,xs[,1L],xs[,2L])
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
-    logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
+    logp <- dnorm(light,fitted,alpha1,log=TRUE)
     data.frame(Time=time,
                Segment=segment,
                Zenith=zenith,
@@ -1436,8 +1471,8 @@ curve.model <- function(time,light,segment,
     zenith <- zenith(sun,xs[,1L],xs[,2L])
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
-    logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
-    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha[2L],log=TRUE)
+    logp <- dnorm(light,fitted,alpha1,log=TRUE)
+    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha2,log=TRUE)
   }
 
   ## Contribution to log posterior from each z location
@@ -1448,12 +1483,12 @@ curve.model <- function(time,light,segment,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta1,beta2,log=TRUE)
   }
 
   list(## Positional contribution to the log posterior
