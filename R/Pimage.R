@@ -364,20 +364,20 @@ chain.bin <- function(pimg, xy, weight = NULL, method = c("bin", "kde"),
 ##' @export
 "[.Pimage" <- function(x, i, j, drop = TRUE, ...) {
 
-  ## watch out for out of bounds i
-  ## i.e. i > length(x) is not checked yet
+  ## When i is missing, return all
   n <- length(x)
   if (missing(i)) i <- seq_len(n)
 
-  if (all(class(i) == "logical")) {
-    i <- which(i)
-  }
-
+  ## When i is character, return the elements of the top level list
   proj <- x$projection
-  ## this actually messes with x$projection
   if (all(class(i) == "character")) {
     class(x) <- NULL
     return(x[i])
+  }
+
+  ## When i is logical,
+  if (all(class(i) == "logical")) {
+    i <- which(i)
   }
 
   x$p <- x$p[i]
@@ -453,7 +453,7 @@ projection.Pimage <- function(x, asText = TRUE) {
   cl <- oldClass(x)
   class(x) <- NULL
   ## note this has to be the 1-element list, perhaps other i-s should be an error
-  if (!is.character(i)) {
+  if(!is.character(i)) {
     x[["p"]] <- x[["p"]][i[1L]]
   } else {
     return(x[[i]])
@@ -531,16 +531,13 @@ cut.Pimage <- function(x, breaks, ...) {
 print.Pimage <- function(x, ...) {
   ## this needs to know the x/y/time range, and possibly the sizes of all images, whether any are NULL or funny
   a <- x[1L]
-  ext <- extent(a)
+  ext <- bbox(a)  # equivalent to extent(a)
   trange <- format(range(.Xtimes(x)))
   type <- .type(x)
   cat("class   :", class(x), type, "\nlength  :", length(x),  "\ntime    :", trange, "\n")
   ##cat("Time Steps   :")
   ##str(attr(x, "times"))
-  e <- bbox(a)
-
-  ## QUERY e or ext?
-  cat("extent  : ", e[1, 1], ", ", e[1, 2], ", ", e[2, 1], ", ", e[2, 2], "  (xmin, xmax, ymin, ymax)\n", sep = "")
+  cat("extent  : ", ext[1, 1], ", ", ext[1, 2], ", ", ext[2, 1], ", ", ext[2, 2], "  (xmin, xmax, ymin, ymax)\n", sep = "")
   cat("CRS     :", projection(a))
   cat("\n")
   invisible(NULL)
@@ -630,12 +627,13 @@ plot.Pimage <- function(x, ...) {
 }
 
 .Xtimes <- function(x) {
+  ## Return the smaller time bound
   .POSIXct(sapply(x$p, function(x) x$tbound[1L]))
 }
 
 
-## QUERY - does this work
 .Ztimes <- function(x) {
+  ## Return the middle of the time bound
   .POSIXct(sapply(x$p, function(x) {xt <- x$tbound; xt[1L] + diff(xt)/2}))
 }
 
