@@ -7,7 +7,8 @@ Maintainer: Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au>
 Suggests:
     GeoLight,
     geosphere,
-    maptools
+    maptools,
+    rgeos
 Depends:
     raster,
     sp
