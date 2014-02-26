@@ -1,0 +1,419 @@
+\documentclass[a4paper]{article}
+\usepackage{a4wide}
+\usepackage[authoryear]{natbib}
+\usepackage{amsmath}
+
+\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
+%\VignetteIndexEntry{Worked Geolocation examples}
+%\VignetteDepends{GeoLight,SGAT,raster,maptools}
+%\VignettePackage{SGAT}
+%\VignetteKeyword{Geolocation}
+\begin{document}
+
+\title{Short-tailed Shearwater}
+\date{2013}
+\author{\textbf{Simeon Lisovski} \\
+%EndAName
+Centre for Integrative Ecology\\
+Deakin University\\
+\and \textbf{Michael Sumner} \\
+%EndAName
+Australian Antarctic Division\\
+\and \textbf{Delphi Ward} \\
+%EndAName
+Institute for Marine and Antarctic Studies\\
+University of Tasmania\\
+\and \textbf{Mark Hindell} \\
+%EndAName
+Institute for Marine and Antarctic Studies\\
+University of Tasmania\\
+\and \textbf{Simon Wotherspoon} \\
+%EndAName
+Australian Antarctic Division,\\
+Institute for Marine and Antarctic Studies\\
+University of Tasmania}
+\maketitle
+
+\begin{abstract}
+  The \textbf{SGAT} package provides facilities for Geolocation
+  estimation.  This document analyses data from a short-tailed
+  Shearwater to demonstrate some of the more complex features of the
+  models.
+\end{abstract}
+
+
+<<echo=FALSE>>=
+set.seed(32)
+options(preferRaster=T)
+@
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+To demonstrate the use of the Estelle model, this document presents a
+worked analysis of a Short-tailed Shearwater dataset that illustrates
+the use of spatial masks and fixed locations.
+
+\section{Short-tailed Shearwater}
+\label{sec:shearwater}
+
+The \texttt{Shearwater} data set contains the times of twilights
+estimated from light intensities recorded by an archival tag on a
+Short-tailed Shearwater (\emph{Puffinus tenuirostris}).  The bird was
+tagged at its burrow on Wedge Island ($147.670^{\circ}$E,
+$43.133^{\circ}$S), and then makes two foraging trips, returning to
+its burrow after each trip.
+
+The data are stored as a dataframe with three columns,
+\begin{itemize}
+\item \texttt{Twilight} - the times of twilight.
+\item \texttt{Rise} - whether the twilight is a sunrise.
+\item \texttt{Burrow} - whether the bird was in its burrow.
+\end{itemize}
+When the bird is in its burrow, no light is recorded by the tag and
+the missing twilights have been filled in by calculating the missing
+twilight assuming a zenith angle of $96^{\circ}$.
+
+To load the data and convert the twilight times to \texttt{POSIXct}
+format
+<<>>=
+## Short tailed Shearwater data
+library(SGAT)
+data(Shearwater)
+Shearwater$Twilight <- as.POSIXct(Shearwater$Twilight,"GMT")
+head(Shearwater)
+@
+
+
+\section{Land Mask}
+\label{sec:land-mask}
+
+Shearwaters are sea birds, and a prior can be imposed on the location
+estimates derived by Stella or Estelle to effectively constrain
+locations to the sea.
+
+The \texttt{land.mask} function constructs a land mask based on
+the polygons in the \texttt{wrld\_simpl} dataset.
+<<>>=
+## Construct a land mask
+library(raster)
+library(maptools)
+data(wrld_simpl)
+land.mask <- function(xlim,ylim,n=4,land=TRUE) {
+  r <- raster(nrows=n*diff(ylim),ncols=n*diff(xlim),
+              xmn=xlim[1],xmx=xlim[2],
+              ymn=ylim[1],ymx=ylim[2],
+              crs=proj4string(wrld_simpl))
+  r <- rasterize(wrld_simpl,r)
+  r <- as.matrix(is.na(r))[nrow(r):1,]
+  if(land) r <- !r
+  xbin <- seq(xlim[1],xlim[2],length=ncol(r)+1)
+  ybin <- seq(ylim[1],ylim[2],length=nrow(r)+1)
+
+  function(p) {
+    r[cbind(.bincode(p[,2],ybin),.bincode(p[,1],xbin))]
+  }
+}
+@
+This function constructs a gridded representation of the world's
+land masses for the region delimited by \texttt{xlim} and
+\texttt{ylim} with a resolution of \texttt{n} cells per degree and
+creates a look-up function that returns \texttt{NA} for locations that
+fall outside the extent of the grid, otherwise it returns \texttt{TRUE} or
+\texttt{FALSE} depending whether the point corresponds to land or sea
+<<>>=
+## Define mask for sea
+is.sea <- land.mask(xlim=c(80,170),ylim=c(-70,-10),n=4,land=F)
+## Land
+is.sea(cbind(120,-30))
+## Sea
+is.sea(cbind(120,-60))
+## Out of rectangle
+is.sea(cbind(0,0))
+@
+This classification is not exact, in part due to the limited
+resolution of the \texttt{wrld\_simpl} data set and in part due to the
+limited resolution of the grid, but the errors are small compared with
+the errors in the GeoLocation estimates.
+
+The location estimates derived by Stella or Estelle can effectively
+excluded from the land by imposing a prior on the $x$ (and $z$)
+locations so that locations on the land have a vanishingly small
+probability of occurrence.  The prior is defined on the log scale
+<<>>=
+## Define the log prior for x and z
+log.prior <- function(p)  {
+  f <- is.sea(p)
+  ifelse(f|is.na(f),0,-1000)
+}
+@
+This function accepts an $n \times 2$ matrix representing locations
+and returns \texttt{-1000} for locations on land, and \texttt{0} for
+locations at sea or outside the extent of the grid.  So locations at
+sea are far more likely than any location on the land, but locations
+at sea are all equally likely. This function will passed as a
+contribution to the log posterior for both $x$ and $z$ in the model
+structure.
+
+It would be possible to completely forbid locations on land by
+returning \texttt{-Inf} for points on land, but this complicates the
+selection of starting locations as they must then also satisfy this
+constraint.  By making the probability that a location falls on the
+land vanishingly small, it is still possible to initialize the sampler
+with locations that fall on the land, but when those location leave
+the land they will never return there.
+
+\section{Known Locations}
+\label{sec:known-locations}
+
+Because the bird returns to its burrow on several occasions, the
+bird's location is known exactly at several points in time.  This
+information can be incorporated into the location estimates by using
+the known locations to initialize the sampler, and marking those
+locations as fixed.
+
+When the bird is in its burrow, the tag detects no light and it is not
+possible to estimate times of twilight from the tag data.  So times of
+twilight estimated from the recorded light data have been augmented by
+replacing the missing twilights with the twilight times calculated for
+the burrow location.
+
+An initial set of locations are estimated with
+\texttt{threshold.path}, but some of these fall too far North to be
+realistic, so are restricted to fall south of $40^{\circ}$S.
+<<>>=
+## Initial x locations
+x0 <- threshold.path(Shearwater$Twilight,Shearwater$Rise,zenith=95)$x
+x0[,2] <- pmin(x0[,2],-40)
+@
+
+For the twilights the bird was known to be in its burrow, the initial
+locations are set to the burrow, and vector \texttt{fixedx} is
+constructed to indicate which points are to be held fixed
+<<>>=
+## Set fixed points when location is known
+x0[Shearwater$Burrow,1] <- 147.670
+x0[Shearwater$Burrow,2] <- -43.133
+fixedx <- Shearwater$Burrow
+@
+
+The midpoints of the $x$ locations are used as the initial $z$
+locations
+<<>>=
+## Initial z locations
+z0 <- trackMidpts(x0)
+@
+
+
+\subsection{Estelle}
+\label{sec:estelle}
+
+To estimate locations with Estelle assuming Log Normal errors in the
+twilight times, an initial run with a modified Log Normal model
+structure is used to generate initial locations that meet all the
+model constraints.
+
+A modified Log Normal model is defined to generate initial
+locations.
+<<>>=
+## Model to generate initial locations
+model <- threshold.model(Shearwater$Twilight,Shearwater$Rise,
+                         twilight.model="ModifiedLogNormal",
+                         alpha=c(1.2,0.8),beta=c(1.34,0.06),
+                         logp.x=log.prior,
+                         logp.z=log.prior,
+                         x0=x0,z0=z0,fixedx=fixedx,zenith=95)
+x.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater))
+z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater)-1)
+@
+The sampler is run until all the twilight residuals for non-fixed
+locations, and all non-fixed locations fall at sea
+<<>>=
+## Run until model constraints are met
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20,chains=1)
+lastx <- chain.last(fit$x)
+lastz <- chain.last(fit$z)
+lapply(lastx,function(x) all(fixedx | model$residuals(x) > 0))
+lapply(lastx,function(x) all(fixedx | is.sea(x)))
+lapply(lastz,function(z) all(is.sea(z)))
+@
+Once a set of initial locations that meet all the model constraints
+is found, these locations are used as initial points for the Log
+Normal model
+<<>>=
+x0 <- chain.last(fit$x)
+z0 <- chain.last(fit$z)
+@
+
+Then Log Normal model is defined
+<<>>=
+## Define log Normal model
+model <- threshold.model(Shearwater$Twilight,Shearwater$Rise,
+                         twilight.model="LogNormal",
+                         alpha=c(1.2,0.8),beta=c(1.34,0.06),
+                         logp.x=log.prior,
+                         logp.z=log.prior,
+                         x0=x0,z0=z0,fixedx=fixedx,zenith=95)
+@
+and several short runs are conducted to tune the proposal distributions
+<<>>=
+x.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater))
+z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(Shearwater)-1)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          iters=300,thin=20,chains=2)
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20,chains=2)
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20,chains=2)
+@
+The output of these runs should be examined thoroughly to establish
+whether the chain is mixing adequately.  Figure~\ref{fig:trace1}
+shows traces for a random sample of locations
+<<label=trace1,eval=F>>=
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+x <- chain.collapse(fit$x)
+k <- sample(dim(x)[1],20)
+matplot(t(x[k,1,]),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(x[k,2,]),type="l",lty=1,col="firebrick",ylab="Lat")
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<trace1>>
+@
+\caption{Traces for a random sample of locations that show the mixing
+  of the chain.}
+  \label{fig:trace1}
+\end{figure}
+
+When the chain appears to mix adequately, a larger sample is drawn.
+<<>>=
+## Tune proposals based on previous run
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=3000,thin=20,chains=2)
+@
+
+
+This example is unusual in many ways.  One atypical feature of this
+example is that there are successive known locations in the middle of
+the track where the bird is in its burrow -- usually only the release
+and recapture locations are known.
+
+Having multiple fixed locations in succession leads to a minor
+problem. While the \texttt{fixedx} argument holds the $x$ locations
+fixed, the $z$ locations are not constrained.  In this example, the
+bird remains in its burrow for several days, and the $z$ locations for
+this period should also be held fixed. But $z_{i}$ is conditionally
+independent of the other $z$ and $x$ locations given $x_{i}$ and
+$x_{i+1}$.  So leaving $z_{i}$ free when the surrounding $x_{i}$ and
+$x_{i+1}$ are fixed does not impact the other estimates, but when
+summarizing the posterior locations the $z$ locations corresponding
+to times when the bird was in its burrow should either be ignored, or
+fixed \emph{post hoc}
+<<>>=
+## Fix the z locations in burrows.
+fixedz <- fixedx[1:(length(fixedx)-1)] & fixedx[2:length(fixedx)]
+for(k in 1:length(fit$z)) {
+  fit$z[[k]][fixedz,1,] <- 147.670
+  fit$z[[k]][fixedz,2,] <- -43.133
+}
+@
+Alternately, the track could be split at each return to the burrow and
+each trip analysed separately.
+
+Means and credible intervals for the twilight locations are easily
+computed and visualized (Figure~\ref{fig:meanci})
+<<label=meanci,eval=F>>=
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+s <- location.summary(fit$x,time=model$time)
+matplot(s$Time,s[,c("Lon.mean","Lon.2.5%","Lon.97.5%")],type="l",lty=1,
+        col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lon",xaxt="n")
+axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
+matplot(s$Time,s[,c("Lat.mean","Lat.2.5%","Lat.97.5%")],type="l",lty=1,
+        col=c("firebrick1","dodgerblue1","dodgerblue1"),ylab="Lat",xaxt="n")
+axis.POSIXct(1,at=seq(round(min(s$Time),"day"),round(max(s$Time),"day"),"weeks"),format="%d %b")
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<meanci>>
+@
+\caption{Means and credible intervals for twilight longitudes and latitudes.}
+  \label{fig:meanci}
+\end{figure}
+But even this simple figure is misleading.  Plotting the sampled
+locations for the second twilight (Figure~\ref{fig:twl2})
+<<label=twl2,eval=F>>=
+x <- chain.collapse(fit$x)
+plot(t(x[2,,]),pch=16,cex=0.7,col="dodgerblue1",xlab="Lon",ylab="Lat")
+plot(wrld_simpl,add=T,col="grey80")
+points(colMeans(t(x[2,,])),pch=16,col="red")
+@
+shows that while the sampled locations do not fall on Tasmania, the
+mean may.
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F>>=
+<<twl2>>
+@
+\caption{Sampled locations for the second twilight.}
+  \label{fig:twl2}
+\end{figure}
+
+A better approach is to focus more directly on the distribution of the
+samples through either a two dimensional histogram or kernel density
+estimate.  The \texttt{slices} function defines time intervals into
+which the track will be split, and the \texttt{slice} function bins
+the samples for each interval to form a density estimate. Binning the
+$z$ locations weighted by the time intervals between twilights
+estimates the distribution of time spent.  Usually an appropriate
+weighting is computed by default, but in this case it is necessary to
+weight out the fixed $z$ locations to prevent them dominating (Figure~\ref{fig:wbin})
+<<label=wbin,eval=F>>=
+r <- raster(nrows=180,ncols=160,xmn=80,xmx=170,ymn=-70,ymx=-10)
+dt <- ifelse(fixedz,0,diff(as.numeric(model$time)/3600))
+s <- slices(type="intermediate",breaks="weeks",mcmc=fit,grid=r,weights=dt)
+opar <- par(mfrow=c(3,2),mar=c(3,4,3,2)+0.1)
+for(k in slice.indices(s)) {
+  tm <- slice.interval(s,k)
+  sk <- slice(s,k)
+  plot(sk,useRaster=F,main=sprintf("%s - %s",as.Date(tm[1]),as.Date(tm[2])))
+  plot(wrld_simpl,add=T,col="grey80")
+  plot(elide(wrld_simpl,shift=c(360,0)),add=T,col="grey80")
+}
+par(opar)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=T,echo=F,height=8>>=
+<<wbin>>
+@
+\caption{Posterior distribution of time spent by location.}
+  \label{fig:wbin}
+\end{figure}
+
+Figure~\ref{fig:twl2} also illustrates another important point.
+Although a prior can be used to prevent locations falling in a region,
+this mechanism cannot stop a track crossing a region.  So while the
+locations can be constrained to lie at sea, it is not possible to
+prevent a track crossing a small ismuth or point.
+
+
+\nocite{Sumner2009}
+\nocite{Lisovski2012}
+\bibliographystyle{apalike}
+\bibliography{SGAT}
+
+\end{document}

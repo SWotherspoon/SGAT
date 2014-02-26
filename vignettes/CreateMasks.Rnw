@@ -1,0 +1,363 @@
+\documentclass[a4paper]{article}
+\usepackage{a4wide}
+\usepackage[authoryear]{natbib}
+\usepackage{amsmath}
+
+%\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
+%\VignetteIndexEntry{CreateMasks}
+%\VignetteDepends{sp,raster,rgeos,maptools,SGAT}
+%\VignettePackage{SGAT}
+%\VignetteKeyword{Masks}
+\begin{document}
+
+
+\title{Masks for Movement Models}
+\date{2013}
+\author{\textbf{Simeon Lisovski} \\
+%EndAName
+Centre for Integrative Ecology\\
+Deakin University\\
+\and \textbf{Michael Sumner} \\
+%EndAName
+Australian Antarctic Division\\
+\and \textbf{Simon Wotherspoon} \\
+%EndAName
+Australian Antarctic Division,\\
+Institute for Marine and Antarctic Studies\\
+University of Tasmania}
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+<<echo=FALSE>>=
+set.seed(27)
+@
+
+\section{Introduction}
+\label{sec:introduction}
+
+\section{Mask lookup function for tripEstimation/SGAT}
+\label{sec:lookupfunction}
+These models need a function that can take a matrix of coordinate
+values and return a TRUE or FALSE value for each location. Any level
+of detail can be hidden, though in practice it should be as efficient
+as possible. The final input to the model will be a function like the
+following pseudocode.
+
+<<label=masksummary,eval=FALSE>>=
+lookup <- function(x) {
+
+  test <- myCustomTest(x)
+  test
+}
+@
+
+The usage of this function might look like this, where we have a 6-location track.
+<<label=maskusage,eval=FALSE>>=
+coords <- proposal.locations()
+lookup(coords)
+@
+
+The mask lookup function has to conform to the following constraints
+and otherwise can include any spatio-temporal test to produce the
+results.
+\begin{enumerate}
+\item{input is single matrix \texttt{x} with 2-columns of the X and Y coordinates}
+\item{return value is a logical vector of \texttt{length(x)}, with no missing values}
+\end{enumerate}
+
+In the following sections we demonstrate a variety of methods for creating mask lookup functions.
+
+\subsection{Create a mask from a bounding box}
+\label{sec:bbox}
+This is the simplest of all cases, a lookup function tests for presence within a \emph{bounding box}.
+
+First define a \emph{function that creates a function}, this allows us
+to provide the flexibility for the minimum and maximum values, without
+relying on values defined in the workspace. The function returned by
+\texttt{bboxlookup} encapsulates the input values \text{xlim,ylim}.
+
+<<label=bbox,eval=TRUE>>=
+bboxlookup <- function(xlim, ylim) {
+    function(x) {
+        x[,1] >= xlim[1] & x[,1] <= xlim[2] & x[,2] >= ylim[1] & x[,2] <= ylim[2]
+    }
+}
+
+
+## define a region of interest
+xrange <- c(100, 170)
+yrange <- c(-55, -30)
+lookup <- bboxlookup(xrange, yrange)
+@
+
+Test that this bounding box test works correctly, in this plot we
+should see that any points within the test area have an extra red
+symbol (Figure~\ref{fig:testbbox}).
+
+<<label=testbbox,eval=FALSE>>=
+n <- 150
+pts <- cbind(runif(n, 60, 180), runif(n, -80, 0))
+plot(pts, xlab = "X", ylab = "Y", main = "random points around bounding box test area")
+rect(xrange[1], yrange[1], xrange[2], yrange[2])
+points(pts[lookup(pts), ], col = "firebrick", pch = 3)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=TRUE,echo=FALSE>>=
+<<testbbox>>
+@
+  \caption{Simple test of points that fall within a bounding box.}
+  \label{fig:testbbox}
+\end{figure}
+
+
+\subsection{Create a mask from a rough drawing outline}
+\label{sec:drawing}
+We need not limit ourselves to simple rectangular region, and using a
+convenient function from the \texttt{raster} package we draw a region
+on a map and then make a lookup function based on the drawn region.
+
+<<label=drawoutline,eval=FALSE>>=
+library(raster)
+p <- drawPoly()
+
+@
+
+
+
+<<label=drawnoutline,eval=TRUE,echo=FALSE>>=
+library(sp)
+p <- SpatialPolygons(list(Polygons(list(Polygon(structure(c(174.016307747703, 178.438912764941, 176.708328192978,
+168.055405333166, 155.749026154767, 147.096103294954, 145.557805897654,
+140.55833935643, 126.905949955393, 122.09877058883, 112.292124681043,
+99.9857455026439, 95.1785661360816, 100.754894201294, 105.177499218531,
+113.253560554356, 123.060206462143, 135.366585640542, 144.211795675017,
+152.864718534829, 159.210195298691, 174.016307747703, -46.0058495777918,
+-47.4375574994349, -51.7326812643641, -51.3747542839533, -48.8692654210779,
+-43.8582876953271, -47.7954844798456, -52.2695717349803, -52.2695717349803,
+-53.1643891860072, -58.7122573823741, -57.4595129509364, -40.100054401014,
+-29.8991354593071, -32.5835878123879, -38.8473099695764, -40.2790178912194,
+-39.2052369499871, -37.0576750675225, -33.6573687536202, -39.7421274206033,
+-46.0058495777918), .Dim = c(22L, 2L)))), "1")))
+@
+
+<<label=testdrawnoutline,eval=FALSE>>=
+polylookup <- function(poly) {
+  function(x) {
+    !is.na(over(SpatialPoints(pts), poly))
+  }
+}
+
+lookup <- polylookup(p)
+
+plot(pts, xlab = "X", ylab = "Y", main = "random points around polygon test area")
+plot(p, add = TRUE)
+points(pts[lookup(pts), ], col = "firebrick", pch = 3)
+@
+
+Figure~\ref{fig:testdrawnoutline} shows points identified as falling
+within a polygonal area, originally drawn by hand on a previous map.
+
+\begin{figure}[ht]
+  \centering
+<<fig=TRUE,echo=FALSE>>=
+<<testdrawnoutline>>
+@
+  \caption{Test for points within a polygonal area.}
+  \label{fig:testdrawnoutline}
+\end{figure}
+
+
+We have ventured far from our very simple first function which relied
+on simple numeric tests for coordinates, and now our lookup function
+uses the \texttt{sp} package facilities \texttt{over} and needs to
+create \texttt{SpatialPoints} and \texttt{SpatialPolygons} objects in
+order to do this test. This actually introduces a lot of expensive
+overhead calculation so we optimize this to a less exact method that
+is much faster.
+
+\subsection{Create a mask by rasterizing a polygon outline}
+\label{sec:rasterizedrawing}
+Using the function \texttt{rasterize} we can easily created a gridded
+version of our polygon test. First generate a raster grid object based
+on the simple bounding box used earlier. Note that our drawn area
+slightly exceeds the first bounding box, so we could either extend the
+range of the base grid to suit or actually exploit this as a feature
+allowing the intersection of these two component tests. (This
+principle will be explored in detail later for sophisticated masks.)
+
+<<label=rasterizepoly,eval=TRUE>>=
+library(raster)
+rgrid <- raster(xmn = xrange[1], xmx = xrange[2],
+                ymn = yrange[1], ymx = yrange[2],
+                nrows = 300, ncols = 230)
+rmask <- rasterize(p, rgrid)
+@
+
+The rasterization process has produced a grid where the cell values
+are either valid value (such as 1) or \texttt{NA} for pixels where no
+polygon overlapped the cell. This is actually more information than we
+need for a mask test, so we convert the cell values to booleans with
+either a \texttt{TRUE} or \texttt{FALSE} for the test. We can further
+simplify the data to its most raw form that R can use, which is just a
+matrix of values with coordinate values for each dimension.
+
+The \texttt{raster} orientation is different from the default used by
+R's \text{image} function, so we flip about the Y axis, and transpose.
+\textbf{We can probably just include a mkLookup function or similar is
+  SGAT that reduces the need to talk about this at all.}
+
+<<label=rasterizepolyconvert>>=
+rmask <- !is.na(rmask)
+
+mask <- list(x = xFromCol(rmask),
+             y = rev(yFromRow(rmask)),
+             z = values(t(flip(rmask, direction = "y")), format = "matrix"))
+@
+
+Create a function to extract the cell value from the list object and plot the result.
+
+<<label=mklookupimage,eval=FALSE>>=
+mkLookupsimple <- function (obj)
+{
+    csize <- c(diff(obj$x[1:2]), diff(obj$y[1:2]))
+    dimXY <- dim(obj$z)
+    function(x) {
+        xs <- x[, 1]
+        ys <- x[, 2]
+        i <- round((1/diff(obj$x[1:2])) * (xs - obj$x[1]) + 1)
+        j <- round((1/diff(obj$y[1:2])) * (ys - obj$y[1]) + 1)
+        f <- vector(mode(obj$z), length(xs))
+        k <- (i > 0 & j > 0 & i <= dimXY[1] & j <= dimXY[2])
+        n <- nrow(x)
+        if (any(k)) {
+                f[k] <- obj$z[cbind(i[k], j[k])]
+                test <- f == 1
+
+        } else test <- rep(FALSE, nrow(x))
+        test
+    }
+}
+
+lookup <- mkLookupsimple(mask)
+image(mask, xlim = xrange, ylim = yrange)
+points(pts)
+points(pts[lookup(pts), ], col = "firebrick", pch = 3)
+@
+
+\begin{figure}[ht]
+  \centering
+<<fig=TRUE,echo=FALSE>>=
+<<mklookupimage>>
+@
+  \caption{Test for points within a rasterized polygon.}
+  \label{fig:mklookupimage}
+\end{figure}
+
+Figure~\ref{fig:mklookupimage} shows the same test as with the
+polygonal test, but done in a much more efficient way. To demonstrate
+the timing, repeat the test multiple times for each.
+
+<<label=timings>>=
+plookup <- polylookup(p)
+glookup <- mkLookupsimple(mask)
+
+system.time({
+    for (i in 1:100) plookup(pts)
+})
+system.time({
+    for (i in 1:100) glookup(pts)
+})
+@
+
+
+\subsection{Create a mask from country outlines}
+<<label=countryoutlines,eval=FALSE>>=
+library(raster)
+library(maptools)
+data(wrld_simpl)
+plot(wrld_simpl)
+@
+\begin{figure}[ht]
+  \centering
+<<fig=TRUE,echo=FALSE>>=
+<<countryoutlines>>
+@
+  \caption{Caption.}
+  \label{fig:countryoutlines}
+\end{figure}
+
+\subsection{Manipulate coastal polygons to build a custom mask}
+
+
+\section{More sophisticated spatial masks}
+Build a lookup mask to return an indicator for land vs. sea or the
+shortest distance to the coast.
+
+<<land-dist>>=
+
+lonlim <- c(110, 190)
+latlim <- c(-70, -50)
+land_dist.mask <- function(xlim, ylim, n=4) {
+    require(maptools)
+    require(rgeos)
+    data(wrld_simpl)
+    r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
+              xmn = xlim[1L], xmx = xlim[2L],
+              ymn= ylim[1L], ymx = ylim[2L],
+              crs = projection(wrld_simpl))
+
+    r <- rasterize(wrld_simpl, r, field = "FIPS")
+
+    ## clip as lines, so we don't get the sealed edges from the intersection
+    outline <- gIntersection(as(wrld_simpl, "SpatialLines"), as(extent(r), "SpatialPolygons"))
+    wxy <- coordinates(as(outline, "SpatialPoints"))
+
+    ## NA is ocean, the rest need distance values
+    ## prepare for distance to coast
+    rxy <- as.data.frame(r, xy = TRUE)
+
+    for (i in seq_len(nrow(rxy))[!is.na(rxy$layer)]) {
+         dsts <- spDistsN1(wxy, as.matrix(rxy[i,c("x", "y"), drop = FALSE]), longlat = TRUE)
+         rxy$layer[i] <- min(dsts)
+
+     }
+    r <- setValues(r, rxy$layer)
+    r <- as.matrix(r)[nrow(r):1, ]
+
+    xbin <- seq(xlim[1],xlim[2],length=ncol(r)+1)
+    ybin <- seq(ylim[1],ylim[2],length=nrow(r)+1)
+    function(p) {
+        r[cbind(.bincode(p[,2],ybin),.bincode(p[,1],xbin))]
+    }
+}
+
+dist.sea <- land_dist.mask(xlim=lonlim,ylim=latlim,n=4)
+
+log.prior <- function(x) {
+    e <- dist.sea(x[,1:2])
+    ifelse(is.na(e), 0, -e)
+}
+
+
+@
+
+\section{Time series masks}
+\subsection{SST masks}
+\subsection{Maximum depth mask and related ideas}
+
+\section{Map projections, working with the native coordinate system}
+
+\section{Combining masks together using lookup functions, disparate data sources}
+
+\clearpage
+\nocite{Sumner2009}
+\nocite{Lisovski2012}
+\bibliographystyle{apalike}
+\bibliography{SGAT}
+
+
+\end{document}
