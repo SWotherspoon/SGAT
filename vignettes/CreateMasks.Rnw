@@ -5,7 +5,7 @@
 
 %\SweaveOpts{engine=R, eps=FALSE, keep.source = FALSE}
 %\VignetteIndexEntry{CreateMasks}
-%\VignetteDepends{sp,raster,rgeos,maptools,SGAT}
+%\VignetteDepends{sp,raster,maptools,SGAT}
 %\VignettePackage{SGAT}
 %\VignetteKeyword{Masks}
 \begin{document}
