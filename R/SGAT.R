@@ -23,7 +23,7 @@ NULL
 ##' Calculate solar time, the equation of time and solar declination
 ##'
 ##' The solar time, the equation of time and the sine and cosine of
-##' the solar declination are calculted for the times specified by
+##' the solar declination are calculated for the times specified by
 ##' \code{tm} using the same methods as
 ##' \url{www.esrl.noaa.gov/gmd/grad/solcalc/}.
 ##' @title Solar Time and Declination
@@ -334,7 +334,8 @@ trackMidpts <- function(p,fold=FALSE) {
 ##'
 ##' @title Distance along a path
 ##' @param x a two column matrix of (lon,lat) locations along the path.
-##' @param z a two column matrix of (lon,lat) intermediate locations along the path.
+##' @param z a two column matrix of (lon,lat) intermediate locations
+##' along the path.
 ##' @return vector of interpoint distances (km)
 ##' @export
 trackDist <- function(x) {
@@ -786,10 +787,13 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' @param X the satellite determined locations.
 ##' @param location.model the model for the errors in satellite locations.
 ##' @param sd a vector or two column matrix of dispersions for the location model.
-##' @param df a vector or two column matrix of degrees of freedom for the t location model.
+##' @param df a vector or two column matrix of degrees of freedom for
+##' the t location model.
 ##' @param beta parameters of the behavioural model.
-##' @param logp.x function to evaluate any additional contribution to the log posterior from the satellite estimated locations.
-##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param logp.x function to evaluate any additional contribution to
+##' the log posterior from the satellite estimated locations.
+##' @param logp.z function to evaluate any additional contribution to
+##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for the satellite locations.
 ##' @param z0 suggested starting points for intermediate locations.
 ##' @param fixedx logical vector indicating which satellite locations
@@ -819,6 +823,9 @@ satellite.model <- function(time,X,
   if(is.null(dt))
     dt <- diff(as.numeric(time)/3600)
 
+  ## Ensure beta is always a matrix
+  if(!is.matrix(beta)) beta <- t(beta)
+
   ## Contribution to log posterior from each x location
   location.model <- match.arg(location.model)
   logpx <-
@@ -846,12 +853,12 @@ satellite.model <- function(time,X,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -947,7 +954,7 @@ satellite.model <- function(time,X,
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
 ##' @param polar logical vector indicating which twilights were
-##' unobserved
+##' unobserved.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -980,6 +987,10 @@ threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## Ensure alpha,beta are always matrices
+  if(!is.matrix(alpha)) alpha <- t(alpha)
+  if(!is.matrix(beta)) beta <- t(beta)
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -995,7 +1006,7 @@ threshold.model <- function(twilight,rise,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1004,7 +1015,7 @@ threshold.model <- function(twilight,rise,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1013,7 +1024,7 @@ threshold.model <- function(twilight,rise,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1023,8 +1034,8 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
+                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1034,8 +1045,8 @@ threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=T),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=T),
+                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- logp + logp.x(x)
              logp[fixedx] <- 0
@@ -1050,12 +1061,12 @@ threshold.model <- function(twilight,rise,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1102,6 +1113,10 @@ grouped.threshold.model <- function(twilight,rise,group,
   }
   time <- .POSIXct(tapply(twilight,group,median),"GMT")
 
+  ## Ensure alpha,beta are always matrices
+  if(!is.matrix(alpha)) alpha <- t(alpha)
+  if(!is.matrix(beta)) beta <- t(beta)
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -1117,7 +1132,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1126,7 +1141,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1135,7 +1150,7 @@ grouped.threshold.model <- function(twilight,rise,group,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!is.finite(r)] <- -Inf
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1145,8 +1160,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
+                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1156,8 +1171,8 @@ grouped.threshold.model <- function(twilight,rise,group,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=TRUE),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=TRUE),
+                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!is.finite(r)] <- -1.0E8
              logp <- tapply(logp,group,sum)+logp.x(x)
              logp[fixedx] <- 0
@@ -1172,12 +1187,12 @@ grouped.threshold.model <- function(twilight,rise,group,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1227,6 +1242,11 @@ polar.threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## Ensure alpha,beta are always matrices
+  if(!is.matrix(alpha)) alpha <- t(alpha)
+  if(!is.matrix(beta)) beta <- t(beta)
+
+
   ## Discrepancy in expected and observed times of twilight, with sign
   ## selected so that a positive value corresponds to the observed
   ## sunrise occurring after the expected time of sunrise, and the
@@ -1242,7 +1262,7 @@ polar.threshold.model <- function(twilight,rise,
            Gamma=
            function(x) {
              r <- residuals(x)
-             logp <- dgamma(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1253,7 +1273,7 @@ polar.threshold.model <- function(twilight,rise,
            LogNormal=
            function(x) {
              r <- residuals(x)
-             logp <- dlnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1264,7 +1284,7 @@ polar.threshold.model <- function(twilight,rise,
            Normal=
            function(x) {
              r <- residuals(x)
-             logp <- dnorm(r,alpha[1L],alpha[2L],log=TRUE)
+             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
              logp[!polar & !is.finite(r)] <- -Inf
              logp[polar & is.finite(r)] <- -Inf
              logp[polar & !is.finite(r)] <- 0
@@ -1276,8 +1296,8 @@ polar.threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[1L]/alpha[2L],alpha[1L],alpha[2L],log=TRUE),
-                            dgamma(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
+                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
              logp[polar & !is.finite(r)] <- 0
@@ -1289,8 +1309,8 @@ polar.threshold.model <- function(twilight,rise,
            function(x) {
              r <- residuals(x)
              logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[1L]+alpha[2L]^2/2),alpha[1L],alpha[2L],log=T),
-                            dlnorm(r,alpha[1L],alpha[2L],log=TRUE))
+                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=T),
+                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
              logp[!polar & !is.finite(r)] <- -1.0E8
              logp[polar & is.finite(r)] <- -1.0E8
              logp[polar & !is.finite(r)] <- 0
@@ -1307,12 +1327,12 @@ polar.threshold.model <- function(twilight,rise,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1366,15 +1386,20 @@ polar.threshold.model <- function(twilight,rise,
 ##' @title Curve Model Structure
 ##' @param time vector of sample times as POSIXct.
 ##' @param light vector of observed (log) light levels.
-##' @param segment vector of integers that assign observations to twilight segments.
-##' @param calibration function that maps zenith angles to expected light levels.
+##' @param segment vector of integers that assign observations to
+##' twilight segments.
+##' @param calibration function that maps zenith angles to expected
+##' light levels.
 ##' @param alpha parameters of the twilight model.
 ##' @param beta parameters of the behavioural model.
-##' @param logp.x function to evaluate any additional contribution to the log posterior from the twilight locations.
-##' @param logp.z function to evaluate any additional contribution to the log posterior from the intermediate locations.
+##' @param logp.x function to evaluate any additional contribution to
+##' the log posterior from the twilight locations.
+##' @param logp.z function to evaluate any additional contribution to
+##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param fixedx logical vector indicating which twilight locations to hold fixed.
+##' @param fixedx logical vector indicating which twilight locations
+##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
 ##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
@@ -1405,6 +1430,10 @@ curve.model <- function(time,light,segment,
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
 
+  ## Ensure alpha,beta are always matrices
+  if(!is.matrix(alpha)) alpha <- t(alpha)
+  if(!is.matrix(beta)) beta <- t(beta)
+
   ## Return a dataframe of the fitted zenith and light observations
   ## for a set of estimated locations.
   fitted <- function(x) {
@@ -1412,7 +1441,7 @@ curve.model <- function(time,light,segment,
     zenith <- zenith(sun,xs[,1L],xs[,2L])
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
-    logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
+    logp <- dnorm(light,fitted,alpha[,1L],log=TRUE)
     data.frame(Time=time,
                Segment=segment,
                Zenith=zenith,
@@ -1427,8 +1456,8 @@ curve.model <- function(time,light,segment,
     zenith <- zenith(sun,xs[,1L],xs[,2L])
     fitted <- calibration(zenith)+xs[,3L]
     ## Contributions to log posterior
-    logp <- dnorm(light,fitted,alpha[1L],log=TRUE)
-    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha[2L],log=TRUE)
+    logp <- dnorm(light,fitted,alpha[,1L],log=TRUE)
+    sapply(split(logp,segment),sum) + logp.x(x) + dnorm(x[,3L],0,alpha[,2L],log=TRUE)
   }
 
   ## Contribution to log posterior from each z location
@@ -1439,12 +1468,12 @@ curve.model <- function(time,light,segment,
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
   list(## Positional contribution to the log posterior
@@ -1470,7 +1499,8 @@ curve.model <- function(time,light,segment,
 ##' These functions draw samples form posterior for the Stella or
 ##' Estelle model by the Metropolis algorithm.
 ##' @title Metropolis Samplers
-##' @param model a model structure as generated by \code{threshold.model}
+##' @param model a model structure as generated by
+##' \code{threshold.model}.
 ##' @param proposal.x function for drawing proposals for x.
 ##' @param proposal.z function for drawing proposals for z.
 ##' @param x0 Starting values for twilight locations x.
@@ -1482,11 +1512,9 @@ curve.model <- function(time,light,segment,
 ##' @return If there are r samples drawn for each of q chains of p
 ##' parameters at n locations, Stella will return a list containing
 ##' \item{\code{model}}{the model structure}
-##' \item{\code{x}}{an n x p x r x q array of twilight locations}
+##' \item{\code{x}}{a list of n x p x r arrays of twilight locations from the q chains}
 ##' While in addition Estelle will return
-##' \item{\code{z}}{an (n-1) x p x r x q array of intermediate locations}.
-##' However, if only one chain is sampled, the final dimension of
-##' \code{x} and \code{z} is dropped, and these arrays are of rank 3.
+##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate locations from the q chains}.
 ##' @seealso \code{\link{threshold.model}}
 ##' @export
 estelle.metropolis <- function(model,
@@ -1501,9 +1529,15 @@ estelle.metropolis <- function(model,
   ## Drop dimnames for speed
   dimnames(x0) <- NULL
   dimnames(z0) <- NULL
-  ## Expand to multiple chains
-  x0 <- array(x0,c(dim(x0)[1:2],chains))
-  z0 <- array(z0,c(dim(z0)[1:2],chains))
+  ## Expand starting values for multiple chains
+  if(is.list(x0))
+    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
+  else
+    x0 <- array(x0,c(dim(x0)[1:2],chains))
+  if(is.list(z0))
+    z0 <- array(unlist(z0),c(dim(z0[[1]])[1:2],chains))
+  else
+    z0 <- array(z0,c(dim(z0)[1:2],chains))
 
   ## Number of locations
   n <- dim(x0)[1L]
@@ -1516,12 +1550,16 @@ estelle.metropolis <- function(model,
   logpb <- model$estelle.logpb
   fixedx <- model$fixedx
 
-  ## Allocate storage for the samples
-  ch.x <- array(0,c(n,m,iters,chains))
-  ch.z <- array(0,c(n-1L,2L,iters,chains))
+  ## Lists of chains
+  ch.xs <- vector(mode="list",chains)
+  ch.zs <- vector(mode="list",chains)
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
+    ## Allocate chains
+    ch.x <- array(0,c(n,m,iters))
+    ch.z <- array(0,c(n-1L,2L,iters))
+
     x1 <- x0[,,k1]
     z1 <- z0[,,k1]
 
@@ -1623,17 +1661,14 @@ estelle.metropolis <- function(model,
         logp.b1[accept] <- logp.b2[accept]
       }
       ## Store the current state
-      ch.x[,,k2,k1] <- x1
-      ch.z[,,k2,k1] <- z1
+      ch.x[,,k2] <- x1
+      ch.z[,,k2] <- z1
     }
+    ch.xs[[k1]] <- ch.x
+    ch.zs[[k1]] <- ch.z
     if(verbose) cat("\n")
   }
-  ## Simplify when only a single chain
-  if(chains==1) {
-    dim(ch.x) <- dim(ch.x)[1:3]
-    dim(ch.z) <- dim(ch.z)[1:3]
-  }
-  list(model=model,x=ch.x,z=ch.z)
+  list(model=model,x=ch.xs,z=ch.zs)
 }
 
 
@@ -1652,6 +1687,11 @@ stella.metropolis <- function(model,
   dimnames(x0) <- NULL
   ## Expand to multiple chains
   x0 <- array(x0,c(dim(x0)[1:2],chains))
+  ## Expand starting values for multiple chains
+  if(is.list(x0))
+    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
+  else
+    x0 <- array(x0,c(dim(x0)[1:2],chains))
 
   ## Number of locations
   n <- dim(x0)[1L]
@@ -1663,11 +1703,13 @@ stella.metropolis <- function(model,
   logpb <- model$stella.logpb
   fixedx <- model$fixedx
 
-  ## Allocate storage for the samples
-  ch.x <- array(0,c(n,m,iters,chains))
+  ## Lists of chains
+  ch.xs <- vector(mode="list",chains)
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
+    ## Allocate chain
+    ch.x <- array(0,c(n,m,iters))
     x1 <- x0[,,k1]
 
     ## Contribution to logp from the initial x
@@ -1752,66 +1794,73 @@ stella.metropolis <- function(model,
         }
       }
       ## Store the current state
-      ch.x[,,k2,k1] <- x1
+      ch.x[,,k2] <- x1
     }
+    ch.xs[[k1]] <- ch.x
     if(verbose) cat("\n")
   }
-  ## Simplify when only a single chain
-  if(chains==1) {
-    dim(ch.x) <- dim(ch.x)[1:3]
-  }
-  list(model=model,x=ch.x)
+  list(model=model,x=ch.xs)
 }
-
-
-
-
 
 
 
 ##' Summarize a set of location samples
 ##'
-##' These functions compute various summaries of an array of location
-##' samples generated by \code{estelle.metropolis} or
+##' These functions compute various summaries of a sample or list of
+##' samples samples generated by \code{estelle.metropolis} or
 ##' \code{stella.metropolis}.
+##'
+##' These functions accept either a sample from a single mcmc run, or
+##' a list of samples from parallel mcmc runs.  When \code{collapse}
+##' is true, multiple samples are merged and single result is
+##' returned, otherwise a result is returned for each sample.
 ##'
 ##' @rdname location.summary
 ##' @title Summaries of Location Samples
-##' @param s an array of location samples generated by
+##' @param s a single chain or a list of parallel chains generated by
 ##' \code{estelle.metropolis} or \code{stella.metropolis}.
-##' @param time the times corresponding to the x locations
-##' @param alpha coverage of the credible intervals calculated by \code{location.summary}.
+##' @param time the times corresponding to the x locations.
 ##' @param discard number of initial samples to discard.
+##' @param alpha coverage of the credible intervals calculated by
+##' \code{location.summary}.
+##' @param collapse whether to collapse multiple chains to a single sample
+##' @param chains the set of chains to retain, or \code{NULL}.
 ##' @return
-##' \code{location.summary} returns a dataframe of summary quantities for each location
-##' \code{location.mean} returns an array of the means of the samples for each location
+##' \item{\code{location.summary}}{returns a dataframe or a list of
+##' dataframes of summary quantities for each location.}
+##' \item{\code{location.mean}}{returns an array or a list of arrays
+##' of the means of the samples for each location.}
 ##' @export
-location.summary <- function(s,time=NULL,discard=0,alpha=0.95) {
-  if(discard>0) s <- chain.tail(s,discard)
-  if(length(dim(s))==4L) s <- chain.collapse(s)
-  smry <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
-  lon <- t(apply(s[,1L,],1L,smry))
-  colnames(lon) <- paste("Lon",colnames(lon),sep=".")
-  lat <- t(apply(s[,2L,],1L,smry))
-  colnames(lat) <- paste("Lat",colnames(lat),sep=".")
-  d <- as.data.frame(cbind(lon,lat))
-  if(!is.null(time)) {
-    ## Add timing information
-    n <- nrow(d)
-    if(length(time)==n)
-      d <- cbind(Time=time,d)
-    else
-      d <- cbind(Time1=time[1:n],Time2=time[2:(n+1L)],d)
-  }
-  d
+location.summary <- function(s,time=NULL,discard=0,alpha=0.95,collapse=TRUE,chains=NULL) {
+  summary <- function(s) {
+     stat <- function(x) c(mean=mean(x),sd=sd(x),quantile(x,prob=c(0.5,(1-alpha)/2,1-(1-alpha)/2)))
+    lon <- t(apply(s[,1L,],1L,stat))
+    colnames(lon) <- paste("Lon",colnames(lon),sep=".")
+    lat <- t(apply(s[,2L,],1L,stat))
+    colnames(lat) <- paste("Lat",colnames(lat),sep=".")
+    d <- as.data.frame(cbind(lon,lat))
+    if(!is.null(time)) {
+      ## Add timing information
+      n <- nrow(d)
+      if(length(time)==n)
+        d <- cbind(Time=time,d)
+      else
+        d <- cbind(Time1=time[1:n],Time2=time[2:(n+1L)],d)
+    }
+    d
+   }
+
+  s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
+  if(is.list(s)) lapply(s,summary) else summary(s)
 }
 
 ##' @rdname location.summary
 ##' @export
-location.mean <- function(s,discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  s <- chain.collapse(s)
-  apply(s[,1:2,],1:2,mean)
+location.mean <- function(s,discard=0,collapse=TRUE,chains=NULL) {
+  locmean <- function(s) apply(s[,1:2,],1:2,mean)
+
+  s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
+  if(is.list(s)) lapply(s,locmean) else locmean(s)
 }
 
 
@@ -1823,35 +1872,45 @@ location.mean <- function(s,discard=0) {
 ##' weights can be provided to differentially weight samples by
 ##' location.
 ##'
+##' This function accepts either a sample from a single mcmc run, or
+##' a list of samples from parallel mcmc runs.  If
+##' \code{collapse} is true, multiple samples are merged and single
+##' image is returned, otherwise an image is returned for each sample.
+##'
 ##' @title Location Density Image
-##' @param s an array of location samples generated by
+##' @param s a single chain or a list of parallel chains generated by
 ##' \code{estelle.metropolis} or \code{stella.metropolis}.
-##' @param xlim range of the first coordinate
-##' @param ylim range of the second coordinate
-##' @param nx number of cells in the first coordinate
-##' @param ny number of cells in the second coordinate
-##' @param weight weights for each location
+##' @param xlim range of the first coordinate.
+##' @param ylim range of the second coordinate.
+##' @param nx number of cells in the first coordinate.
+##' @param ny number of cells in the second coordinate.
+##' @param weight weights for each location.
 ##' @param discard number of initial samples to discard.
+##' @param collapse whether to collapse multiple chains to a single sample
+##' @param chains the set of chains to retain, or \code{NULL}.
 ##' @return A list with elesments
 ##' \item{\code{x}}{the x-ordinates that bound the bins}
 ##' \item{\code{y}}{the y-ordinates that bound the bins}
 ##' \item{\code{W}}{the weighted image.}
 ##' @export
-location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  if(length(dim(s))==4L) s <- chain.collapse(s)
-
+location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),
+                           discard=0,collapse=TRUE,chains=NULL) {
   xbin <- seq.int(xlim[1L],xlim[2L],length.out=nx+1L)
   ybin <- seq.int(ylim[1L],ylim[2L],length.out=ny+1L)
 
-  W <- 0
-  for(k in 1:dim(s)[1L]) {
-     W <- W+weight[k]*table(
-      factor(.bincode(s[k,1L,],xbin),levels=1:nx),
-      factor(.bincode(s[k,2L,],ybin),levels=1:ny))
+  bin <- function(s) {
+    W <- 0
+    for(k in 1:dim(s)[1L]) {
+      W <- W+weight[k]*table(
+        factor(.bincode(s[k,1L,],xbin),levels=1:nx),
+        factor(.bincode(s[k,2L,],ybin),levels=1:ny))
+    }
+    W[W==0] <- NA
+    list(x=xbin,y=ybin,W=W)
   }
-  W[W==0] <- NA
-  list(x=xbin,y=ybin,W=W)
+
+  s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
+  if(is.list(s)) lapply(s,bin) else bin(s)
 }
 
 
@@ -1864,70 +1923,74 @@ location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),discar
 ##'
 ##' @rdname chain.summary
 ##' @title Manipulate MCMC samples
-##' @param s an array of location samples generated by
+##' @param s a single chain or a list of parallel chains generated by
 ##' \code{estelle.metropolis} or \code{stella.metropolis}.
 ##' @param discard number of initial samples to discard.
 ##' @param thin rate at which to thin the sample.
+##' @param collapse whether to collapse multiple chains to a single sample
+##' @param chains the set of chains to retain, or \code{NULL}.
 ##' @return
 ##' \code{chain.summary} returns a summary of the sample
 ##' \code{chain.tail} discards the initial samples from each chain
 ##' \code{chain.last} returns the last sample for each location in each chain
-##' \code{chain.thin} returns the thinned sample
 ##' \code{chain.collapse} collapses multiple chains into a single sample
 ##' \code{chain.cov} returns the covariance of the parameters location by location as a pxpxn array.
 ##' \code{chain.bcov} returns the joint covariance of the parameters as an (np)x(np) array.
 ##' \code{chain.acceptance} returns the acceptance rate in the (thinned) chain
 ##' @export
 chain.summary <- function(s) {
-  dm <- c(dim(s),1)
-  cat("Sample of",dm[3L],"from",dm[4L],"chains of",dm[2L],"parameters for",dm[1L],"locations\n")
+  dm <- dim(s[[1]])
+  cat("Sample of",dm[3L],"from",length(s),"chains of",dm[2L],"parameters for",dm[1L],"locations\n")
 }
 
 ##' @rdname chain.summary
 ##' @export
-chain.tail <- function(s,discard=0) {
-  dm <- dim(s)
-  if(length(dm)==4L)
-    s[,,seq.int(to=dm[3L],length.out=max(0,dm[3L]-discard)),]
-  else
-    s[,,seq.int(to=dm[3L],length.out=max(0,dm[3L]-discard))]
+chain.tail <- function(s,discard=0,thin=1) {
+  tail <- function(s) s[,,seq.int(from=1+max(discard,0),to=dim(s)[3L],by=thin)]
+  if(!is.list(s)) tail(s) else lapply(s,tail)
 }
 
 ##' @rdname chain.summary
 ##' @export
 chain.last <- function(s) {
-  dm <- dim(s)
-  if(length(dm)==4L) s[,,dm[3L],] else s[,,dm[3L]]
+  last <- function(s) s[,,dim(s)[3L]]
+  if(!is.list(s)) last(s) else lapply(s,last)
 }
+
 
 ##' @rdname chain.summary
 ##' @export
-chain.thin <- function(s,thin) {
-  dm <- dim(s)
-  if(length(dm)==4L)
-    s[,,seq.int(1L,dm[3L],by=thin),]
-  else
-    s[,,seq.int(1L,dm[3L],by=thin)]
-}
-
-##' @rdname chain.summary
-##' @export
-chain.collapse <- function(s) {
-  dm <- dim(s)
-  dim(s) <- c(dm[1:2],prod(dm[-(1:2)]))
+chain.collapse <- function(s,collapse=TRUE,discard=0,thin=1,chains=NULL) {
+  subset <- function(s) s[,,seq.int(from=1+max(discard,0),to=dim(s)[3L],by=thin)]
+  if(!is.list(s)) {
+    if(thin>1 || discard>0)
+      s <- subset(s)
+  } else {
+    if(!is.null(chains)) s <- s[chains]
+    if(thin>1 || discard>0) s <- lapply(s,subset)
+    if(collapse) {
+      dm <- dim(s[[1]])
+      s <- array(unlist(s),c(dm[1:2],dm[-(1:2)]))
+      }
+  }
   s
 }
 
+
+
 ##' @rdname chain.summary
 ##' @export
-chain.cov <- function(s,discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  dm <- dim(s)
-  if(length(dm)==4L)
-    V <- apply(apply(s,c(1L,4L),function(x) var(t(x))),1:2,mean)
-  else
+chain.cov <- function(s,discard=0,chains=NULL) {
+  s <- chain.collapse(s,collapse=FALSE,discard=discard,chains=chains)
+
+  if(!is.list(s)) {
     V <- apply(s,1L,function(x) var(t(x)))
-  dim(V) <- dm[c(2L,2L,1L)]
+  } else {
+    dm <- dim(s[[1]])
+    V <- apply(array(unlist(lapply(s, function(s) apply(s,1L,function(y) var(t(y))))),
+                     c(dm[c(2L,2L,1L)],length(s))),
+               1:3,mean)
+  }
   V
 }
 
@@ -1935,59 +1998,64 @@ chain.cov <- function(s,discard=0) {
 
 ##' @rdname chain.summary
 ##' @export
-chain.bcov <- function(s,discard=0) {
-  if(discard>0) s <- chain.tail(s,discard)
-  dm <- dim(s)
-  m <- prod(dm[1:2])
-  dim(s) <- c(m,dm[-(1:2)])
-  if(length(dm)==4L) {
-    V <- rowMeans(apply(s,3L,function(x) var(t(x))))
-    dim(V) <- c(m,m)
-  } else
-    V <- var(t(s))
-  V
-}
+chain.bcov <- function(s,discard=0,chains=NULL) {
+  bcov <- function(s) {
+    dm <- dim(s)
+    dim(s) <- c(prod(dm[1:2]),dm[3])
+    var(t(s))
+  }
 
+  s <- chain.collapse(s,collapse=FALSE,discard=discard,chains=chains)
+  if(is.list(s))
+    apply(simplify2array(lapply(s,bcov)),1:2,mean)
+  else
+    bcov(s)
+}
 
 ##' @rdname chain.summary
 ##' @export
-chain.acceptance <- function(s) {
-  dm <- dim(s)
-  if(length(dm)==4L) {
-    rowMeans(apply(s,c(1L,4L),function(x) mean(colSums(x[,-1L]-x[,-ncol(x)]==0)!=0)))
-  } else {
-    apply(s,1L,function(x) mean(rowSums(x[,-1L]-x[,-nrow(x)]==0)!=0))
-  }
+chain.acceptance <- function(s,collapse=FALSE,chains=NULL) {
+  rate <- function(s) mean(apply(s,1,function(x) mean(rowMeans(x[,-1L]-x[,-ncol(x)]!=0))))
+
+  s <- chain.collapse(s,collapse=FALSE,chains=chains)
+  r <- if(is.list(s)) lapply(s,rate) else rate(s)
+  if(collapse & is.list(r)) do.call(mean,r) else r
 }
 
 
-##' Map projection and datum transformation for Metropolis samples.
+
+##' Convert to Coda objects
 ##'
-##' This function transforms samples generated by
-##' \code{estelle.metropolis} or \code{stella.metropolis} to a new map
-##' projection or datum.
+##' Convert samples generated by \code{estelle.metropolis} or
+##' \code{stella.metropolis} to a \pkg{coda} object.
 ##'
-##' @title Coordinate transformation
-##' @param s an array of location samples generated by
-##' \code{estelle.metropolis} or \code{stella.metropolis}.
-##' @param to.crs an object of class \code{CRS} defining the projection to be transformed to.
-##' @param from.crs \code{NULL} or an object of class \code{CRS} defining the original projection.
-##' @return an array of location samples with projected coordinates.
+##' @title Export to Coda
+##' @param s a list of chains generated by \code{estelle.metropolis}
+##' or \code{stella.metropolis}.
+##' @return a \pkg{coda} object.
+##' @importFrom coda mcmc mcmc.list
 ##' @export
-chain.project <- function(s,to.crs,
-                          from.crs=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")) {
-
-  if(length(dim(s))==4L) {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1L,,]),as.vector(s[,2L,,])),from.crs),to.crs))
-    s[,1L,,] <- p[,1L]
-    s[,2L,,] <- p[,2L]
-  } else {
-    p <- coordinates(spTransform(SpatialPoints(cbind(as.vector(s[,1L,]),as.vector(s[,2L,])),from.crs),to.crs))
-    s[,1L,] <- p[,1L]
-    s[,2L,] <- p[,2L]
+chain.coda <- function(s) {
+  coda <- function(s) {
+      dm <- dim(s)
+      dim(s) <- c(prod(dm[1:2]),dm[3])
+      nms <- c("Lon","Lat")
+      if(dm[2]>2)
+          nms <- c("Lon","Lat",paste0("P",seq.int(length.out=dm[2]-2)))
+      nms <- as.vector(t(outer(nms,1:dm[1],paste,sep=".")))
+      rownames(s) <- nms
+      mcmc(t(s))
   }
-  s
+  if(is.list(s)) {
+      if(length(s)==1) coda(s[[1]]) else do.call(mcmc.list,lapply(s,coda))
+  } else {
+      coda(s)
+  }
 }
+
+
+
+
 
 
 ##' Calculate shape and rate parameters of the Gamma distribution
