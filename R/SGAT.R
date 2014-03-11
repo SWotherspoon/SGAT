@@ -1526,23 +1526,14 @@ estelle.metropolis <- function(model,
   ## Initialize x,z
   if(is.null(x0)) x0 <- model$x0
   if(is.null(z0)) z0 <- model$z0
-  ## Drop dimnames for speed
-  dimnames(x0) <- NULL
-  dimnames(z0) <- NULL
   ## Expand starting values for multiple chains
-  if(is.list(x0))
-    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
-  else
-    x0 <- array(x0,c(dim(x0)[1:2],chains))
-  if(is.list(z0))
-    z0 <- array(unlist(z0),c(dim(z0[[1]])[1:2],chains))
-  else
-    z0 <- array(z0,c(dim(z0)[1:2],chains))
+  x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
+  z0 <- rep(if(is.list(z0)) z0 else list(z0),length.out=chains)
 
   ## Number of locations
-  n <- dim(x0)[1L]
+  n <- nrow(x0[[1]])
   ## Number of parameters
-  m <- dim(x0)[2L]
+  m <- ncol(x0[[1]])
 
   ## Extract model components
   logpx <- model$logpx
@@ -1560,8 +1551,12 @@ estelle.metropolis <- function(model,
     ch.x <- array(0,c(n,m,iters))
     ch.z <- array(0,c(n-1L,2L,iters))
 
-    x1 <- x0[,,k1]
-    z1 <- z0[,,k1]
+    ## Initialize
+    x1 <- x0[[k1]]
+    z1 <- z0[[k1]]
+    ## Drop dimnames for speed
+    dimnames(x1) <- NULL
+    dimnames(z1) <- NULL
 
     ## Contribution to logp from the initial x,z
     logp.x1 <- logpx(x1)
@@ -1683,20 +1678,13 @@ stella.metropolis <- function(model,
 
   ## Initialize x
   if(is.null(x0)) x0 <- model$x0
-  ## Drop dimnames for speed
-  dimnames(x0) <- NULL
-  ## Expand to multiple chains
-  x0 <- array(x0,c(dim(x0)[1:2],chains))
   ## Expand starting values for multiple chains
-  if(is.list(x0))
-    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
-  else
-    x0 <- array(x0,c(dim(x0)[1:2],chains))
+  x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
 
   ## Number of locations
-  n <- dim(x0)[1L]
+  n <- nrow(x0[[1]])
   ## Number of parameters
-  m <- dim(x0)[2L]
+  m <- ncol(x0[[1]])
 
   ## Extract model components
   logpx <- model$logpx
@@ -1710,7 +1698,11 @@ stella.metropolis <- function(model,
   for(k1 in 1:chains) {
     ## Allocate chain
     ch.x <- array(0,c(n,m,iters))
-    x1 <- x0[,,k1]
+
+    ## Initialize
+    x1 <- x0[[k1]]
+    ## Drop dimnames for speed
+    dimnames(x1) <- NULL
 
     ## Contribution to logp from the initial x
     logp.x1 <- logpx(x1)
