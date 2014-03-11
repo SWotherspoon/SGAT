@@ -796,6 +796,7 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for the satellite locations.
 ##' @param z0 suggested starting points for intermediate locations.
+##' @param b0 suggested starting points for the behvioural state.
 ##' @param fixedx logical vector indicating which satellite locations
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
@@ -990,7 +991,7 @@ satellite.model <- function(time,X,
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{s0}}{a vector of initial behavioural states.}
+##' \item{\code{b0}}{a vector of initial behavioural states.}
 ##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{group}}{the grouping vector.}
@@ -1487,6 +1488,7 @@ polar.threshold.model <- function(twilight,rise,
 ##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
+##' @param b0 suggested starting points for the behvioural state.
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
@@ -1948,48 +1950,47 @@ estelle.metropolis.switch <- function(model,
   if(is.null(x0)) x0 <- model$x0
   if(is.null(z0)) z0 <- model$z0
   if(is.null(b0)) b0 <- model$b0
-  ## Drop dimnames for speed
-  dimnames(x0) <- NULL
-  dimnames(z0) <- NULL
-  dimnames(b0) <- NULL
   ## Expand starting values for multiple chains
-  if(is.list(x0))
-    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
-  else
-    x0 <- array(x0,c(dim(x0)[1:2],chains))
-  if(is.list(z0))
-    z0 <- array(unlist(z0),c(dim(z0[[1]])[1:2],chains))
-  else
-    z0 <- array(z0,c(dim(z0)[1:2],chains))
+  x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
+  z0 <- rep(if(is.list(z0)) z0 else list(z0),length.out=chains)
+  b0 <- rep(if(is.list(b0)) b0 else list(b0),length.out=chains)
 
   ## Number of locations
-  n <- dim(x0)[1L]
+  n <- nrow(x0)
   ## Number of parameters
-  m <- dim(x0)[2L]
+  m <- ncol(x0)
 
   ## Extract model components
   logpx <- model$logpx
   logpz <- model$logpz
   logpb <- model$estelle.logpb
+  logpB <- model$estelle.logpB
   fixedx <- model$fixedx
 
   ## Lists of chains
   ch.xs <- vector(mode="list",chains)
   ch.zs <- vector(mode="list",chains)
+  ch.bs <- vector(mode="list",chains)
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
     ## Allocate chains
     ch.x <- array(0,c(n,m,iters))
     ch.z <- array(0,c(n-1L,2L,iters))
+    ch.b <- array(0,c(n-1L,1L,iters))
 
-    x1 <- x0[,,k1]
-    z1 <- z0[,,k1]
+    x1 <- x0[[k1]]
+    z1 <- z0[[k1]]
+    b1 <- b0[[k1]]
+    ## Drop dimnames for speed
+    dimnames(x1) <- NULL
+    dimnames(z1) <- NULL
+    dimnames(b1) <- NULL
 
     ## Contribution to logp from the initial x,z
     logp.x1 <- logpx(x1)
     logp.z1 <- logpz(z1)
-    logp.b1 <- logpb(x1,z1)
+    logp.b1 <- logpb(x1,z1,b1)
 
     k2 <- 0
     if(verbose) {
@@ -2015,7 +2016,7 @@ estelle.metropolis.switch <- function(model,
 
         x <- x1
         x[c(1L,n),] <- x2[c(1L,n),]
-        logp.b2 <- logpb(x,z1)
+        logp.b2 <- logpb(x,z1,b1)
 
 
         ## Update x
@@ -2055,7 +2056,7 @@ estelle.metropolis.switch <- function(model,
           is <- seq.int(rb,n-1L,by=2L)
           x <- x1
           x[is,] <- x2[is,]
-          logp.b2 <- logpb(x,z1)
+          logp.b2 <- logpb(x,z1,b1)
 
           logp1 <- logp.x1[is]+logp.b1[is-1L]+logp.b1[is]
           logp2 <- logp.x2[is]+logp.b2[is-1L]+logp.b2[is]
@@ -2074,7 +2075,7 @@ estelle.metropolis.switch <- function(model,
         ## and would cancel), and so we can update all the z in parallel.
         z2 <- proposal.z(z1)
         logp.z2 <- logpz(z2)
-        logp.b2 <- logpb(x,z2)
+        logp.b2 <- logpb(x,z2,b1)
         logp1 <- logp.z1+logp.b1
         logp2 <- logp.z2+logp.b2
         ## MH rule - compute indices of the accepted points.
@@ -2082,16 +2083,27 @@ estelle.metropolis.switch <- function(model,
         z1[accept,] <- z2[accept,]
         logp.z1[accept] <- logp.z2[accept]
         logp.b1[accept] <- logp.b2[accept]
+
+
+        ## Update b
+        logp.B <- logpB(x1,z1)
+        for(i in seq_along(b1)) {
+          b1[i] <- sample.int(ncol(logp.B),prob=exp(logp.B[i,]))
+          logp.b1[i] <- logp.B[i,b1[i]]
+        }
+
       }
       ## Store the current state
       ch.x[,,k2] <- x1
       ch.z[,,k2] <- z1
+      ch.b[,,k2] <- b1
     }
     ch.xs[[k1]] <- ch.x
     ch.zs[[k1]] <- ch.z
+    ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
-  list(model=model,x=ch.xs,z=ch.zs)
+  list(model=model,x=ch.xs,z=ch.zs,b=ch.bs)
 }
 
 
@@ -2106,38 +2118,38 @@ stella.metropolis.switch <- function(model,
 
   ## Initialize x
   if(is.null(x0)) x0 <- model$x0
-  ## Drop dimnames for speed
-  dimnames(x0) <- NULL
-  ## Expand to multiple chains
-  x0 <- array(x0,c(dim(x0)[1:2],chains))
   ## Expand starting values for multiple chains
-  if(is.list(x0))
-    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
-  else
-    x0 <- array(x0,c(dim(x0)[1:2],chains))
+  x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
 
   ## Number of locations
-  n <- dim(x0)[1L]
+  n <- nrow(x0)
   ## Number of parameters
-  m <- dim(x0)[2L]
+  m <- ncol(x0)
 
   ## Extract model components
   logpx <- model$logpx
   logpb <- model$stella.logpb
+  logpB <- model$stella.logpB
   fixedx <- model$fixedx
 
   ## Lists of chains
   ch.xs <- vector(mode="list",chains)
+  ch.bs <- vector(mode="list",chains)
 
   ## PARALLEL - parallelise this loop
   for(k1 in 1:chains) {
     ## Allocate chain
     ch.x <- array(0,c(n,m,iters))
-    x1 <- x0[,,k1]
+    ch.b <- array(0,c(n-1L,1L,iters))
+
+    ## Initialize
+    x1 <- x0[[k1]]
+    ## Drop dimnames for speed
+    dimnames(x1) <- NULL
 
     ## Contribution to logp from the initial x
     logp.x1 <- logpx(x1)
-    logp.b1 <- logpb(x1)
+    logp.b1 <- logpb(x1,b1)
 
     k2 <- 0
     if(verbose) {
@@ -2163,7 +2175,7 @@ stella.metropolis.switch <- function(model,
 
         x <- x1
         x[c(1L,n),] <- x2[c(1L,n),]
-        logp.b2 <- logpb(x)
+        logp.b2 <- logpb(x,b1)
 
 
         ## Update x
@@ -2203,7 +2215,7 @@ stella.metropolis.switch <- function(model,
           is <- seq.int(rb,n-1L,by=2L)
           x <- x1
           x[is,] <- x2[is,]
-          logp.b2 <- logpb(x)
+          logp.b2 <- logpb(x,b1)
 
           logp1 <- logp.x1[is]+logp.b1[is-1L]+logp.b1[is]
           logp2 <- logp.x2[is]+logp.b2[is-1L]+logp.b2[is]
@@ -2213,16 +2225,25 @@ stella.metropolis.switch <- function(model,
           logp.x1[accept] <- logp.x2[accept]
           logp.b1[accept] <- logp.b2[accept]
           logp.b1[accept-1L] <- logp.b2[accept-1L]
-
         }
+
+        ## Update b
+        logp.B <- logpB(x1)
+        for(i in seq_along(b1)) {
+          b1[i] <- sample.int(ncol(logp.B),prob=exp(logp.B[i,]))
+          logp.b1[i] <- logp.B[i,b1[i]]
+        }
+
       }
       ## Store the current state
       ch.x[,,k2] <- x1
+      ch.b[,1L,k2] <- b1
     }
     ch.xs[[k1]] <- ch.x
+    ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
-  list(model=model,x=ch.xs)
+  list(model=model,x=ch.xs,b=ch.bs)
 }
 
 
