@@ -815,7 +815,7 @@ satellite.model <- function(time,X,
                             sd,df=NULL,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE,dt=NULL) {
+                            x0,z0=NULL,b0=b0,fixedx=FALSE,dt=NULL) {
 
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=length(time))
@@ -851,14 +851,34 @@ satellite.model <- function(time,X,
   }
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
+  estelle.logpb <- function(x,z,b=NULL) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x) {
+  stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  estelle.logpB <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  stella.logpB <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
 
@@ -868,6 +888,8 @@ satellite.model <- function(time,X,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
+       estelle.logpB=estelle.logpB,
+       stella.logpB=stella.logpB,
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -875,6 +897,7 @@ satellite.model <- function(time,X,
        ## Suggested starting points
        x0=x0,
        z0=z0,
+       b0=b0,
        ## Data
        time=time,
        X=X)
@@ -951,6 +974,7 @@ satellite.model <- function(time,X,
 ##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
+##' @param b0 suggested starting behavioural states.
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
 ##' @param polar logical vector indicating which twilights were
@@ -966,6 +990,7 @@ satellite.model <- function(time,X,
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
+##' \item{\code{s0}}{a vector of initial behavioural states.}
 ##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{group}}{the grouping vector.}
@@ -975,7 +1000,7 @@ threshold.model <- function(twilight,rise,
                             alpha,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
+                            x0,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1059,14 +1084,34 @@ threshold.model <- function(twilight,rise,
   }
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
+  estelle.logpb <- function(x,z,b=NULL) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x) {
+  stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  estelle.logpB <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  stella.logpB <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
 
@@ -1076,6 +1121,8 @@ threshold.model <- function(twilight,rise,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
+       estelle.logpB=estelle.logpB,
+       stella.logpB=stella.logpB,
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1083,6 +1130,7 @@ threshold.model <- function(twilight,rise,
        ## Suggested starting points
        x0=x0,
        z0=z0,
+       b0=b0,
        ## Data
        time=twilight,
        rise=rise)
@@ -1096,7 +1144,7 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     alpha,beta,
                                     logp.x=function(x) rep.int(0L,nrow(x)),
                                     logp.z=function(z) rep.int(0L,nrow(z)),
-                                    x0,z0=NULL,fixedx=FALSE,dt=NULL,
+                                    x0,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL,
                                     zenith=96) {
 
   ## Convert twilights to solar time.
@@ -1185,18 +1233,35 @@ grouped.threshold.model <- function(twilight,rise,group,
   }
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
+  estelle.logpb <- function(x,z,b=NULL) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x) {
+  stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
+  estelle.logpB <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
 
-
+  stella.logpB <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
@@ -1204,6 +1269,8 @@ grouped.threshold.model <- function(twilight,rise,group,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
+       estelle.logpB=estelle.logpB,
+       stella.logpB=stella.logpB,
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1211,6 +1278,7 @@ grouped.threshold.model <- function(twilight,rise,group,
        ## Suggested starting points
        x0=x0,
        z0=z0,
+       b0=b0,
        ## Data
        twilight=twilight,
        rise=rise,
@@ -1227,7 +1295,7 @@ polar.threshold.model <- function(twilight,rise,
                                   alpha,beta,
                                   logp.x=function(x) rep.int(0L,nrow(x)),
                                   logp.z=function(z) rep.int(0L,nrow(z)),
-                                  x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+                                  x0,z0=NULL,b0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1325,16 +1393,35 @@ polar.threshold.model <- function(twilight,rise,
   }
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
+  estelle.logpb <- function(x,z,b=NULL) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x) {
+  stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
+  estelle.logpB <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  stella.logpB <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
@@ -1342,6 +1429,8 @@ polar.threshold.model <- function(twilight,rise,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
+       estelle.logpB=estelle.logpB,
+       stella.logpB=stella.logpB,
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1418,7 +1507,7 @@ curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
                         logp.x=function(x) rep.int(0L,nrow(x)),
                         logp.z=function(z) rep.int(0L,nrow(z)),
-                        x0=NULL,z0=NULL,fixedx=FALSE,dt=NULL) {
+                        x0=NULL,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Convert to solar time.
   sun <- solar(time)
@@ -1466,22 +1555,47 @@ curve.model <- function(time,light,segment,
   }
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
+  estelle.logpb <- function(x,z,b=NULL) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x) {
+
+  stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    if(is.null(b))
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    else
+      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
+
+
+  estelle.logpB <- function(x,z) {
+    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
+  stella.logpB <- function(x) {
+    spd <- pmax.int(trackDist(x), 1e-06)/dt
+    B <- matrix(0,length(x)-1,nrow(beta))
+    for(b in 1:nrow(beta))
+      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+  }
+
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
        ## Behavioural contribution to the log posterior
-       estelle.logpb = estelle.logpb,
+       estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
+       estelle.logpB=estelle.logpB,
+       stella.logpB=stella.logpB,
        ## Fitted values
        fitted=fitted,
        ## Locations to be held fixed
@@ -1489,6 +1603,7 @@ curve.model <- function(time,light,segment,
        ## Suggested starting points
        x0=x0,
        z0=z0,
+       b0=b0,
        ## Median time of twilights
        time = tm)
 }
@@ -1801,6 +1916,325 @@ stella.metropolis <- function(model,
   }
   list(model=model,x=ch.xs)
 }
+
+
+
+
+##' Metropolis samplers for Stella or Estelle with behaviour switching
+##'
+##' These functions draw samples form posterior for the simple
+##' behavioural switching Stella or Estelle model by the Metropolis
+##' algorithm.
+##' @title Metropolis Samplers (Behaviour switching)
+##' @param model a model structure as generated by
+##' \code{threshold.model}.
+##' @param proposal.x function for drawing proposals for x.
+##' @param proposal.z function for drawing proposals for z.
+##' @param x0 Starting values for twilight locations x.
+##' @param z0 Starting values for intermediate locations z.
+##' @param b0 Starting values for the behavioural states b.
+##' @param iters number of samples to draw.
+##' @param thin rate at which to thin samples.
+##' @param chains number of chains to sample.
+##' @param verbose report progress at prompt?
+##' @return If there are r samples drawn for each of q chains of p
+##' parameters at n locations, Stella will return a list containing
+##' \item{\code{model}}{the model structure}
+##' \item{\code{x}}{a list of n x p x r arrays of twilight locations from the q chains}
+##' \item{\code{b}}{a list of (n-1) x r arrays of behavioural states from the q chains}
+##' While in addition Estelle will return
+##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate locations from the q chains}.
+##' @seealso \code{\link{threshold.model}}
+##' @export
+estelle.metropolis.switch <- function(model,
+                                      proposal.x,proposal.z,
+                                      x0=NULL,z0=NULL,b0=NULL,
+                                      iters=1000L,thin=10L,chains=1L,
+                                      verbose=interactive()) {
+
+  ## Initialize x,z
+  if(is.null(x0)) x0 <- model$x0
+  if(is.null(z0)) z0 <- model$z0
+  if(is.null(b0)) b0 <- model$b0
+  ## Drop dimnames for speed
+  dimnames(x0) <- NULL
+  dimnames(z0) <- NULL
+  dimnames(b0) <- NULL
+  ## Expand starting values for multiple chains
+  if(is.list(x0))
+    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
+  else
+    x0 <- array(x0,c(dim(x0)[1:2],chains))
+  if(is.list(z0))
+    z0 <- array(unlist(z0),c(dim(z0[[1]])[1:2],chains))
+  else
+    z0 <- array(z0,c(dim(z0)[1:2],chains))
+
+  ## Number of locations
+  n <- dim(x0)[1L]
+  ## Number of parameters
+  m <- dim(x0)[2L]
+
+  ## Extract model components
+  logpx <- model$logpx
+  logpz <- model$logpz
+  logpb <- model$estelle.logpb
+  fixedx <- model$fixedx
+
+  ## Lists of chains
+  ch.xs <- vector(mode="list",chains)
+  ch.zs <- vector(mode="list",chains)
+
+  ## PARALLEL - parallelise this loop
+  for(k1 in 1:chains) {
+    ## Allocate chains
+    ch.x <- array(0,c(n,m,iters))
+    ch.z <- array(0,c(n-1L,2L,iters))
+
+    x1 <- x0[,,k1]
+    z1 <- z0[,,k1]
+
+    ## Contribution to logp from the initial x,z
+    logp.x1 <- logpx(x1)
+    logp.z1 <- logpz(z1)
+    logp.b1 <- logpb(x1,z1)
+
+    k2 <- 0
+    if(verbose) {
+      cat("iter ",sprintf("%6d",k2))
+      flush.console()
+    }
+
+    for(k2 in 1:iters) {
+
+      if(verbose && k2%%10==0) {
+        cat("\b\b\b\b\b\b");
+        cat(sprintf("%6d",k2));
+        flush.console()
+      }
+
+      for(k3 in 1:thin) {
+
+        ## Propose all x at once, and calculate contribution to the log
+        ## posterior
+        x2 <- proposal.x(x1)
+        x2[fixedx,] <- x1[fixedx,]
+        logp.x2 <- logpx(x2)
+
+        x <- x1
+        x[c(1L,n),] <- x2[c(1L,n),]
+        logp.b2 <- logpb(x,z1)
+
+
+        ## Update x
+        ## In each case we compute full contribution (positional +
+        ## behavourial) to the log posterior for current and proposed
+        ## points, and apply the MH rule. If the proposal is accepted,
+        ## we update both x and the cached contributions to the log
+        ## posterior.
+
+
+        ## Accept/reject first x
+        if(!fixedx[1L]) {
+          logp1 <- logp.x1[1L]+logp.b1[1L]
+          logp2 <- logp.x2[1L]+logp.b2[1L]
+          if(logp2-logp1 > log(runif(1))) {
+            x1[1L,] <- x2[1L,]
+            logp.x1[1L] <- logp.x2[1L]
+            logp.b1[1L] <- logp.b2[1L]
+          }
+        }
+
+
+        ## Accept/reject last x
+        if(!fixedx[n]) {
+          logp1 <- logp.x1[n]+logp.b1[n-1L]
+          logp2 <- logp.x2[n]+logp.b2[n-1L]
+          if(logp2-logp1 > log(runif(1))) {
+            x1[n,] <- x2[n,]
+            logp.x1[n] <- logp.x2[n]
+            logp.b1[n-1L] <- logp.b2[n-1L]
+          }
+        }
+
+
+        ## Red/Black update for interior x
+        for(rb in 2:3) {
+          is <- seq.int(rb,n-1L,by=2L)
+          x <- x1
+          x[is,] <- x2[is,]
+          logp.b2 <- logpb(x,z1)
+
+          logp1 <- logp.x1[is]+logp.b1[is-1L]+logp.b1[is]
+          logp2 <- logp.x2[is]+logp.b2[is-1L]+logp.b2[is]
+          ## MH rule - compute indices of the accepted points.
+          accept <- is[logp2-logp1 > log(runif(length(is)))]
+          x1[accept,] <- x[accept,]
+          logp.x1[accept] <- logp.x2[accept]
+          logp.b1[accept] <- logp.b2[accept]
+          logp.b1[accept-1L] <- logp.b2[accept-1L]
+
+        }
+
+        ## Update z
+        ## Here we need only consider the behavioural contributions to
+        ## the log posterior (the position contributions are constant
+        ## and would cancel), and so we can update all the z in parallel.
+        z2 <- proposal.z(z1)
+        logp.z2 <- logpz(z2)
+        logp.b2 <- logpb(x,z2)
+        logp1 <- logp.z1+logp.b1
+        logp2 <- logp.z2+logp.b2
+        ## MH rule - compute indices of the accepted points.
+        accept <- logp2-logp1 > log(runif(n-1L))
+        z1[accept,] <- z2[accept,]
+        logp.z1[accept] <- logp.z2[accept]
+        logp.b1[accept] <- logp.b2[accept]
+      }
+      ## Store the current state
+      ch.x[,,k2] <- x1
+      ch.z[,,k2] <- z1
+    }
+    ch.xs[[k1]] <- ch.x
+    ch.zs[[k1]] <- ch.z
+    if(verbose) cat("\n")
+  }
+  list(model=model,x=ch.xs,z=ch.zs)
+}
+
+
+
+##' @rdname estelle.metropolis
+##' @export
+stella.metropolis.switch <- function(model,
+                                     proposal.x,
+                                     x0=NULL,
+                                     iters=1000,thin=10,chains=1,
+                                     verbose=interactive()) {
+
+  ## Initialize x
+  if(is.null(x0)) x0 <- model$x0
+  ## Drop dimnames for speed
+  dimnames(x0) <- NULL
+  ## Expand to multiple chains
+  x0 <- array(x0,c(dim(x0)[1:2],chains))
+  ## Expand starting values for multiple chains
+  if(is.list(x0))
+    x0 <- array(unlist(x0),c(dim(x0[[1]])[1:2],chains))
+  else
+    x0 <- array(x0,c(dim(x0)[1:2],chains))
+
+  ## Number of locations
+  n <- dim(x0)[1L]
+  ## Number of parameters
+  m <- dim(x0)[2L]
+
+  ## Extract model components
+  logpx <- model$logpx
+  logpb <- model$stella.logpb
+  fixedx <- model$fixedx
+
+  ## Lists of chains
+  ch.xs <- vector(mode="list",chains)
+
+  ## PARALLEL - parallelise this loop
+  for(k1 in 1:chains) {
+    ## Allocate chain
+    ch.x <- array(0,c(n,m,iters))
+    x1 <- x0[,,k1]
+
+    ## Contribution to logp from the initial x
+    logp.x1 <- logpx(x1)
+    logp.b1 <- logpb(x1)
+
+    k2 <- 0
+    if(verbose) {
+      cat("iter ",sprintf("%6d",k2))
+      flush.console()
+    }
+
+    for(k2 in 1:iters) {
+
+      if(verbose && k2%%10==0) {
+        cat("\b\b\b\b\b\b");
+        cat(sprintf("%6d",k2));
+        flush.console()
+      }
+
+      for(k3 in 1:thin) {
+
+        ## Propose all x at once, and calculate contribution to the log
+        ## posterior
+        x2 <- proposal.x(x1)
+        x2[fixedx,] <- x1[fixedx,]
+        logp.x2 <- logpx(x2)
+
+        x <- x1
+        x[c(1L,n),] <- x2[c(1L,n),]
+        logp.b2 <- logpb(x)
+
+
+        ## Update x
+        ## In each case we compute full contribution (positional +
+        ## behavourial) to the log posterior for current and proposed
+        ## points, and apply the MH rule. If the proposal is accepted,
+        ## we update both x and the cached contributions to the log
+        ## posterior.
+
+
+        ## Accept/reject first x
+        if(!fixedx[1L]) {
+          logp1 <- logp.x1[1L]+logp.b1[1L]
+          logp2 <- logp.x2[1L]+logp.b2[1L]
+          if(logp2-logp1 > log(runif(1))) {
+            x1[1L,] <- x2[1L,]
+            logp.x1[1L] <- logp.x2[1L]
+            logp.b1[1L] <- logp.b2[1L]
+          }
+        }
+
+
+        ## Accept/reject last x
+        if(!fixedx[n]) {
+          logp1 <- logp.x1[n]+logp.b1[n-1L]
+          logp2 <- logp.x2[n]+logp.b2[n-1L]
+          if(logp2-logp1 > log(runif(1))) {
+            x1[n,] <- x2[n,]
+            logp.x1[n] <- logp.x2[n]
+            logp.b1[n-1L] <- logp.b2[n-1L]
+          }
+        }
+
+
+        ## Red/Black update for interior x
+        for(rb in 2:3) {
+          is <- seq.int(rb,n-1L,by=2L)
+          x <- x1
+          x[is,] <- x2[is,]
+          logp.b2 <- logpb(x)
+
+          logp1 <- logp.x1[is]+logp.b1[is-1L]+logp.b1[is]
+          logp2 <- logp.x2[is]+logp.b2[is-1L]+logp.b2[is]
+          ## MH rule - compute indices of the accepted points.
+          accept <- is[logp2-logp1 > log(runif(length(is)))]
+          x1[accept,] <- x[accept,]
+          logp.x1[accept] <- logp.x2[accept]
+          logp.b1[accept] <- logp.b2[accept]
+          logp.b1[accept-1L] <- logp.b2[accept-1L]
+
+        }
+      }
+      ## Store the current state
+      ch.x[,,k2] <- x1
+    }
+    ch.xs[[k1]] <- ch.x
+    if(verbose) cat("\n")
+  }
+  list(model=model,x=ch.xs)
+}
+
+
+
 
 
 
