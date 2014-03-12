@@ -1914,7 +1914,6 @@ stella.metropolis <- function(model,
 
 
 
-<<<<<<< HEAD
 ##' Metropolis samplers for Stella or Estelle with behaviour switching
 ##'
 ##' These functions draw samples form posterior for the simple
@@ -2109,7 +2108,7 @@ estelle.metropolis.switch <- function(model,
 
 
 
-##' @rdname estelle.metropolis
+##' @rdname estelle.metropolis.switch
 ##' @export
 stella.metropolis.switch <- function(model,
                                      proposal.x,
