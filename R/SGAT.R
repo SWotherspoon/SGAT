@@ -2261,7 +2261,7 @@ stella.metropolis.switch <- function(model,
 ##' @return size of the first dimension of the array.
 ##' @export
 nlocation <- function(s) {
-  dim(if(is.list(s)) s else s[[1]])[1]
+  dim(if(is.list(s)) s[[1]] else s)[1]
 }
 
 
