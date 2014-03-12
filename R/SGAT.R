@@ -1914,6 +1914,7 @@ stella.metropolis <- function(model,
 
 
 
+<<<<<<< HEAD
 ##' Metropolis samplers for Stella or Estelle with behaviour switching
 ##'
 ##' These functions draw samples form posterior for the simple
@@ -2248,7 +2249,21 @@ stella.metropolis.switch <- function(model,
 
 
 
-
+##' Number of locations
+##'
+##' A convience function to determine the number of locations a chain,
+##' or set of initial locations or a location summary
+##' describe. Assumes \code{s} is either an array or a list of arrays
+##' in which the first dimension corresponds to location, and returns
+##' the length of the first dimension.
+##'
+##' @title Number of locations
+##' @param s an array or a list of arrays.
+##' @return size of the first dimension of the array.
+##' @export
+nlocation <- function(s) {
+  dim(if(is.list(s)) s else s[[1]])[1]
+}
 
 
 ##' Summarize a set of location samples
