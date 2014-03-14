@@ -870,16 +870,18 @@ satellite.model <- function(time,X,
 
   estelle.logpB <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   stella.logpB <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
 
@@ -1103,16 +1105,18 @@ threshold.model <- function(twilight,rise,
 
   estelle.logpB <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   stella.logpB <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
 
@@ -1252,16 +1256,18 @@ grouped.threshold.model <- function(twilight,rise,group,
 
   estelle.logpB <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   stella.logpB <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   list(## Positional contribution to the log posterior
@@ -1412,16 +1418,18 @@ polar.threshold.model <- function(twilight,rise,
 
   estelle.logpB <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   stella.logpB <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   list(## Positional contribution to the log posterior
@@ -1577,16 +1585,18 @@ curve.model <- function(time,light,segment,
 
   estelle.logpB <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
   stella.logpB <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,length(x)-1,nrow(beta))
+    B <- matrix(0,nrow(x)-1,nrow(beta))
     for(b in 1:nrow(beta))
       B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    B
   }
 
 
@@ -1956,9 +1966,9 @@ estelle.metropolis.switch <- function(model,
   b0 <- rep(if(is.list(b0)) b0 else list(b0),length.out=chains)
 
   ## Number of locations
-  n <- nrow(x0)
+  n <- nrow(x0[[1]])
   ## Number of parameters
-  m <- ncol(x0)
+  m <- ncol(x0[[1]])
 
   ## Extract model components
   logpx <- model$logpx
@@ -2088,7 +2098,7 @@ estelle.metropolis.switch <- function(model,
         ## Update b
         logp.B <- logpB(x1,z1)
         for(i in seq_along(b1)) {
-          b1[i] <- sample.int(ncol(logp.B),prob=exp(logp.B[i,]))
+          b1[i] <- sample.int(ncol(logp.B),1,prob=exp(logp.B[i,]))
           logp.b1[i] <- logp.B[i,b1[i]]
         }
 
@@ -2096,13 +2106,14 @@ estelle.metropolis.switch <- function(model,
       ## Store the current state
       ch.x[,,k2] <- x1
       ch.z[,,k2] <- z1
-      ch.b[,,k2] <- b1
+      ch.b[,1L,k2] <- b1
     }
     ch.xs[[k1]] <- ch.x
     ch.zs[[k1]] <- ch.z
     ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
+  attr(ch.bs,"nstates") <- ncol(logp.B)
   list(model=model,x=ch.xs,z=ch.zs,b=ch.bs)
 }
 
@@ -2122,9 +2133,9 @@ stella.metropolis.switch <- function(model,
   x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
 
   ## Number of locations
-  n <- nrow(x0)
+  n <- nrow(x0[[1]])
   ## Number of parameters
-  m <- ncol(x0)
+  m <- ncol(x0[[1]])
 
   ## Extract model components
   logpx <- model$logpx
@@ -2230,7 +2241,7 @@ stella.metropolis.switch <- function(model,
         ## Update b
         logp.B <- logpB(x1)
         for(i in seq_along(b1)) {
-          b1[i] <- sample.int(ncol(logp.B),prob=exp(logp.B[i,]))
+          b1[i] <- sample.int(ncol(logp.B),1,prob=exp(logp.B[i,]))
           logp.b1[i] <- logp.B[i,b1[i]]
         }
 
@@ -2243,6 +2254,7 @@ stella.metropolis.switch <- function(model,
     ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
+  attr(ch.bs,"nstates") <- ncol(logp.B)
   list(model=model,x=ch.xs,b=ch.bs)
 }
 
@@ -2268,7 +2280,7 @@ nlocation <- function(s) {
 ##' Summarize a set of location samples
 ##'
 ##' These functions compute various summaries of a sample or list of
-##' samples samples generated by \code{estelle.metropolis} or
+##' samples generated by \code{estelle.metropolis} or
 ##' \code{stella.metropolis}.
 ##'
 ##' These functions accept either a sample from a single mcmc run, or
@@ -2324,6 +2336,52 @@ location.mean <- function(s,discard=0,collapse=TRUE,chains=NULL) {
   if(is.list(s)) lapply(s,locmean) else locmean(s)
 }
 
+
+
+##' Summarize a set of behavioural state samples
+##'
+##' The functions compute various summaries of a sample or list of
+##' samples of behavioural states generated by
+##' \code{estelle.metropolis.switch} or
+##' \code{stella.metropolis.switch}.
+##'
+##' These functions accept either a sample from a single mcmc run, or
+##' a list of samples from parallel mcmc runs.  When \code{collapse}
+##' is true, multiple samples are merged and single result is
+##' returned, otherwise a result is returned for each sample.
+##'
+##' @rdname behaviour.prob
+##' @title Summaries of Behavioural Samples
+##' @param s a single chain or a list of parallel chains of
+##' behavioural states generated by \code{estelle.metropolis.switch}
+##' or \code{stella.metropolis.switch}.
+##' @param discard number of initial samples to discard.
+##' @param collapse whether to collapse multiple chains to a single sample
+##' @param chains the set of chains to retain, or \code{NULL}.
+##' @return
+##' \item{\code{behaviour.prob}}{returns an array or a list of
+##' arrays of the probabilities of each behavioural state in each interval.}
+##' \item{\code{location.mean}}{returns an vector or a list of vectors
+##' of the most likely behvarioual state in each interval.}
+##' @export
+behaviour.prob <- function(s,discard=0,collapse=TRUE,chains=NULL) {
+  nstates <- attr(s,"nstates")
+  prob <- function(s) t(apply(s,1,tabulate,nbins=nstates))
+
+  s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
+  if(is.list(s)) lapply(s,prob) else prob(s)
+}
+
+
+##' @rdname behaviour.prob
+##' @export
+behaviour.class <- function(s,discard=0,collapse=TRUE,chains=NULL) {
+  nstates <- attr(s,"nstates")
+  prob <- function(s) apply(s,1,function(p) which.max(tabulate(p,nbins=nstates)))
+
+  s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
+  if(is.list(s)) lapply(s,prob) else prob(s)
+}
 
 
 ##' Bin locations to form a 2D density image
