@@ -1003,6 +1003,7 @@ threshold.model <- function(twilight,rise,
                             alpha,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
+                            B0=1,
                             x0,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
@@ -1136,6 +1137,7 @@ threshold.model <- function(twilight,rise,
        x0=x0,
        z0=z0,
        b0=b0,
+       B0=B0,
        ## Data
        time=twilight,
        rise=rise)
@@ -2376,7 +2378,7 @@ location.mean <- function(s,discard=0,collapse=TRUE,chains=NULL) {
 ##' @export
 behaviour.prob <- function(s,discard=0,collapse=TRUE,chains=NULL) {
   nstates <- attr(s,"nstates")
-  prob <- function(s) t(apply(s,1,tabulate,nbins=nstates))
+  prob <- function(s) t(apply(s,1,tabulate,nbins=nstates)/ncol(s))
 
   s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
   if(is.list(s)) lapply(s,prob) else prob(s)
