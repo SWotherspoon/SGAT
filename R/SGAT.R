@@ -1517,6 +1517,7 @@ curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
                         logp.x=function(x) rep.int(0L,nrow(x)),
                         logp.z=function(z) rep.int(0L,nrow(z)),
+                        B0=1,
                         x0=NULL,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Convert to solar time.
@@ -1616,6 +1617,7 @@ curve.model <- function(time,light,segment,
        x0=x0,
        z0=z0,
        b0=b0,
+       B0=B0,
        ## Median time of twilights
        time = tm)
 }
@@ -1800,7 +1802,7 @@ estelle.metropolis <- function(model,
 stella.metropolis <- function(model,
                               proposal.x,
                               x0=NULL,
-                              iters=1000,thin=10,chains=1,
+                              iters=1000L,thin=10L,chains=1L,
                               verbose=interactive()) {
 
   ## Initialize x
@@ -1975,6 +1977,7 @@ estelle.metropolis.switch <- function(model,
   logpz <- model$logpz
   logpb <- model$estelle.logpb
   logpB <- model$estelle.logpB
+  B0 <- model$B0
   fixedx <- model$fixedx
 
   ## Lists of chains
@@ -2097,8 +2100,9 @@ estelle.metropolis.switch <- function(model,
 
         ## Update b
         logp.B <- logpB(x1,z1)
+        B <- B0*exp(logp.B)
         for(i in seq_along(b1)) {
-          b1[i] <- sample.int(ncol(logp.B),1,prob=exp(logp.B[i,]))
+          b1[i] <- sample.int(ncol(B),1,prob=B[i,])
           logp.b1[i] <- logp.B[i,b1[i]]
         }
 
@@ -2123,14 +2127,16 @@ estelle.metropolis.switch <- function(model,
 ##' @export
 stella.metropolis.switch <- function(model,
                                      proposal.x,
-                                     x0=NULL,
-                                     iters=1000,thin=10,chains=1,
+                                     x0=NULL,b0=NULL,
+                                     iters=1000L,thin=10L,chains=1L,
                                      verbose=interactive()) {
 
   ## Initialize x
   if(is.null(x0)) x0 <- model$x0
+  if(is.null(b0)) b0 <- model$b0
   ## Expand starting values for multiple chains
   x0 <- rep(if(is.list(x0)) x0 else list(x0),length.out=chains)
+  b0 <- rep(if(is.list(b0)) b0 else list(b0),length.out=chains)
 
   ## Number of locations
   n <- nrow(x0[[1]])
@@ -2141,6 +2147,7 @@ stella.metropolis.switch <- function(model,
   logpx <- model$logpx
   logpb <- model$stella.logpb
   logpB <- model$stella.logpB
+  B0 <- model$B0
   fixedx <- model$fixedx
 
   ## Lists of chains
@@ -2155,8 +2162,10 @@ stella.metropolis.switch <- function(model,
 
     ## Initialize
     x1 <- x0[[k1]]
+    b1 <- b0[[k1]]
     ## Drop dimnames for speed
     dimnames(x1) <- NULL
+    dimnames(b1) <- NULL
 
     ## Contribution to logp from the initial x
     logp.x1 <- logpx(x1)
@@ -2240,8 +2249,9 @@ stella.metropolis.switch <- function(model,
 
         ## Update b
         logp.B <- logpB(x1)
+        B <- B0*exp(logp.B)
         for(i in seq_along(b1)) {
-          b1[i] <- sample.int(ncol(logp.B),1,prob=exp(logp.B[i,]))
+          b1[i] <- sample.int(ncol(B),1,prob=B[i,])
           logp.b1[i] <- logp.B[i,b1[i]]
         }
 
