@@ -881,6 +881,87 @@ satellite.model <- function(time,X,
 }
 
 
+##' Log density of twilight errors
+##'
+##' Construct a function to evalute the log density of the twilight
+##' errors in a threshold model.
+##'
+##' One of several models models may be selected for the errors in
+##' twilight times.  The errors in twilight time are defined as the
+##' difference in the observed and true times of twilight, with sign
+##' selected so that a positive error always corresponds to a sunrise
+##' observed after the true time of sunrise, and sunset observed
+##' before the true time of sunset. That is, a positive error
+##' corresponds to the observed light level being lower than expected.
+##'
+##' The properties of the twilight model are determined by
+##' \code{alpha}, which must be either a vector of parameters that are
+##' to be applied to each twilight, or a matrix of parameters with one
+##' row for each twilight.
+##'
+##' The \code{twilight.model} argument selects the distribution of the
+##' twilight errors
+##' \describe{
+##' \item{'Normal'}{Normally distributed with mean \code{alpha[,1]} and
+##' standard deviation \code{alpha[,2]},}
+##' \item{'LogNormal'}{Log Normally distributed so the log errors have
+##' mean \code{alpha[,1]} and standard deviation \code{alpha[,2]}, or}
+##' \item{'Gamma'}{Gamma distributed with shape \code{alpha[,1]} and
+##' rate \code{alpha[2]}.}
+##' }
+##' The 'LogNormal' and 'Gamma' models forbid negative errors, that
+##' is, the observed light cannot be brighter than expected.  There
+##' are modified variants of these models for which negative errors
+##' are extremely unlikely, but not forbidden, and can be used to
+##' generate suitable initialization locations for their unmodified
+##' counterparts.
+##'
+##' @title Twilight Error Models
+##' @param twilight.model the model for the errors in twilight times.
+##' @param alpha parameters of the twilight model.
+##' @return a function to evaluate the log density of the twilight
+##' residuals in a threshold model.
+##' @export
+make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
+                                alpha) {
+
+  twilight.model <- match.arg(twilight.model)
+  logp <- switch(twilight.model,
+                 Gamma={
+
+                   shape <- alpha[,1L]
+                   rate <- alpha[,2L]
+                   function(r) dgamma(r,shape,rate,log=TRUE)
+                 },
+                 LogNormal={
+                   meanlog <- alpha[,1L]
+                   sdlog <- alpha[,2L]
+                   function(r) dlnorm(r,meanlog,sdlog,log=TRUE)
+                 },
+                 Normal={
+                   mean <- alpha[,1L]
+                   sd <- alpha[,2L]
+                   function(r) dnorm(r,mean,sd,log=TRUE)
+                 },
+                 ModifiedGamma={
+                   shape <- alpha[,1L]
+                   rate <- alpha[,2L]
+                   function(r)
+                     ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dgamma(shape/rate,shape,rate,log=TRUE),
+                            dgamma(r,shape,rate,log=TRUE))
+                 },
+                 ModifiedLogNormal={
+                   meanlog <- alpha[,1L]
+                   sdlog <- alpha[,2L]
+                   function(r)
+                     ifelse(is.finite(r) & r < 0,
+                            60*r-1.0E8+dlnorm(exp(meanlog+sdlog^2/2),meanlog,sdlog,log=T),
+                            dlnorm(r,meanlog,sdlog,log=TRUE))
+                 })
+  logp
+}
+
 
 ##' Threshold Model Structures for Stella and Estelle
 ##'
@@ -895,27 +976,34 @@ satellite.model <- function(time,X,
 ##' multiple twilight times to be associated with a single location.
 ##'
 ##' One of several models models may be selected for the errors in
-##' twilight times.  These errors are defined as the difference in the
-##' observed and true times of twilight, with sign selected so that a
-##' positive error always corresponds to a sunrise observed after the
-##' true time of sunrise, and sunset observed before the true time of
-##' sunset. That is, a positive error corresponds to the observed
-##' light level being lower than expected. The \code{twilight.model}
-##' selects whether these errors are:
+##' twilight times.  The errors in twilight time are defined as the
+##' difference in the observed and true times of twilight, with sign
+##' selected so that a positive error always corresponds to a sunrise
+##' observed after the true time of sunrise, and sunset observed
+##' before the true time of sunset. That is, a positive error
+##' corresponds to the observed light level being lower than expected.
+##'
+##' The properties of the twilight model are determined by
+##' \code{alpha}, which must be either a vector of parameters that are
+##' to be applied to each twilight, or a matrix of parameters with one
+##' row for each twilight.
+##'
+##' The \code{twilight.model} argument selects the distribution of the
+##' twilight errors
 ##' \describe{
-##' \item{'Normal'}{Normally distributed with mean \code{alpha[1]} and
-##' standard deviation \code{alpha[2]},}
+##' \item{'Normal'}{Normally distributed with mean \code{alpha[,1]} and
+##' standard deviation \code{alpha[,2]},}
 ##' \item{'LogNormal'}{Log Normally distributed so the log errors have
-##' mean \code{alpha[1]} and standard deviation \code{alpha[2]}, or}
-##' \item{'Gamma'}{Gamma distributed with shape \code{alpha[1]} and
+##' mean \code{alpha[,1]} and standard deviation \code{alpha[,2]}, or}
+##' \item{'Gamma'}{Gamma distributed with shape \code{alpha[,1]} and
 ##' rate \code{alpha[2]}.}
 ##' }
-##' Note that the 'LogNormal' and 'Gamma' models forbid negative
-##' errors, that is, the observed light cannot be brighter than
-##' expected.  There are modified variants of these models for which
-##' negative errors are extremely unlikely, but not forbidden, and can
-##' be used to generate suitable initialization locations for their
-##' unmodified counterparts.
+##' The 'LogNormal' and 'Gamma' models forbid negative errors, that
+##' is, the observed light cannot be brighter than expected.  There
+##' are modified variants of these models for which negative errors
+##' are extremely unlikely, but not forbidden, and can be used to
+##' generate suitable initialization locations for their unmodified
+##' counterparts.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
 ##' consistent with the chosen twilight model.  That is, if
@@ -975,7 +1063,7 @@ threshold.model <- function(twilight,rise,
                             alpha,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE,dt=NULL,zenith=96) {
+                            x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -983,6 +1071,9 @@ threshold.model <- function(twilight,rise,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=length(twilight))
+  ## Polar locations indicator
+  if(is.null(polar))
+    polar <- logical(length(twilight))
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
@@ -999,64 +1090,41 @@ threshold.model <- function(twilight,rise,
     4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise,zenith))
   }
 
-  ## Contribution to log posterior from each x location
+  ## Select the density of the twilight residuals
   twilight.model <- match.arg(twilight.model)
-  logpx <-
-    switch(twilight.model,
-           Gamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           LogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           Normal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedGamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
-                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!is.finite(r)] <- -1.0E8
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedLogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=T),
-                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!is.finite(r)] <- -1.0E8
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           })
+  ## Contribution to log posterior from the residuals
+  twilight.model <- match.arg(twilight.model)
+  logp.residual <- make.twilight.model(twilight.model,alpha)
+
+  ## Log density at forbidden locations
+  forbid <- -Inf
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
+
+  ## Contribution to log posterior from each x location
+  if(any(polar)) {
+    logpx <- function(x) {
+      r <- residuals(x)
+      logp <- logp.residual(r)
+      logp[!polar & !is.finite(r)] <- forbid
+      logp[polar & is.finite(r)] <- forbid
+      logp[polar & !is.finite(r)] <- 0
+      logp <- logp + logp.x(x)
+      logp[fixedx] <- 0
+      logp
+    }
+  } else {
+    logpx <- function(x) {
+      r <- residuals(x)
+      logp <- logp.residual(r)
+      logp[!is.finite(r)] <- forbid
+      logp <- logp + logp.x(x)
+      logp[fixedx] <- 0
+      logp
+    }
+  }
 
   ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
+  logpz <- logp.z
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
@@ -1088,7 +1156,6 @@ threshold.model <- function(twilight,rise,
        rise=rise)
 }
 
-
 ##' @rdname threshold.model
 ##' @export
 grouped.threshold.model <- function(twilight,rise,group,
@@ -1096,8 +1163,7 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     alpha,beta,
                                     logp.x=function(x) rep.int(0L,nrow(x)),
                                     logp.z=function(z) rep.int(0L,nrow(z)),
-                                    x0,z0=NULL,fixedx=FALSE,dt=NULL,
-                                    zenith=96) {
+                                    x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1105,6 +1171,9 @@ grouped.threshold.model <- function(twilight,rise,group,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=max(group))
+  ## Polar locations indicator
+  if(is.null(polar))
+    polar <- logical(length(twilight))
   if(is.null(dt)) {
     ## Times (hours) between twilight groups
     tmin <- tapply(as.numeric(twilight)/3600,group,min)
@@ -1125,64 +1194,39 @@ grouped.threshold.model <- function(twilight,rise,group,
     4*sgn*(s$solarTime-twilight.solartime(s,x[group,1L],x[group,2L],rise,zenith))
   }
 
-  ## Contribution to log posterior from each x location
+  ## Select the density of the twilight residuals
   twilight.model <- match.arg(twilight.model)
-  logpx <-
-    switch(twilight.model,
-           Gamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- tapply(logp,group,sum)+logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           LogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- tapply(logp,group,sum)+logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           Normal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!is.finite(r)] <- -Inf
-             logp <- tapply(logp,group,sum)+logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedGamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
-                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!is.finite(r)] <- -1.0E8
-             logp <- tapply(logp,group,sum)+logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedLogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=TRUE),
-                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!is.finite(r)] <- -1.0E8
-             logp <- tapply(logp,group,sum)+logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           })
+  logp.residual <- make.twilight.model(twilight.model,alpha)
+
+  ## Log density at forbidden locations
+  forbid <- -Inf
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
+
+  ## Contribution to log posterior from each x location
+  logpx <- if(any(polar)) {
+    function(x) {
+      r <- residuals(x)
+      logp <- logp.residual(r)
+      logp[!polar & !is.finite(r)] <- forbid
+      logp[polar & is.finite(r)] <- forbid
+      logp[polar & !is.finite(r)] <- 0
+      logp <- tapply(logp,group,sum)+logp.x(x)
+      logp[fixedx] <- 0
+      logp
+    }
+  } else {
+    function(x) {
+      r <- residuals(x)
+      logp <- logp.residual(r)
+      logp[!is.finite(r)] <- forbid
+      logp <- tapply(logp,group,sum)+logp.x(x)
+      logp[fixedx] <- 0
+      logp
+    }
+  }
 
   ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
+  logpz <- logp.z
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
@@ -1194,8 +1238,6 @@ grouped.threshold.model <- function(twilight,rise,group,
     spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
-
-
 
 
   list(## Positional contribution to the log posterior
@@ -1217,143 +1259,6 @@ grouped.threshold.model <- function(twilight,rise,group,
        group=group,
        time=time)
 }
-
-
-
-##' @rdname threshold.model
-##' @export
-polar.threshold.model <- function(twilight,rise,
-                                  twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
-                                  alpha,beta,
-                                  logp.x=function(x) rep.int(0L,nrow(x)),
-                                  logp.z=function(z) rep.int(0L,nrow(z)),
-                                  x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
-
-  ## Convert twilights to solar time.
-  s <- solar(twilight)
-  ## Sign for residuals
-  sgn <- ifelse(rise,1,-1)
-  ## Fixed x locations
-  fixedx <- rep_len(fixedx,length.out=length(twilight))
-  ## Polar locations indicator
-  if(is.null(polar))
-    polar <- logical(length(twilight))
-  ## Times (hours) between observations
-  if(is.null(dt))
-    dt <- diff(as.numeric(twilight)/3600)
-
-  ## Ensure alpha,beta are always matrices
-  if(!is.matrix(alpha)) alpha <- t(alpha)
-  if(!is.matrix(beta)) beta <- t(beta)
-
-
-  ## Discrepancy in expected and observed times of twilight, with sign
-  ## selected so that a positive value corresponds to the observed
-  ## sunrise occurring after the expected time of sunrise, and the
-  ## observed sunset occurring before the expected time of sunset
-  residuals <- function(x) {
-    4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise,zenith))
-  }
-
-  ## Contribution to log posterior from each x location
-  twilight.model <- match.arg(twilight.model)
-  logpx <-
-    switch(twilight.model,
-           Gamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- dgamma(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!polar & !is.finite(r)] <- -Inf
-             logp[polar & is.finite(r)] <- -Inf
-             logp[polar & !is.finite(r)] <- 0
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           LogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!polar & !is.finite(r)] <- -Inf
-             logp[polar & is.finite(r)] <- -Inf
-             logp[polar & !is.finite(r)] <- 0
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           Normal=
-           function(x) {
-             r <- residuals(x)
-             logp <- dnorm(r,alpha[,1L],alpha[,2L],log=TRUE)
-             logp[!polar & !is.finite(r)] <- -Inf
-             logp[polar & is.finite(r)] <- -Inf
-             logp[polar & !is.finite(r)] <- 0
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedGamma=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dgamma(alpha[,1L]/alpha[,2L],alpha[,1L],alpha[,2L],log=TRUE),
-                            dgamma(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!polar & !is.finite(r)] <- -1.0E8
-             logp[polar & is.finite(r)] <- -1.0E8
-             logp[polar & !is.finite(r)] <- 0
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           },
-           ModifiedLogNormal=
-           function(x) {
-             r <- residuals(x)
-             logp <- ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(alpha[,1L]+alpha[,2L]^2/2),alpha[,1L],alpha[,2L],log=T),
-                            dlnorm(r,alpha[,1L],alpha[,2L],log=TRUE))
-             logp[!polar & !is.finite(r)] <- -1.0E8
-             logp[polar & is.finite(r)] <- -1.0E8
-             logp[polar & !is.finite(r)] <- 0
-             logp <- logp + logp.x(x)
-             logp[fixedx] <- 0
-             logp
-           })
-
-  ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
-
-  ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-  }
-
-  stella.logpb <- function(x) {
-    spd <- pmax.int(trackDist(x), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-  }
-
-
-  list(## Positional contribution to the log posterior
-       logpx=logpx,
-       logpz=logpz,
-       ## Behavioural contribution to the log posterior
-       estelle.logpb=estelle.logpb,
-       stella.logpb=stella.logpb,
-       ## Residuals
-       residuals=residuals,
-       ## Locations to be held fixed
-       fixedx=fixedx,
-       ## Suggested starting points
-       x0=x0,
-       z0=z0,
-       ## Data
-       time=twilight,
-       rise=rise)
-}
-
 
 
 
@@ -1793,7 +1698,6 @@ stella.metropolis <- function(model,
   }
   list(model=model,x=ch.xs)
 }
-
 
 
 
