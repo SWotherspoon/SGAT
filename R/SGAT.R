@@ -1092,8 +1092,6 @@ threshold.model <- function(twilight,rise,
 
   ## Select the density of the twilight residuals
   twilight.model <- match.arg(twilight.model)
-  ## Contribution to log posterior from the residuals
-  twilight.model <- match.arg(twilight.model)
   logp.residual <- make.twilight.model(twilight.model,alpha)
 
   ## Log density at forbidden locations
