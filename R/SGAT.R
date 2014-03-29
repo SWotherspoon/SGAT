@@ -846,9 +846,7 @@ satellite.model <- function(time,X,
            })
 
   ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
+  logpz <- logp.z
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
@@ -1274,9 +1272,7 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' be Normally distributed about their expected value.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
-##' consistent with the chosen twilight model.  That is, if
-##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
-##' yield negative twilight errors.
+##' consistent with any other constraints impsed by the data.
 ##'
 ##' Both Estelle and Stella variants of the model assume that the
 ##' speed of travel between successive (x) locations is gamma
@@ -1364,9 +1360,7 @@ curve.model <- function(time,light,segment,
   }
 
   ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
+  logpz <- logp.z
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z) {
