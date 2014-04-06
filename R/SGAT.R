@@ -1016,12 +1016,20 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' time actually available for travel can be specified directly with
 ##' the \code{dt} argument.
 ##'
-##' The \code{polar.threshold.model} function is experimental.  It is
-##' identical to \code{threshold.model} except that it allows for the
-##' case where the tag is so far North or South that twilight is not
-##' observed.  In these cases, an approximate time of twilight may be
-##' supplied, and the logical vector \code{polar} is used to indicate
-##' which twilights are approximate and which are actual.
+##' Twilights can be missing because either the light record was too
+##' noisy at that time to estimate twilight reliably, or because the
+##' tag was at very high latitude and no twilight was observed.
+##' Missing twilights should be replaced with an approximate time of
+##' twilight, and the vector \code{missing} used to indicate which
+##' twilights are approaximate and which are true.  This should be a
+##' vector of integers, one for each twilight where the integer codes
+##' signify
+##' \describe{
+##' \item{0:}{The twilight is not missing.}
+##' \item{1:}{The twilight is missing, but a twilight did occur.}
+##' \item{2:}{The twilight is missing because twilight did not occur.}
+##' \item{3:}{The twilight is missing and it is not known if a twilight occurred.}
+##' }
 ##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -1039,8 +1047,8 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' @param z0 suggested starting points for intermediate locations.
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
-##' @param polar logical vector indicating which twilights were
-##' unobserved.
+##' @param missing integer vector indicating which twilights were
+##' unobserved and why.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -1061,7 +1069,7 @@ threshold.model <- function(twilight,rise,
                             alpha,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+                            x0,z0=NULL,fixedx=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1069,9 +1077,6 @@ threshold.model <- function(twilight,rise,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=length(twilight))
-  ## Polar locations indicator
-  if(is.null(polar))
-    polar <- logical(length(twilight))
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
@@ -1097,13 +1102,16 @@ threshold.model <- function(twilight,rise,
   forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
 
   ## Contribution to log posterior from each x location
-  if(any(polar)) {
+  if(any(missing > 0)) {
     logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
-      logp[!polar & !is.finite(r)] <- forbid
-      logp[polar & is.finite(r)] <- forbid
-      logp[polar & !is.finite(r)] <- 0
+      ## Fix missing values
+      logp[missing <= 1 & !is.finite(r)] <- forbid
+      logp[missing == 1 & is.finite(r)] <- 0
+      logp[missing == 2 & is.finite(r)] <- forbid
+      logp[missing == 2 & !is.finite(r)] <- 0
+      logp[missing == 3] <- 0
       logp <- logp + logp.x(x)
       logp[fixedx] <- 0
       logp
@@ -1112,6 +1120,7 @@ threshold.model <- function(twilight,rise,
     logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
+      ## Fix missing values
       logp[!is.finite(r)] <- forbid
       logp <- logp + logp.x(x)
       logp[fixedx] <- 0
@@ -1159,7 +1168,7 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     alpha,beta,
                                     logp.x=function(x) rep.int(0L,nrow(x)),
                                     logp.z=function(z) rep.int(0L,nrow(z)),
-                                    x0,z0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+                                    x0,z0=NULL,fixedx=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1167,9 +1176,6 @@ grouped.threshold.model <- function(twilight,rise,group,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=max(group))
-  ## Polar locations indicator
-  if(is.null(polar))
-    polar <- logical(length(twilight))
   if(is.null(dt)) {
     ## Times (hours) between twilight groups
     tmin <- tapply(as.numeric(twilight)/3600,group,min)
@@ -1198,25 +1204,30 @@ grouped.threshold.model <- function(twilight,rise,group,
   forbid <- -Inf
   forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
 
+
   ## Contribution to log posterior from each x location
-  logpx <- if(any(polar)) {
-    function(x) {
+  if(any(missing > 0)) {
+    logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
-      logp[!polar & !is.finite(r)] <- forbid
-      logp[polar & is.finite(r)] <- forbid
-      logp[polar & !is.finite(r)] <- 0
+      ## Fix missing values
+      logp[missing <= 1 & !is.finite(r)] <- forbid
+      logp[missing == 1 & is.finite(r)] <- 0
+      logp[missing == 2 & is.finite(r)] <- forbid
+      logp[missing == 2 & !is.finite(r)] <- 0
+      logp[missing == 3] <- 0
       logp <- tapply(logp,group,sum)+logp.x(x)
       logp[fixedx] <- 0
       logp
     }
   } else {
-    function(x) {
+    logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
+      ## Fix missing values
       logp[!is.finite(r)] <- forbid
+      logp <- logp + logp.x(x)
       logp <- tapply(logp,group,sum)+logp.x(x)
-      logp[fixedx] <- 0
       logp
     }
   }
