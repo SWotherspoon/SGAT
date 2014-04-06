@@ -1384,6 +1384,7 @@ curve.model <- function(time,light,segment,
     dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
+
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
