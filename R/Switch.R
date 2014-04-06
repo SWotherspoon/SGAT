@@ -1,3 +1,16 @@
+##' @param B0 prior for the states.  Either 1, corresponding to a
+##' uniform prior, or a (n-1) x m matrix where each row is a vector of
+##' prior probabilities of the m states.
+##' @param b0 suggested starting points for the behavioural state.
+
+switching.model <- function(model,B0=1,b0=NULL) {
+  model$B0 <- B0
+  model$b0 <- b0
+  model
+}
+
+
+
 ##' Metropolis samplers for Stella or Estelle with behaviour switching
 ##'
 ##' These functions draw samples form posterior for the simple
@@ -48,7 +61,7 @@ estelle.metropolis.switch <- function(model,
   logpx <- model$logpx
   logpz <- model$logpz
   logpb <- model$estelle.logpb
-  logpB <- model$estelle.logpB
+  n.states <- model$n.states
   B0 <- model$B0
   fixedx <- model$fixedx
 
@@ -171,7 +184,8 @@ estelle.metropolis.switch <- function(model,
 
 
         ## Update b
-        logp.B <- logpB(x1,z1)
+        logp.B <- matrix(0,nrow(x)-1,n.states)
+        for(j in seq_along(n.states)) logp.B[,k] <- logpb(x1,z1,k)
         B <- B0*exp(logp.B)
         for(i in seq_along(b1)) {
           b1[i] <- sample.int(ncol(B),1,prob=B[i,])
@@ -189,7 +203,7 @@ estelle.metropolis.switch <- function(model,
     ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
-  attr(ch.bs,"nstates") <- ncol(logp.B)
+  attr(ch.bs,"n.states") <- ncol(logp.B)
   list(model=model,x=ch.xs,z=ch.zs,b=ch.bs)
 }
 
@@ -218,7 +232,7 @@ stella.metropolis.switch <- function(model,
   ## Extract model components
   logpx <- model$logpx
   logpb <- model$stella.logpb
-  logpB <- model$stella.logpB
+  n.states <- model$n.states
   B0 <- model$B0
   fixedx <- model$fixedx
 
@@ -320,7 +334,8 @@ stella.metropolis.switch <- function(model,
         }
 
         ## Update b
-        logp.B <- logpB(x1)
+        logp.B <- matrix(0,nrow(x)-1,n.states)
+        for(j in seq_along(n.states)) logp.B[,k] <- logpb(x1,k)
         B <- B0*exp(logp.B)
         for(i in seq_along(b1)) {
           b1[i] <- sample.int(ncol(B),1,prob=B[i,])
@@ -336,7 +351,7 @@ stella.metropolis.switch <- function(model,
     ch.bs[[k1]] <- ch.b
     if(verbose) cat("\n")
   }
-  attr(ch.bs,"nstates") <- ncol(logp.B)
+  attr(ch.bs,"n.states") <- n.states
   list(model=model,x=ch.xs,b=ch.bs)
 }
 
@@ -368,8 +383,8 @@ stella.metropolis.switch <- function(model,
 ##' of the most likely behvarioual state in each interval.}
 ##' @export
 behaviour.prob <- function(s,discard=0,collapse=TRUE,chains=NULL) {
-  nstates <- attr(s,"nstates")
-  prob <- function(s) t(apply(s,1,tabulate,nbins=nstates)/ncol(s))
+  n.states <- attr(s,"n.states")
+  prob <- function(s) t(apply(s,1,tabulate,nbins=n.states)/ncol(s))
 
   s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
   if(is.list(s)) lapply(s,prob) else prob(s)
@@ -379,8 +394,8 @@ behaviour.prob <- function(s,discard=0,collapse=TRUE,chains=NULL) {
 ##' @rdname behaviour.prob
 ##' @export
 behaviour.class <- function(s,discard=0,collapse=TRUE,chains=NULL) {
-  nstates <- attr(s,"nstates")
-  prob <- function(s) apply(s,1,function(p) which.max(tabulate(p,nbins=nstates)))
+  n.states <- attr(s,"n.states")
+  prob <- function(s) apply(s,1,function(p) which.max(tabulate(p,nbins=n.states)))
 
   s <- chain.collapse(s,collapse=collapse,discard=discard,chains=chains)
   if(is.list(s)) lapply(s,prob) else prob(s)

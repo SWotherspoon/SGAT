@@ -796,7 +796,6 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' the log posterior from the intermediate locations.
 ##' @param x0 suggested starting points for the satellite locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param b0 suggested starting points for the behavioural state.
 ##' @param fixedx logical vector indicating which satellite locations
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
@@ -816,7 +815,7 @@ satellite.model <- function(time,X,
                             sd,df=NULL,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            x0,z0=NULL,b0=b0,fixedx=FALSE,dt=NULL) {
+                            x0,z0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=length(time))
@@ -866,22 +865,6 @@ satellite.model <- function(time,X,
       dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  estelle.logpB <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
-  stella.logpB <- function(x) {
-    spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
@@ -889,8 +872,8 @@ satellite.model <- function(time,X,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       estelle.logpB=estelle.logpB,
-       stella.logpB=stella.logpB,
+       ## Number of states
+       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -898,7 +881,6 @@ satellite.model <- function(time,X,
        ## Suggested starting points
        x0=x0,
        z0=z0,
-       b0=b0,
        ## Data
        time=time,
        X=X)
@@ -1042,12 +1024,20 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' time actually available for travel can be specified directly with
 ##' the \code{dt} argument.
 ##'
-##' The \code{polar} argument controls how  function is experimental.  It is
-##' identical to \code{threshold.model} except that it allows for the
-##' case where the tag is so far North or South that twilight is not
-##' observed.  In these cases, an approximate time of twilight may be
-##' supplied, and the logical vector \code{polar} is used to indicate
-##' which twilights are approximate and which are actual.
+##' Twilights can be missing because either the light record was too
+##' noisy at that time to estimate twilight reliably, or because the
+##' tag was at very high latitude and no twilight was observed.
+##' Missing twilights should be replaced with an approximate time of
+##' twilight, and the vector \code{missing} used to indicate which
+##' twilights are approaximate and which are true.  This should be a
+##' vector of integers, one for each twilight where the integer codes
+##' signify
+##' \describe{
+##' \item{0:}{The twilight is not missing.}
+##' \item{1:}{The twilight is missing, but a twilight did occur.}
+##' \item{2:}{The twilight is missing because twilight did not occur.}
+##' \item{3:}{The twilight is missing and it is not known if a twilight occurred.}
+##' }
 ##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -1061,16 +1051,12 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' the log posterior from the twilight locations.
 ##' @param logp.z function to evaluate any additional contribution to
 ##' the log posterior from the intermediate locations.
-##' @param B0 prior for the states.  Either 1, corresponding to a
-##' uniform prior, or a (n-1) x m matrix where each row is a vector of
-##' prior probabilities of the m states.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param b0 suggested starting points for the behavioural state.
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
-##' @param polar logical vector indicating which twilights were
-##' unobserved.
+##' @param missing integer vector indicating which twilights were
+##' unobserved and why.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -1082,7 +1068,6 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{b0}}{a vector of initial behavioural states.}
 ##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{group}}{the grouping vector.}
@@ -1092,8 +1077,7 @@ threshold.model <- function(twilight,rise,
                             alpha,beta,
                             logp.x=function(x) rep.int(0L,nrow(x)),
                             logp.z=function(z) rep.int(0L,nrow(z)),
-                            B0=1,
-                            x0,z0=NULL,b0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+                            x0,z0=NULL,fixedx=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1101,9 +1085,6 @@ threshold.model <- function(twilight,rise,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=length(twilight))
-  ## Polar locations indicator
-  if(is.null(polar))
-    polar <- logical(length(twilight))
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
@@ -1129,13 +1110,16 @@ threshold.model <- function(twilight,rise,
   forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
 
   ## Contribution to log posterior from each x location
-  if(any(polar)) {
+  if(any(missing > 0)) {
     logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
-      logp[!polar & !is.finite(r)] <- forbid
-      logp[polar & is.finite(r)] <- forbid
-      logp[polar & !is.finite(r)] <- 0
+      ## Fix missing values
+      logp[missing <= 1 & !is.finite(r)] <- forbid
+      logp[missing == 1 & is.finite(r)] <- 0
+      logp[missing == 2 & is.finite(r)] <- forbid
+      logp[missing == 2 & !is.finite(r)] <- 0
+      logp[missing == 3] <- 0
       logp <- logp + logp.x(x)
       logp[fixedx] <- 0
       logp
@@ -1144,6 +1128,7 @@ threshold.model <- function(twilight,rise,
     logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
+      ## Fix missing values
       logp[!is.finite(r)] <- forbid
       logp <- logp + logp.x(x)
       logp[fixedx] <- 0
@@ -1171,22 +1156,6 @@ threshold.model <- function(twilight,rise,
       dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  estelle.logpB <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
-  stella.logpB <- function(x) {
-    spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
@@ -1194,8 +1163,8 @@ threshold.model <- function(twilight,rise,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       estelle.logpB=estelle.logpB,
-       stella.logpB=stella.logpB,
+       ## Number of states
+       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1203,8 +1172,6 @@ threshold.model <- function(twilight,rise,
        ## Suggested starting points
        x0=x0,
        z0=z0,
-       b0=b0,
-       B0=B0,
        ## Data
        time=twilight,
        rise=rise)
@@ -1217,8 +1184,7 @@ grouped.threshold.model <- function(twilight,rise,group,
                                     alpha,beta,
                                     logp.x=function(x) rep.int(0L,nrow(x)),
                                     logp.z=function(z) rep.int(0L,nrow(z)),
-                                    B0=1,
-                                    x0,z0=NULL,b0=NULL,fixedx=FALSE,polar=NULL,dt=NULL,zenith=96) {
+                                    x0,z0=NULL,fixedx=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Convert twilights to solar time.
   s <- solar(twilight)
@@ -1226,9 +1192,6 @@ grouped.threshold.model <- function(twilight,rise,group,
   sgn <- ifelse(rise,1,-1)
   ## Fixed x locations
   fixedx <- rep_len(fixedx,length.out=max(group))
-  ## Polar locations indicator
-  if(is.null(polar))
-    polar <- logical(length(twilight))
   if(is.null(dt)) {
     ## Times (hours) between twilight groups
     tmin <- tapply(as.numeric(twilight)/3600,group,min)
@@ -1258,21 +1221,25 @@ grouped.threshold.model <- function(twilight,rise,group,
   forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
 
   ## Contribution to log posterior from each x location
-  logpx <- if(any(polar)) {
-    function(x) {
+  if(any(missing > 0)) {
+    logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
-      logp[!polar & !is.finite(r)] <- forbid
-      logp[polar & is.finite(r)] <- forbid
-      logp[polar & !is.finite(r)] <- 0
+      ## Fix missing values
+      logp[missing <= 1 & !is.finite(r)] <- forbid
+      logp[missing == 1 & is.finite(r)] <- 0
+      logp[missing == 2 & is.finite(r)] <- forbid
+      logp[missing == 2 & !is.finite(r)] <- 0
+      logp[missing == 3] <- 0
       logp <- tapply(logp,group,sum)+logp.x(x)
       logp[fixedx] <- 0
       logp
     }
   } else {
-    function(x) {
+    logpx <- function(x) {
       r <- residuals(x)
       logp <- logp.residual(r)
+      ## Fix missing values
       logp[!is.finite(r)] <- forbid
       logp <- tapply(logp,group,sum)+logp.x(x)
       logp[fixedx] <- 0
@@ -1300,21 +1267,6 @@ grouped.threshold.model <- function(twilight,rise,group,
       dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-  estelle.logpB <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
-  stella.logpB <- function(x) {
-    spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
 
   list(## Positional contribution to the log posterior
        logpx=logpx,
@@ -1322,8 +1274,8 @@ grouped.threshold.model <- function(twilight,rise,group,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       estelle.logpB=estelle.logpB,
-       stella.logpB=stella.logpB,
+       ## Number of states
+       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1331,8 +1283,6 @@ grouped.threshold.model <- function(twilight,rise,group,
        ## Suggested starting points
        x0=x0,
        z0=z0,
-       b0=b0,
-       B0=B0,
        ## Data
        twilight=twilight,
        rise=rise,
@@ -1356,9 +1306,7 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' be Normally distributed about their expected value.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
-##' consistent with the chosen twilight model.  That is, if
-##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
-##' yield negative twilight errors.
+##' consistent with any other constraints imposed by the data.
 ##'
 ##' Both Estelle and Stella variants of the model assume that the
 ##' speed of travel between successive (x) locations is gamma
@@ -1381,12 +1329,8 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' the log posterior from the twilight locations.
 ##' @param logp.z function to evaluate any additional contribution to
 ##' the log posterior from the intermediate locations.
-##' @param B0 prior for the states.  Either 1, corresponding to a
-##' uniform prior, or a (n-1) x m matrix where each row is a vector of
-##' prior probabilities of the m states.
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param z0 suggested starting points for intermediate locations.
-##' @param b0 suggested starting points for the behavioural state.
 ##' @param fixedx logical vector indicating which twilight locations
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
@@ -1407,8 +1351,7 @@ curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
                         logp.x=function(x) rep.int(0L,nrow(x)),
                         logp.z=function(z) rep.int(0L,nrow(z)),
-                        B0=1,
-                        x0=NULL,z0=NULL,b0=NULL,fixedx=FALSE,dt=NULL) {
+                        x0=NULL,z0=NULL,fixedx=FALSE,dt=NULL) {
 
   ## Convert to solar time.
   sun <- solar(time)
@@ -1451,9 +1394,7 @@ curve.model <- function(time,light,segment,
   }
 
   ## Contribution to log posterior from each z location
-  logpz <- function(z) {
-    logp.z(z)
-  }
+  logpz <- logp.z
 
   ## Contribution to log posterior from the movement
   estelle.logpb <- function(x,z,b=NULL) {
@@ -1464,7 +1405,6 @@ curve.model <- function(time,light,segment,
       dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
-
   stella.logpb <- function(x,b=NULL) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
     if(is.null(b))
@@ -1474,31 +1414,14 @@ curve.model <- function(time,light,segment,
   }
 
 
-  estelle.logpB <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
-  stella.logpB <- function(x) {
-    spd <- pmax.int(trackDist(x), 1e-06)/dt
-    B <- matrix(0,nrow(x)-1,nrow(beta))
-    for(b in 1:nrow(beta))
-      B[,b] <- dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
-    B
-  }
-
-
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       estelle.logpB=estelle.logpB,
-       stella.logpB=stella.logpB,
+       ## Number of states
+       n.states=nrow(beta),
        ## Fitted values
        fitted=fitted,
        ## Locations to be held fixed
@@ -1506,8 +1429,6 @@ curve.model <- function(time,light,segment,
        ## Suggested starting points
        x0=x0,
        z0=z0,
-       b0=b0,
-       B0=B0,
        ## Median time of twilights
        time = tm)
 }
