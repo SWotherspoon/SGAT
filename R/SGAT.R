@@ -1226,8 +1226,8 @@ grouped.threshold.model <- function(twilight,rise,group,
       logp <- logp.residual(r)
       ## Fix missing values
       logp[!is.finite(r)] <- forbid
-      logp <- logp + logp.x(x)
       logp <- tapply(logp,group,sum)+logp.x(x)
+      logp[fixedx] <- 0
       logp
     }
   }
@@ -1283,7 +1283,7 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' be Normally distributed about their expected value.
 ##'
 ##' The initialization locations \code{x0} and \code{z0} must be
-##' consistent with any other constraints impsed by the data.
+##' consistent with any other constraints imposed by the data.
 ##'
 ##' Both Estelle and Stella variants of the model assume that the
 ##' speed of travel between successive (x) locations is gamma
