@@ -865,6 +865,7 @@ satellite.model <- function(time,X,
       dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
   }
 
+
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
