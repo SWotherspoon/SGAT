@@ -1098,8 +1098,7 @@ threshold.model <- function(twilight,rise,
   logp.residual <- make.twilight.model(twilight.model,alpha)
 
   ## Log density at forbidden locations
-  forbid <- -Inf
-  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8 else -Inf
 
   ## Contribution to log posterior from each x location
   if(any(missing > 0)) {
@@ -1201,9 +1200,7 @@ grouped.threshold.model <- function(twilight,rise,group,
   logp.residual <- make.twilight.model(twilight.model,alpha)
 
   ## Log density at forbidden locations
-  forbid <- -Inf
-  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
-
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8 else -Inf
 
   ## Contribution to log posterior from each x location
   if(any(missing > 0)) {
