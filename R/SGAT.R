@@ -849,20 +849,14 @@ satellite.model <- function(time,X,
   logpz <- logp.z
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z,b=NULL) {
+  estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x,b=NULL) {
+  stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1140,20 +1134,14 @@ threshold.model <- function(twilight,rise,
   logpz <- logp.z
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z,b=NULL) {
+  estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x,b=NULL) {
+  stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1251,20 +1239,14 @@ grouped.threshold.model <- function(twilight,rise,group,
   logpz <- logp.z
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z,b=NULL) {
+  estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x,b=NULL) {
+  stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
@@ -1397,20 +1379,14 @@ curve.model <- function(time,light,segment,
   logpz <- logp.z
 
   ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z,b=NULL) {
+  estelle.logpb <- function(x,z) {
     spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
-  stella.logpb <- function(x,b=NULL) {
+  stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
-    if(is.null(b))
-      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
-    else
-      dgamma(spd,beta[b,1L],beta[b,2L],log=TRUE)
+    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
 
 
