@@ -866,8 +866,6 @@ satellite.model <- function(time,X,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       ## Number of states
-       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1100,8 +1098,7 @@ threshold.model <- function(twilight,rise,
   logp.residual <- make.twilight.model(twilight.model,alpha)
 
   ## Log density at forbidden locations
-  forbid <- -Inf
-  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8 else -Inf
 
   ## Contribution to log posterior from each x location
   if(any(missing > 0)) {
@@ -1151,8 +1148,6 @@ threshold.model <- function(twilight,rise,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       ## Number of states
-       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1205,8 +1200,7 @@ grouped.threshold.model <- function(twilight,rise,group,
   logp.residual <- make.twilight.model(twilight.model,alpha)
 
   ## Log density at forbidden locations
-  forbid <- -Inf
-  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8
+  forbid <- if(twilight.model %in% c("ModifiedGamma","ModifiedLogNormal")) -1.0E8 else -Inf
 
   ## Contribution to log posterior from each x location
   if(any(missing > 0)) {
@@ -1256,8 +1250,6 @@ grouped.threshold.model <- function(twilight,rise,group,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       ## Number of states
-       n.states=nrow(beta),
        ## Residuals
        residuals=residuals,
        ## Locations to be held fixed
@@ -1396,8 +1388,6 @@ curve.model <- function(time,light,segment,
        ## Behavioural contribution to the log posterior
        estelle.logpb=estelle.logpb,
        stella.logpb=stella.logpb,
-       ## Number of states
-       n.states=nrow(beta),
        ## Fitted values
        fitted=fitted,
        ## Locations to be held fixed
