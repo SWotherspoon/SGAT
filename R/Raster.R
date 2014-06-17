@@ -227,7 +227,7 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 ##' @return the long,lat locations for the requested cells.
 ##' @export
 longlatFromCell <- function(raster,cells,spatial=FALSE) {
-  if(is.na(projection(r)) || isLonLat(raster)) {
+  if(is.na(projection(raster)) || isLonLat(raster)) {
     xyFromCell(raster,cells,spatial=spatial)
   } else {
     p <- spTransform(xyFromCell(raster,cells,spatial=TRUE),
