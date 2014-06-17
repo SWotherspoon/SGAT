@@ -20,7 +20,7 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   r <- if(is.null(grid)) raster() else raster(grid)
 
   ## Project coords
-  if(!isLonLat(r)) {
+  if(!is.na(projection(r)) && !isLonLat(r)) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
@@ -64,7 +64,7 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL) {
   r <- if(is.null(grid)) raster() else raster(grid)
 
   ## Project coords
-  if(!isLonLat(r)) {
+  if(!is.na(projection(r)) && !isLonLat(r)) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
@@ -227,7 +227,7 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 ##' @return the long,lat locations for the requested cells.
 ##' @export
 longlatFromCell <- function(raster,cells,spatial=FALSE) {
-  if(isLonLat(raster)) {
+  if(is.na(projection(r)) || isLonLat(raster)) {
     xyFromCell(raster,cells,spatial=spatial)
   } else {
     p <- spTransform(xyFromCell(raster,cells,spatial=TRUE),
