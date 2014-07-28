@@ -20,7 +20,7 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   r <- if(is.null(grid)) raster() else raster(grid)
 
   ## Project coords
-  if(!isLonLat(r)) {
+  if(!is.na(projection(r)) && !isLonLat(r)) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
@@ -64,7 +64,7 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL) {
   r <- if(is.null(grid)) raster() else raster(grid)
 
   ## Project coords
-  if(!isLonLat(r)) {
+  if(!is.na(projection(r)) && !isLonLat(r)) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
@@ -227,7 +227,7 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 ##' @return the long,lat locations for the requested cells.
 ##' @export
 longlatFromCell <- function(raster,cells,spatial=FALSE) {
-  if(isLonLat(raster)) {
+  if(is.na(projection(raster)) || isLonLat(raster)) {
     xyFromCell(raster,cells,spatial=spatial)
   } else {
     p <- spTransform(xyFromCell(raster,cells,spatial=TRUE),
@@ -269,11 +269,14 @@ solar.residuals <- function(twilight,rise,grid,zenith=96) {
 ## ##'
 ## ##' This implementation discretizes wrld_simpl onto a simple grid in
 ## ##' longitude and latitude. The bounding box is set by \code{xlim} and
-## ##' \code{ylim}, unless \code{wrap360=TRUE} in which case the mask
-## ##' spans the globe in longitude.  When \code{wrap360=FALSE},
-## ##' \code{xlim} must be contained in the interval [-540,540].
+## ##' \code{ylim}.  In general \code{xlim} must be contained in the
+## ##' interval [-540,540]. If \code{xlim} is \code{NULL} or spans more
+## ##' than 360 degrees, then \code{xlim} is taken to be [-180,180] and
+## ##' longitudes outside this range will be mapped back into this
+## ##' region.  Similarly, if \code{ylim} is \code{NULL}, it is taken to
+## ##' be [-90,90].
 ## ##'
-## ##' For points outside the bounding box, the function returns
+## ##' For points outside the bounding box, the mask function returns
 ## ##' \code{NA}. For points inside the bounding box, the function
 ## ##' returns \code{land} for points on land (within the resolution of
 ## ##' the grid) and \code{!land} for points at sea.
@@ -300,18 +303,31 @@ solar.residuals <- function(twilight,rise,grid,zenith=96) {
 ## ##' is.sea(cbind(0,0))
 ## ##' @importFrom maptools elide
 ## ##' @export
-## land.mask <- function(xlim,ylim,n=4,land=TRUE,wrap360=FALSE) {
+## ## Function for constructing a land/sea mask from wrld_simpl
+## land.mask <- function(xlim=NULL,ylim=NULL,n=4,land=TRUE) {
 ##   data("wrld_simpl",package="maptools",envir=environment())
+##   ## Set limits
+##   wrap360 <- is.null(xlim) || diff(xlim)>=360
+##   if(wrap360) xlim <- c(-180,180)
+##   if(is.null(ylim)) ylim <- c(-90,90)
+##
+##   ## Construct lookup raster
 ##   r <- raster(nrows=n*diff(ylim),ncols=n*diff(xlim),
-##               xmn=if(wrap360) -180 else xlim[1],
-##               xmx=if(wrap360) 180 else xlim[2],
-##               ymn=ylim[1],ymx=ylim[2],
+##               xmn=xlim[1],xmx=xlim[2],ymn=ylim[1],ymx=ylim[2],
 ##               crs=proj4string(wrld_simpl))
-##   r <- cover(rasterize(maptools::elide(wrld_simpl,shift=c(-360,0)),r,1,silent=TRUE),
-## 	     rasterize(wrld_simpl,r,1,silent=TRUE),
-##              rasterize(maptools::elide(wrld_simpl,shift=c(360,0)),r,1,silent=TRUE))
+##   if(xlim[1] >= -180 && xlim[2] <= 180) {
+##     r <- rasterize(wrld_simpl,r,1,silent=TRUE)
+##   } else if(xlim[1] < -180) {
+##     r <- cover(rasterize(maptools::elide(wrld_simpl,shift=c(-360,0)),r,1,silent=TRUE),
+##                rasterize(wrld_simpl,r,1,silent=TRUE))
+##   } else {
+##     r <- cover(rasterize(wrld_simpl,r,1,silent=TRUE),
+##                rasterize(maptools::elide(wrld_simpl,shift=c(360,0)),r,1,silent=TRUE))
+##   }
 ##   r <- as.matrix(is.na(r))[nrow(r):1,]
 ##   if(land) r <- !r
+##
+##   ## Lookup bins
 ##   xbin <- seq(xlim[1],xlim[2],length=ncol(r)+1)
 ##   ybin <- seq(ylim[1],ylim[2],length=nrow(r)+1)
 ##
@@ -325,3 +341,4 @@ solar.residuals <- function(twilight,rise,grid,zenith=96) {
 ##     }
 ##   }
 ## }
+

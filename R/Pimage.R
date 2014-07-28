@@ -37,7 +37,6 @@ Pimage <- function(x, ...) UseMethod("Pimage")
 
 ##' @rdname Pimage
 ##' @method Pimage POSIXct
-##' @S3method Pimage POSIXct
 ##' @export
 Pimage.POSIXct <- function(x, grid = NULL, type = c("primary", "intermediate"), ...) {
   ## process arguments
@@ -138,9 +137,8 @@ Pimage.POSIXct <- function(x, grid = NULL, type = c("primary", "intermediate"), 
 ##' @param ... arguments passed to \code{chain.bin}
 ##' @return \code{\link{Pimage}}
 ##' @import raster sp
-##' @export
 ##' @method Pimage default
-##' @S3method Pimage default
+##' @export
 Pimage.default <- function(x, type = c("primary", "intermediate"),
                            pimg = NULL, grid = NULL, proj = NULL, ...) {
   ## this better be a SGAT fit object
@@ -358,7 +356,6 @@ chain.bin <- function(pimg, xy, weight = NULL, method = c("bin", "kde"),
 ##' @param ... ignored
 ##' @return RasterLayer, or Pimage, see Details
 ##' @method [ Pimage
-##' @S3method [ Pimage
 ##' @seealso \code{\link{cut.Pimage}} for creating temporal
 ##' partitions.
 ##' @export
@@ -390,7 +387,6 @@ chain.bin <- function(pimg, xy, weight = NULL, method = c("bin", "kde"),
 ##' Raster
 ##'
 ##' See \code{[.Pimage}
-##' @S3method subset Pimage
 ##' @method subset Pimage
 ##' @rdname subset-Pimage
 ##' @param x Pimage
@@ -419,7 +415,6 @@ projection.Pimage <- function(x, asText = TRUE) {
 ##' @param ... ignored
 ##' @param value ignored
 ##' @usage \method{[}{Pimage}(x, \dots) <- value
-##' @S3method [<- Pimage
 ##' @method [<- Pimage
 ##' @rdname replace-Pimage
 ##' @export
@@ -444,7 +439,6 @@ projection.Pimage <- function(x, asText = TRUE) {
 ##' @param i integer index
 ##' @param ... ignored
 ##' @param exact ignored
-##' @S3method [[ Pimage
 ##' @method [[ Pimage
 ##' @rdname EExtract-Pimage
 ##' @return Pimage
@@ -493,7 +487,6 @@ as.POSIXct.Pimage <- function(x, ...) {
 ##' @param breaks an interval specification, see \code{\link{cut.POSIXt}}
 ##' @param ... pass arguments to \code{\link{cut.POSIXt}}
 ##' @method cut Pimage
-##' @S3method cut Pimage
 ##' @return RasterLayer or RasterBrick, for multiple or single level cut respectively
 ##' @export
 cut.Pimage <- function(x, breaks, ...) {
@@ -526,7 +519,6 @@ cut.Pimage <- function(x, breaks, ...) {
 ##' @rdname Pimage-methods
 ##' @aliases print
 ##' @method print Pimage
-##' @S3method print Pimage
 ##' @export
 print.Pimage <- function(x, ...) {
   ## this needs to know the x/y/time range, and possibly the sizes of all images, whether any are NULL or funny
@@ -544,7 +536,6 @@ print.Pimage <- function(x, ...) {
 }
 
 ##' @method str Pimage
-##' @S3method str Pimage
 ##' @rdname Pimage-methods
 ##' @param object Pimage
 ##' @export
@@ -554,7 +545,6 @@ str.Pimage <- function(object, ...) {
 }
 
 ##' @method length Pimage
-##' @S3method length Pimage
 ##' @rdname Pimage-methods
 ##' @export
 length.Pimage <- function(x, ...) {
@@ -564,7 +554,6 @@ length.Pimage <- function(x, ...) {
 ##' @rdname Pimage-methods
 ##' @param recursive ignored
 ##' @method c Pimage
-##' @S3method c Pimage
 ##' @export
 c.Pimage <- function(..., recursive = FALSE) {
   obj <- list(...)
@@ -590,7 +579,6 @@ c.Pimage <- function(..., recursive = FALSE) {
 
 ##' @rdname Pimage-methods
 ##' @method as.list Pimage
-##' @S3method as.list Pimage
 ##' @export
 as.list.Pimage <- function(x, ...) {
   ## drop the class and attributes
@@ -599,7 +587,6 @@ as.list.Pimage <- function(x, ...) {
 
 ##' @rdname Pimage-methods
 ##' @method plot Pimage
-##' @S3method plot Pimage
 ##' @export
 plot.Pimage <- function(x, ...) {
   plot(x[], ...)
@@ -607,7 +594,6 @@ plot.Pimage <- function(x, ...) {
 
 
 ## internal
-## S3method [[<- Pimage
 ## method [[<- Pimage
 ## rdname [.Pimage
 ## export

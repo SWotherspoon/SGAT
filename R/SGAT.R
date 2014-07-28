@@ -823,6 +823,12 @@ satellite.model <- function(time,X,
   if(is.null(dt))
     dt <- diff(as.numeric(time)/3600)
 
+  ## sanity
+  badtimes <- which(!dt > 0)
+  if (length(badtimes) > 0L) {
+      stop(sprintf("input time has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+  }
+
   ## Ensure beta is always a matrix
   if(!is.matrix(beta)) beta <- t(beta)
 
@@ -1081,6 +1087,12 @@ threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## sanity
+  badtimes <- which(!dt > 0)
+  if (length(badtimes) > 0L) {
+      stop(sprintf("input time or dt has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+  }
+
   ## Ensure alpha,beta are always matrices
   if(!is.matrix(alpha)) alpha <- t(alpha)
   if(!is.matrix(beta)) beta <- t(beta)
@@ -1180,7 +1192,17 @@ grouped.threshold.model <- function(twilight,rise,group,
     tmin <- tapply(as.numeric(twilight)/3600,group,min)
     tmax <- tapply(as.numeric(twilight)/3600,group,max)
     dt <- tmin[-1L]-tmax[-max(group)]
+
   }
+
+     ## sanity
+
+  badtimes <- which(!dt > 0)
+  if (length(badtimes) > 0L) {
+        stop(sprintf("input time has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+  }
+
+
   time <- .POSIXct(tapply(twilight,group,median),"GMT")
 
   ## Ensure alpha,beta are always matrices
@@ -1336,6 +1358,12 @@ curve.model <- function(time,light,segment,
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(tm)/3600)
+
+  ## sanity
+  badtimes <- which(!dt > 0)
+  if (length(badtimes) > 0L) {
+      stop(sprintf("input time has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+  }
 
   ## Ensure alpha,beta are always matrices
   if(!is.matrix(alpha)) alpha <- t(alpha)
