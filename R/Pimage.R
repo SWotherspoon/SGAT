@@ -247,7 +247,8 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
          xmn = xrange[1L],
          xmx = xrange[2L],
          ymn = yrange[1L],
-         ymx = yrange[2L]
+         ymx = yrange[2L],
+         crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"
          )
 }
 
