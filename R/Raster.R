@@ -282,19 +282,17 @@ solar.residuals <- function(twilight,rise,grid,zenith=96) {
 ## ##' the grid) and \code{!land} for points at sea.
 ## ##'
 ## ##' @title Example Land Mask
-## ##' @param xlim the longitude range when \code{wrap360=FALSE}.
+## ##' @param xlim the longitude range.
 ## ##' @param ylim the latitude range.
 ## ##' @param n number of grid cells per degree.
 ## ##' @param land mask for land or sea?
-## ##' @param wrap360 if \code{TRUE}, the mask spans the entire globe in
-## ##' longitude.
 ## ##' @return A vectorized function that determines (approximately)
 ## ##' whether a location is land or sea.
 ## ##' @examples
 ## ##'
 ## ##'
 ## ##' ## Define mask for sea
-## ##' is.sea <- land.mask(xlim=c(80,170),ylim=c(-70,-10),n=4,land=F)
+## ##' is.sea <- land.mask(xlim=c(80,170),ylim=c(-70,-10),n=4,land=FALSE)
 ## ##' ## Land
 ## ##' is.sea(cbind(120,-30))
 ## ##' ## Sea
