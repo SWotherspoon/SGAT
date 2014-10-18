@@ -960,7 +960,7 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
                    sdlog <- alpha[,2L]
                    function(r)
                      ifelse(is.finite(r) & r < 0,
-                            60*r-1.0E8+dlnorm(exp(meanlog+sdlog^2/2),meanlog,sdlog,log=T),
+                            60*r-1.0E8+dlnorm(exp(meanlog+sdlog^2/2),meanlog,sdlog,log=TRUE),
                             dlnorm(r,meanlog,sdlog,log=TRUE))
                  })
   logp
