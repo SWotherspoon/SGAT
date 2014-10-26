@@ -114,7 +114,8 @@ solar <- function(tm) {
 ##' \url{www.esrl.noaa.gov/gmd/grad/solcalc/}.  This function does not
 ##' adjust for atmospheric refraction see \code{\link{refracted}}.
 ##' @title Solar Zenith Angle
-##' @param sun list of solar time and declination computed by \code{solar}.
+##' @param sun list of solar time and declination computed by
+##' \code{solar}.
 ##' @param lon vector of longitudes.
 ##' @param lat vector latitudes.
 ##' @return A vector of solar zenith angles (degrees) for the given
@@ -207,10 +208,12 @@ unrefracted <- function(zenith)
 ##'
 ##' Note this function returns the time of twilight in solar time.
 ##' @title Solar Time of Sunrise and Sunset
-##' @param solar output of \code{solar} for approximate times of twilight.
+##' @param solar output of \code{solar} for approximate times of
+##' twilight.
 ##' @param lon vector of longitudes.
 ##' @param lat vector of latitudes.
-##' @param rise logical vector indicating whether to compute rise or set.
+##' @param rise logical vector indicating whether to compute rise or
+##' set.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a vector of twilight times in solar time (degrees)
 ##' @seealso \code{\link{twilight}}
@@ -249,12 +252,14 @@ twilight.solartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' of sunrise/sunset.  The process is repreated and is accurate to
 ##' less than 2 seconds within 2 or 3 iterations.
 ##'
-##' \code{sunrise} and \code{sunset} are simple wrappers for \code{twilight}.
+##' \code{sunrise} and \code{sunset} are simple wrappers for
+##' \code{twilight}.
 ##' @title Times of Sunrise and Sunset
 ##' @param tm vector of approximate times of twilight.
 ##' @param lon vector of longitudes.
 ##' @param lat vector of latitudes.
-##' @param rise logical vector indicating whether to compute rise or set.
+##' @param rise logical vector indicating whether to compute rise or
+##' set.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param iters number of iteratve refinements made to the initial
 ##' approximation.
@@ -303,7 +308,8 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3)
 ##'
 ##' Compute the midpoints of a sequence of locations along a path.
 ##' @title Path Midpoints
-##' @param p a two column matrix of (lon,lat) locations along the path.
+##' @param p a two column matrix of (lon,lat) locations along the
+##' path.
 ##' @param fold should the longitudes be folded into [-180,180).
 ##' @return a two column matrix of (lon,lat) midpoints.
 ##' @export
@@ -515,16 +521,17 @@ threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold
 ##' nonstationary observer and errors in estimated twilights
 ##'
 ##' Given the times of a single sunrise and sunset pair,
-##' \code{threshold.sensitivity} estimates the location of the tagged animal
-##' at sunrise and at sunset assuming that during this time the animal
-##' moves no further than a given maximum range, and that the observed
-##' times of sunrise and sunset contain an additive log Normally
-##' distributed error with known mean and variance. These errors are
-##' directed so that observed sunrise occurs earlier than true
-##' sunrise, and the observed sunset occurs later than true sunrise.
+##' \code{threshold.sensitivity} estimates the location of the tagged
+##' animal at sunrise and at sunset assuming that during this time the
+##' animal moves no further than a given maximum range, and that the
+##' observed times of sunrise and sunset contain an additive log
+##' Normally distributed error with known mean and variance. These
+##' errors are directed so that observed sunrise occurs earlier than
+##' true sunrise, and the observed sunset occurs later than true
+##' sunrise.
 ##'
-##' \code{threshold.sensitivity} implements a Metropolis sampler to draw
-##' samples from the posterior distribution for the sunrise and
+##' \code{threshold.sensitivity} implements a Metropolis sampler to
+##' draw samples from the posterior distribution for the sunrise and
 ##' sunset.
 ##' @title Threshold Geolocation Sensitivity
 ##' @param rise observed time of sunrise as POSIXct.
@@ -547,8 +554,10 @@ threshold.path <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold
 ##' @param n.iters total number of samples to draw.
 ##' @return a list with three components
 ##' \item{\code{p0}}{the threshold estimate}
-##' \item{\code{rise}}{the sampled sunrise locations as a two column matrix}
-##' \item{\code{set}}{the sampled sunset locations as a two column matrix}
+##' \item{\code{rise}}{the sampled sunrise locations as a two column
+##' matrix}
+##' \item{\code{set}}{the sampled sunset locations as a two column
+##' matrix}
 ##' @export
 threshold.sensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.mulog,sr.sdlog,ss.mulog,ss.sdlog,
@@ -658,14 +667,16 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
 ##' @param dfz a dataframe generated with \code{zenith.simulate}.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param dft a dataframe generated with \code{twilight.simulate}.
-##' @param err a vector of adjustments (in minutes) to the twilight times.
+##' @param err a vector of adjustments (in minutes) to the twilight
+##' times.
 ##' @return \code{zenith.simulate} returns a data frame with
 ##' components
 ##' \item{\code{Date}}{times along the simulated track}
 ##' \item{\code{Lon}}{longitudes along the simulated track}
 ##' \item{\code{Lat}}{latitudes along the simulated track}
 ##' \item{\code{Zenith}}{zenith angles along the simulated track}
-##' \code{twilight.simulate} returns a data frame of twilights with components
+##' \code{twilight.simulate} returns a data frame of twilights with
+##' components
 ##' \item{\code{Twilight}}{times of twilight}
 ##' \item{\code{Rise}}{is this a sunrise}
 ##' \item{\code{Lon}}{longitude at twilight}
@@ -785,8 +796,10 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' @title Satellite Model Structures
 ##' @param time the times of the satellite determined locations.
 ##' @param X the satellite determined locations.
-##' @param location.model the model for the errors in satellite locations.
-##' @param sd a vector or two column matrix of dispersions for the location model.
+##' @param location.model the model for the errors in satellite
+##' locations.
+##' @param sd a vector or two column matrix of dispersions for the
+##' location model.
 ##' @param df a vector or two column matrix of degrees of freedom for
 ##' the t location model.
 ##' @param beta parameters of the behavioural model.
@@ -800,14 +813,20 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
-##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
-##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
-##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
-##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
-##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
+##' \item{\code{logpx}}{function to evaluate the contributions to the
+##' log posterior from the twilight model}
+##' \item{\code{logpz}}{function to evaluate the contributions to the
+##' log posterior from the prior for the z locations}
+##' \item{\code{estelle.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for estelle.}
+##' \item{\code{stella.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for stella.}
+##' \item{\code{fixedx}}{a logical vector indicating which locations
+##' should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
-##' \item{\code{time}}{the times of the satellite determined locations.}
+##' \item{\code{time}}{the times of the satellite determined
+##' locations.}
 ##' \item{\code{X}}{the satellite determined locations.}
 ##' @export
 satellite.model <- function(time,X,
@@ -1058,12 +1077,18 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
-##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
-##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
-##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
-##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
-##' \item{\code{residuals}}{function to evaluate the twilight model residuals.}
-##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
+##' \item{\code{logpx}}{function to evaluate the contributions to the
+##' log posterior from the twilight model}
+##' \item{\code{logpz}}{function to evaluate the contributions to the
+##' log posterior from the prior for the z locations}
+##' \item{\code{estelle.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for estelle.}
+##' \item{\code{stella.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for stella.}
+##' \item{\code{residuals}}{function to evaluate the twilight model
+##' residuals.}
+##' \item{\code{fixedx}}{a logical vector indicating which locations
+##' should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
 ##' \item{\code{time}}{the twilight times.}
@@ -1331,17 +1356,24 @@ grouped.threshold.model <- function(twilight,rise,group,
 ##' to hold fixed.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return a list with components
-##' \item{\code{logpx}}{function to evaluate the contributions to the log posterior from the twilight model}
-##' \item{\code{logpz}}{function to evaluate the contributions to the log posterior from the prior for the z locations}
-##' \item{\code{estelle.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for estelle.}
-##' \item{\code{stella.logpb}}{function to evaluate contribution to the log posterior from the behavioural model for stella.}
-##' \item{\code{fitted}}{function to evaluate the fitted values for a given set of lcoations.}
-##' \item{\code{fixedx}}{a logical vector indicating which locations should remain fixed.}
+##' \item{\code{logpx}}{function to evaluate the contributions to the
+##' log posterior from the twilight model}
+##' \item{\code{logpz}}{function to evaluate the contributions to the
+##' log posterior from the prior for the z locations}
+##' \item{\code{estelle.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for estelle.}
+##' \item{\code{stella.logpb}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for stella.}
+##' \item{\code{fitted}}{function to evaluate the fitted values for a
+##' given set of locations.}
+##' \item{\code{fixedx}}{a logical vector indicating which locations
+##' should remain fixed.}
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{z0}}{an array of initial intermediate locations.}
 ##' \item{\code{time}}{the sample times.}
 ##' \item{\code{light}}{the recorded light levels.}
-##' \item{\code{segment}}{vector of integers that assign observations to twilight segments.}
+##' \item{\code{segment}}{vector of integers that assign observations
+##' to twilight segments.}
 ##' @export
 curve.model <- function(time,light,segment,
                         calibration,alpha,beta,
@@ -1446,9 +1478,11 @@ curve.model <- function(time,light,segment,
 ##' @return If there are r samples drawn for each of q chains of p
 ##' parameters at n locations, Stella will return a list containing
 ##' \item{\code{model}}{the model structure}
-##' \item{\code{x}}{a list of n x p x r arrays of twilight locations from the q chains}
+##' \item{\code{x}}{a list of n x p x r arrays of twilight locations
+##' from the q chains}
 ##' While in addition Estelle will return
-##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate locations from the q chains}.
+##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate
+##' locations from the q chains}.
 ##' @seealso \code{\link{threshold.model}}
 ##' @export
 estelle.metropolis <- function(model,
@@ -1766,7 +1800,8 @@ nlocation <- function(s) {
 ##' @param discard number of initial samples to discard.
 ##' @param alpha coverage of the credible intervals calculated by
 ##' \code{location.summary}.
-##' @param collapse whether to collapse multiple chains to a single sample
+##' @param collapse whether to collapse multiple chains to a single
+##' sample
 ##' @param chains the set of chains to retain, or \code{NULL}.
 ##' @return
 ##' \item{\code{location.summary}}{returns a dataframe or a list of
@@ -2003,8 +2038,8 @@ chain.coda <- function(s) {
 
 ##' Calculate shape and rate parameters of the Gamma distribution
 ##'
-##' The Gamma distribution is usually parametrized in terms of the
-##' shape and rate parameters.  The \code{gamma.par} function
+##' The Gamma distribution is usually parameterized in terms of the
+##' shape and rate parameters.  The \code{parameters.gamma} function
 ##' deterimines the shape and rate parameters that will yield a Gamma
 ##' distribution with a desired mean and standard deviation.
 ##' @title Alternate Gamma Parametrization
@@ -2130,9 +2165,9 @@ bmvnorm <- function(S,m,s=1) {
 ##' @param tFirst times of first twilight.
 ##' @param tSecond times of second twilight.
 ##' @param type type of twilight.
-##' @return A data frame with columns
-##' \item{\code{twilight}}{times of twilight as POSIXct objects.}
-##' \item{\code{rise}}{logical vector indicating which twilights are sunrise.}
+##' @return A data frame with columns \item{\code{twilight}}{times of
+##' twilight as POSIXct objects.}  \item{\code{rise}}{logical vector
+##' indicating which twilights are sunrise.}
 ##' @export
 geolight.convert <- function(tFirst,tSecond,type) {
   tm <- .POSIXct(c(as.POSIXct(tFirst,"GMT"),
@@ -2181,34 +2216,37 @@ NULL
 ##' data from a time-depth-recorder (Mk9 TDR; Wildlife Computers,
 ##' Seattle, WA, USA).  These tags provides regular time series of
 ##' measurements of depth, water temperature, and ambient light
-##' level. The original data for \code{ElephantSeal1} were processed to remove
-##' values at depths greater than 15m and to classify periods of
-##' twilight. The data for \code{ElephantSeal2} have also been processed for
-##' twilight periods. The seals makes one single foraging trip,
-##' returning to the isthmus where they were tagged.  Data recorded while
-##' the seal is at the isthmus are used for calibration
-##' (\code{\link{ElephantSeal1calib}}).
+##' level. The original data for \code{ElephantSeal1} were processed
+##' to remove values at depths greater than 15m and to classify
+##' periods of twilight. The data for \code{ElephantSeal2} have also
+##' been processed for twilight periods. The seals makes one single
+##' foraging trip, returning to the isthmus where they were tagged.
+##' Data recorded while the seal is at the isthmus are used for
+##' calibration (\code{\link{ElephantSeal1calib}}).
 ##'
 ##' These data supplied courtesy of Mark Hindell, Institute of Marine
-##' and Antarctic Studies, University of Tasmania. \code{ElephantSeal1} is
-##' B362_99 and \code{ElephantSeal2} is C699_02
+##' and Antarctic Studies, University of
+##' Tasmania. \code{ElephantSeal1} is B362_99 and \code{ElephantSeal2}
+##' is C699_02
 ##' @name ElephantSeal1
 ##' @aliases ElephantSeal1calib ElephantSeal2 ElephantSeal2calib
 ##' @docType data
 ##' @title Southern Elephant seal tag data
-##' @format \code{ElephantSeal1} A data frame with 3 columns.  The columns
-##' represent
+##' @format \code{ElephantSeal1} A data frame with 3 columns.  The
+##' columns represent
 ##' \tabular{rl}{
 ##' \code{time} \tab times of measurement \cr
 ##' \code{light} \tab  (log) light values \cr
 ##' \code{segment} \tab integer indicating sequence of twilight periods \cr
 ##' }
-##' \code{ElephantSeal2} This tag is similar to \code{ElephantSeal1} but also has columns
+##' \code{ElephantSeal2} This tag is similar to \code{ElephantSeal1}
+##' but also has columns
 ##' \tabular{rl}{
 ##' \code{depth} \tab depth in the water column in metres (positive) \cr
 ##' \code{temp} \tab temperature in the water column in degrees celcius \cr
 ##' }
-##'  \code{ElephantSeal1calib} and \code{ElephantSealcalib2} A data frame with 2 columns.  The columns represent
+##' \code{ElephantSeal1calib} and \code{ElephantSealcalib2} A data
+##' frame with 2 columns.  The columns represent
 ##' \tabular{rl}{
 ##' \code{zenith} \tab zenith values \cr
 ##' \code{light} \tab  (log) light values \cr
