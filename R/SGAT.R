@@ -885,6 +885,7 @@ satellite.model <- function(time,X,
   }
 
 
+
   list(## Positional contribution to the log posterior
        logpx=logpx,
        logpz=logpz,
@@ -1112,10 +1113,10 @@ threshold.model <- function(twilight,rise,
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
-  ## sanity
+  ## Sanity checks
   badtimes <- which(!dt > 0)
   if (length(badtimes) > 0L) {
-      stop(sprintf("input time or dt has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+    stop(sprintf("input time or dt has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
   }
 
   ## Ensure alpha,beta are always matrices
@@ -1220,11 +1221,10 @@ grouped.threshold.model <- function(twilight,rise,group,
 
   }
 
-     ## sanity
-
+  ## Sanity check
   badtimes <- which(!dt > 0)
   if (length(badtimes) > 0L) {
-        stop(sprintf("input time has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
+    stop(sprintf("input time has %i non-increasing values, starting at index %i", length(badtimes), badtimes[1L]))
   }
 
 
