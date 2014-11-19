@@ -923,6 +923,7 @@ satellite.model <- function(time,X,
        z0=z0,
        ## Data
        time=time,
+       dt=dt,
        X=X)
 }
 
@@ -1217,7 +1218,8 @@ threshold.model <- function(twilight,rise,
        z0=z0,
        ## Data
        time=twilight,
-       rise=rise)
+       rise=rise,
+       dt=dt)
 }
 
 ##' @rdname threshold.model
@@ -1330,7 +1332,8 @@ grouped.threshold.model <- function(twilight,rise,group,
        twilight=twilight,
        rise=rise,
        group=group,
-       time=time)
+       time=time,
+       dt=dt)
 }
 
 
@@ -1478,7 +1481,8 @@ curve.model <- function(time,light,segment,
        x0=x0,
        z0=z0,
        ## Median time of twilights
-       time = tm)
+       time=tm,
+       dt=dt)
 }
 
 
