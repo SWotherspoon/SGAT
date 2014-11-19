@@ -923,11 +923,12 @@ satellite.model <- function(time,X,
 
   c(location.model,
     behavioural.model,
-    ## Suggested starting points
-    x0=x0,z0=z0,
-    ## Data
-    time=time,
-    X=X)
+    list(
+      ## Suggested starting points
+      x0=x0,z0=z0,
+      ## Data
+      time=time,
+      X=X))
 }
 
 
@@ -1194,11 +1195,12 @@ threshold.model <- function(twilight,rise,
 
   c(location.model,
     behavioural.model,
-    ## Suggested starting points
-    x0=x0,z0=z0,
-    ## Data
-    time=twilight,
-    rise=rise)
+    list(
+      ## Suggested starting points
+      x0=x0,z0=z0,
+      ## Data
+      time=twilight,
+      rise=rise))
 }
 
 ##' @rdname threshold.model
@@ -1306,13 +1308,14 @@ grouped.threshold.model <- function(twilight,rise,group,
 
   c(location.model,
     behavioural.model,
-    ## Suggested starting points
-    x0=x0,z0=z0,
-    ## Data
-    twilight=twilight,
-    rise=rise,
-    group=group,
-    time=time)
+    list(
+      ## Suggested starting points
+      x0=x0,z0=z0,
+      ## Data
+      twilight=twilight,
+      rise=rise,
+      group=group,
+      time=time))
 }
 
 
@@ -1478,10 +1481,11 @@ curve.model <- function(time,light,segment,
 
   c(location.model,
     behavioural.model,
-    ## Suggested starting points
-    x0=x0,z0=z0,
-    ## Median time of twilights
-    time=tm)
+    list(
+      ## Suggested starting points
+      x0=x0,z0=z0,
+      ## Median time of twilights
+      time=tm))
 }
 
 
