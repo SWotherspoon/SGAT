@@ -1,7 +1,7 @@
 ##' Cluster Model Structure for Stella and Estelle
 ##'
 ##' This function modifies a model constructed for
-##' \code{stella.metropolis} or \code{estelle.metropolis) to make it
+##' \code{stella.metropolis} or \code{estelle.metropolis} to make it
 ##' suitable for the cluster switching variants
 ##' \code{estelle.metropolis.cluster} or
 ##' \code{stella.metropolis.cluster}.
@@ -9,13 +9,12 @@
 ##' @param an array of parameters of the behavioural model.  Each row
 ##' corresponds to a different state.
 ##' @param model a model structure suitable for use with
-##' \code{estelle.metropolis} or \code{stella.metropolis).
+##' \code{estelle.metropolis} or \code{stella.metropolis}.
 ##' @param B0 prior for the states.  Either 1, corresponding to a
 ##' uniform prior, or a (n-1) x m matrix where each row is a vector of
 ##' prior probabilities of the m states.
 ##' @param b0 suggested starting points for the behavioural state.
-##' @return
-##' @author
+##' @export
 cluster.model <- function(model,beta=NULL,B0=1,b0=NULL) {
   env <- new.env(parent=environment(model$estelle.logpb))
   env$beta <- beta
