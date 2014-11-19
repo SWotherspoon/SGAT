@@ -239,7 +239,7 @@ longlatFromCell <- function(raster,cells,spatial=FALSE) {
 ##' Spatial maps of twilight residuals
 ##'
 ##' This function calculates the twilight residuals corresponding to
-##' an observed twilight across a grid of locations.
+##' a single observed twilight across a grid of locations.
 ##'
 ##' @title Twilight Residuals
 ##' @param twilight an observed time of twilight
@@ -247,8 +247,9 @@ longlatFromCell <- function(raster,cells,spatial=FALSE) {
 ##' @param grid raster object that define the sampling grid.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a raster of twilight residuals (in minutes).
+##' @seealso \code{\link{twilight.residuals}}
 ##' @export
-solar.residuals.map <- function(twilight,rise,grid,zenith=96) {
+twilight.residuals.map <- function(twilight,rise,grid,zenith=96) {
   p <- longlatFromCell(grid,1:ncell(grid))
   legal <- !(is.na(p[,1]) | is.na(p[,2]))
   sgn <- if(rise) 1 else -1
