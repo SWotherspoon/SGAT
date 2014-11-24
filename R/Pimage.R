@@ -225,10 +225,10 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
 
   for (k in seq_along(pimg)) {
     binx <- t(chain[k, 1:2, ])
-    pimg[[k]] <- chain.bin(pimg[[k]], binx, weight = weights[k], previters =  attr(pimg, "itersbin"), ...)
+    pimg[[k]] <- chain.bin(pimg[[k]], binx, weight = weights[k], previters =  pimg$itersbin, ...)
     ##pimg[[k]]
   }
-  attr(pimg, "itersbin") <-  attr(pimg, "itersbin") + nrow(binx)
+  pimg$itersbin <-  pimg$itersbin + nrow(binx)
   pimg
 }
 
