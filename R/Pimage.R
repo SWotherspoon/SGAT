@@ -276,8 +276,8 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
   yrange <- range(x[,2,])
 
   ## buffer this out to be sure
-  xrange <- xrange + c(-1, 1) * (diff(xrange) / 100)
-  yrange <- yrange + c(-1, 1) * (diff(yrange) / 100)
+  xrange <- xrange + c(-1, 1) * (diff(xrange) / 10)
+  yrange <- yrange + c(-1, 1) * (diff(yrange) / 10)
   ## need to determine lon/lat aspect and modify default dims
   raster(nrows = 300,
          ncols = 300,
@@ -336,8 +336,8 @@ chain.bin <- function(pimg, xy, weight = NULL, method = c("bin", "kde"),
         off <- c(irange[1],jrange[1])
         img <- matrix(0,diff(irange)+1,diff(jrange)+1)
       } else {
-        irange0 <- pimg[[1]]$offset[1]+c(0,nrow(pimg$p[[1L]]$image)-1)
-        jrange0 <- pimg[[1]]$offset[2]+c(0,ncol(pimg$p[[1L]]$image)-1)
+        irange0 <- pimg$p[[1]]$offset[1] + c(0,nrow(pimg$p[[1L]]$image)-1)
+        jrange0 <- pimg$p[[1]]$offset[2] + c(0,ncol(pimg$p[[1L]]$image)-1)
         irange <- range(i,irange0)
         jrange <- range(j,jrange0)
         off <- c(irange[1],jrange[1])
