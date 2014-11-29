@@ -31,14 +31,14 @@ The package is easily built with RStudio
 
 7. Create an Rstudio project in the folder containing this README file.
 
-8. In the build tab, choose `More/Configure Build Tools...` and click
-`Generate documentation with Roxygen`, select `Configure` and choose
-to generate `Rd files` and the `NAMESPACE file`, leaving the other
-options as they are.
+8. In the build tab, choose `More/Configure Build Tools...` and
 
-9. Choose `More/Roxygenize` from the `Build` tab
+   1. Click `Use devtools if available`, and
 
-10. Choose `Build & Reload` to make the package immediately available
+   2. Click `Generate documentation with Roxygen`, select `Configure`
+      and select all six teckboxes.
+
+9. Choose `Build & Reload` to make the package immediately available
     to R, or choose `More/Build source package` `More/Build binary
     package` from the `Build` tab to make source or binary packages.
 
