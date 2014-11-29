@@ -33,7 +33,7 @@ The package is easily built with RStudio
 
 8. In the build tab, choose `More/Configure Build Tools...` and
 
-   1. Click `Use devtools if available`, and
+   1. Select `Use devtools if available`, and
 
    2. Click `Generate documentation with Roxygen`, select `Configure`
       and select all six teckboxes.
