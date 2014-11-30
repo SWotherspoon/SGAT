@@ -224,9 +224,9 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 ##' @param raster a raster object
 ##' @param cells the cell numbers
 ##' @param spatial return locations as SpatialPoints object instead of a matrix.
-##' @return the long,lat locations for the requested cells.
+##' @return the lon,lat locations for the requested cells.
 ##' @export
-longlatFromCell <- function(raster,cells,spatial=FALSE) {
+lonlatFromCell <- function(raster,cells,spatial=FALSE) {
   if(is.na(projection(raster)) || isLonLat(raster)) {
     xyFromCell(raster,cells,spatial=spatial)
   } else {
@@ -250,7 +250,7 @@ longlatFromCell <- function(raster,cells,spatial=FALSE) {
 ##' @seealso \code{\link{twilight.residuals}}
 ##' @export
 twilight.residuals.map <- function(twilight,rise,grid,zenith=96) {
-  p <- longlatFromCell(grid,1:ncell(grid))
+  p <- lonlatFromCell(grid,1:ncell(grid))
   legal <- !(is.na(p[,1]) | is.na(p[,2]))
   sgn <- if(rise) 1 else -1
   s <- solar(twilight)
