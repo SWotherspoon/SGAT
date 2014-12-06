@@ -1769,7 +1769,7 @@ estelle.metropolis <- function(model,
         ## and would cancel), and so we can update all the z in parallel.
         z2 <- proposal.z(z1)
         logp.z2 <- logpz(z2)
-        logp.b2 <- logpb(x,z2)
+        logp.b2 <- logpb(x1,z2)
         logp1 <- logp.z1+logp.b1
         logp2 <- logp.z2+logp.b2
         ## MH rule - compute indices of the accepted points.
