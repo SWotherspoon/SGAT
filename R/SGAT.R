@@ -370,6 +370,64 @@ trackDist2 <- function(x,z) {
 
 
 
+
+##' Bearing changes along a track
+##'
+##' The \code{trackBearingChange} computes the change in bearing between
+##' successive locations along path. The \code{trackBearingChange2}
+##' accepts a second sequence of intermediate points, and computes the
+##' change in bearing along the dog leg paths from \code{x[i,]}
+##' to \code{z[i,]} to \code{x[i+1,]}.
+##'
+##' @title Distance along a path
+##' @param x a two column matrix of (lon,lat) locations along the path.
+##' @param z a two column matrix of (lon,lat) intermediate locations
+##' along the path.
+##' @return vector of changes in bearing (degrees)
+##' @export
+trackBearingChange <- function(x) {
+  n <- nrow(x)
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2L])
+  sinx2 <- sin(rad*x[,2L])
+
+
+  ## Bearing from one x to the next
+  bs <- atan2(sin(rad*(x[-1L,1L]-x[-n,1L]))*cosx2[-1L],
+              cosx2[-n]*sinx2[-1L]-sinx2[-n]*cosx2[-1L]*cos(rad*(x[-1L,1L]-x[-n,1L])))/rad
+  ## Difference bs and fold difference into [-180,180)
+  (bs[1-n]-bs[-1]+180)%%360-180
+}
+
+
+##' @rdname trackBearingChange
+##' @export
+trackBearingChange2 <- function(x,z) {
+  n <- nrow(x)
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2L])
+  sinx2 <- sin(rad*x[,2L])
+  cosz2 <- cos(rad*z[,2L])
+  sinz2 <- sin(rad*z[,2L])
+  dLon1 <- rad*(x[-n,1L]-z[,1L])
+  dLon2 <- rad*(x[-1,1L]-z[,1L])
+
+  ## Bearing from z to previous x
+  b1 <- atan2(sin(dLon1)*cosx2[-n],
+              cosz2*sinx2[-n]-sinz2*cosx2[-n]*cos(dLon1))/rad
+
+  ## Bearing from z to next
+  b2 <- atan2(sin(dLon2)*cosx2[-1L],
+              cosz2*sinx2[-1L]-sinz2*cosx2[-1L]*cos(dLon2))/rad
+  ## Reverse b1 and fold difference into [-180,180)
+  (b2-b1)%%360-180
+}
+
+
+
+
+
+
 ##' Convert streams of twilights to sunrise/sunset pairs
 ##'
 ##' This function converts the twilight, rise format used by Stella
@@ -563,7 +621,6 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.mulog,sr.sdlog,ss.mulog,ss.sdlog,
                                   sr.proposal,ss.proposal,
                                   n.thin=10,n.iters=1000) {
-
 
   ## Great circle distance (km)
   gcdist <- function(a,b) {
@@ -813,16 +870,28 @@ speed.gamma.model <- function(beta,dt) {
   ## Ensure beta is always a matrix
   if(!is.matrix(beta)) beta <- t(beta)
 
-  ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+  if(ncol(beta)==2) {
+    ## Contribution to log posterior from the movement
+    estelle.logpb <- function(x,z) {
+      spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    }
+  }
+
+  if(ncol(beta)==3) {
+    ## Contribution to log posterior from the movement
+    estelle.logpb <- function(x,z) {
+      spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+      angle <- trackBearingChange2(x,z)
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)+dnorm(angle,0,beta[,3L],log=TRUE)
+    }
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
+
 
   ## Behavioural contribution to the log posterior
   list(
@@ -1692,7 +1761,6 @@ estelle.metropolis <- function(model,
           logp.x1[accept] <- logp.x2[accept]
           logp.b1[accept] <- logp.b2[accept]
           logp.b1[accept-1L] <- logp.b2[accept-1L]
-
         }
 
         ## Update z
