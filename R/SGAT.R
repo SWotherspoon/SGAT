@@ -1027,7 +1027,6 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
   twilight.model <- match.arg(twilight.model)
   logp <- switch(twilight.model,
                  Gamma={
-
                    shape <- alpha[,1L]
                    rate <- alpha[,2L]
                    function(r) dgamma(r,shape,rate,log=TRUE)
