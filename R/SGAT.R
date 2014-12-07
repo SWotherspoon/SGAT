@@ -839,30 +839,37 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 
 
 
-##' Movement model that assumes speeds have a Gamma distribution.
+##' Movement model that assumes speeds are Gamma distributed
 ##'
-##' This function implements the simple Gamma speed movement model
-##' used by \code{\link{satellite.model}},
-##' \code{\link{threshold.model}},
-##' \code{\link{grouped.threshold.model}} and
-##' \code{\link{curve.model}}.
+##' This function implements a movement model that assumes the speed
+##' of travel between locations is Gamma distributed, and for Estelle
+##' models, the change in bearing along the dog-leg path segments can
+##' be assumed Normally distributed with mean zero.
 ##'
-##' Both the Estelle and Stella variants of this simple model assume
-##' that the speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' For Stella models, average speeds is calculated along great circle
+##' paths between primary locations (x).  For Estelle, average speed
+##' is calculated along dog leg paths through the intermediate points
+##' (z), and the change in bearing at each intermediate point calculated.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
+##'
+##' Alternately, these parameters can be specified individually for
+##' each track segment by passing \code{beta} as a matrix with one row
+##' for each segment.
 ##'
 ##' @title Gamma Behavioural Model
 ##' @param beta parameters of the behavioural model.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return Functions to evaluate the contributions to the log
 ##' posterior for the Estelle and Stella models.
+##' @seealso \code{\link{satellite.model}}, \code{\link{threshold.model}},
+##' \code{\link{grouped.threshold.model}}, \code{\link{curve.model}}.
 ##' @export
 speed.gamma.model <- function(beta,dt) {
-
 
   ## Sanity check
   if(any(dt <= 0)) stop("Data not ordered in time")
@@ -921,22 +928,24 @@ speed.gamma.model <- function(beta,dt) {
 ##' \item{'T'}{t distributed with degrees of freedom df.}
 ##' }
 ##'
-##' The initialization locations \code{x0} and \code{z0} must be
-##' consistent with the chosen twilight model.  That is, if
-##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
-##' yield negative twilight errors.
-##'
 ##' Both Estelle and Stella variants of the model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
 ##'
-##' The \code{satellite.model0} function constructs only the
-##' non-movement elements of the model, and can be used as a basis for
-##' those wishing to experiment with alternative movement models.
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
+##'
+##' The \code{satellite.model0} function constructs the non-movement
+##' elements of the model, and the movement elements of the model are
+##' constructed by the \code{speed.gamma.model} function.
 ##'
 ##' @title Satellite Model Structures
 ##' @param time the times of the satellite determined locations.
@@ -1178,13 +1187,20 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
 ##' yield negative twilight errors.
 ##'
-##' Both Estelle and Stella variants of this model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' Both Estelle and Stella variants of the model assume that the
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
 ##'
 ##' Twilights can be missing because either the light record was too
 ##' noisy at that time to estimate twilight reliably, or because the
@@ -1202,9 +1218,9 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' }
 ##'
 ##' The \code{threshold.model0} and \code{grouped.threshold.model0}
-##' functions construct only the non-movement elements of the model,
-##' and can be used as a basis for those wishing to experiment with
-##' alternative movement models.
+##' functions construct the non-movement elements of the model, and
+##' the movement elements of the model are constructed by the
+##' \code{speed.gamma.model} function.
 ##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -1479,13 +1495,20 @@ grouped.threshold.model0 <- function(twilight,rise,group,
 ##' The initialization locations \code{x0} and \code{z0} must be
 ##' consistent with any other constraints imposed by the data.
 ##'
-##' Both Estelle and Stella variants of this model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' Both Estelle and Stella variants of the model assume that the
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
 ##'
 ##' The \code{curve.model0} function constructs only the non-movement
 ##' elements of the model, and can be used as a basis for those
