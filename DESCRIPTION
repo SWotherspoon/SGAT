@@ -1,7 +1,7 @@
 Package: SGAT
 Type: Package
 Title: Solar/Satellite Geolocation for Animal Tracking
-Version: 0.1-1
+Version: 0.1-3
 Author: Simon Wotherspoon, Michael Sumner and Simeon Lisovski
 Maintainer: Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au>
 Suggests:
