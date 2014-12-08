@@ -38,8 +38,8 @@ essie.threshold.model <- function(twilight,rise,
   }
 
   logbk <- function(k,x1,x2) {
-    spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
-    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+      spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
+      dgamma(spd,beta[1L],beta[2L],log=TRUE)
   }
 
 
@@ -60,7 +60,7 @@ fixed <- twl$Marker > 0
 
 
 alpha <- c(2.2,1.0)
-beta <- c(6, 0.12)
+beta <- c(2.8, 0.12)
 model <- essie.threshold.model(twl$Twilight,twl$Rise,alpha=alpha,beta=beta,x0=x0,fixed=fixed,zenith=zenith)
 #grid <- raster(ncols=1*(227-89),nrows=1*(66+75),xmn=89,xmx=227,ymn=-75,ymx=66)
 
@@ -73,7 +73,10 @@ essie.forback <- function(model,grid,epsilon=1.0E-10) {
   fixed <- integer(n)
   fixed[model$fixed] <- cellFromLonLat(grid,model$x0[model$fixed,])
 
-  normalize <- function(x) x/sum(x)
+  normalize <- function(x) {
+      s <- sum(x)
+      if(s < 1.0E-12) rep(0,length(x)) else x/sum(x)
+  }
 
   cs <- (1:ncell(grid))[values(grid)>0]
   lattice <- lapply(1:n,function(k) {
@@ -93,11 +96,14 @@ essie.forback <- function(model,grid,epsilon=1.0E-10) {
     print(k)
     xs0 <- xs
     as0 <- as
+    xs0 <- pts[lattice[[k-1]]$cs,,drop=F]
     xs <- pts[lattice[[k]]$cs,,drop=F]
+    as0 <- lattice[[k-1]]$as
     as <- 0
-    for(i in which(as0 > epsilon*max(as0)))
-      as <- as + as0[i]*normalize(exp(model$logbk(k-1,xs0[i,,drop=F],xs)))
-    lattice[[k]]$as <- normalize(as*lattice[[k]]$ps)
+    for(i in which(as0>0))
+        as <- as + as0[i]*normalize(exp(model$logbk(k-1,xs0[i,,drop=F],xs)))
+    as <- normalize(as*lattice[[k]]$ps)
+    lattice[[k]]$as <- as
   }
 
 
@@ -110,13 +116,23 @@ essie.forback <- function(model,grid,epsilon=1.0E-10) {
     bs0 <- bs
     xs <- pts[lattice[[k]]$cs,,drop=F]
     bs <- 0
-    for(i in which(bs0 > epsilon*max(bs0)))
-      bs <- bs + bs0[i]*normalize(exp(model$logbk(k-1,xs,xs0[i,,drop=F])))
-    lattice[[k]]$bs <- normalize(bs*lattice[[k]]$ps)
+    #for(i in which(bs0 > epsilon*max(bs0)))
+    for(i in which(bs0>0))
+        bs <- bs + bs0[i]*normalize(exp(model$logbk(k-1,xs,xs0[i,,drop=F])))
+    bs <- normalize(bs*lattice[[k]]$ps)
+    lattice[[k]]$bs <- bs
   }
 
 
 }
+
+
+plot3 <- function(grid,cs,ps,...) {
+    g <- raster(grid)
+    g[cs] <- ps
+    plot(g,...)
+}
+
 
 plot1 <- function(lattice,grid,k=NULL) {
   opar <- par(mfrow=c(2,2))
