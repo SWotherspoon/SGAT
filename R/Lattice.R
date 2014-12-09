@@ -1,5 +1,3 @@
-library(SGAT)
-library(raster)
 cellFromLonLat <- function(raster,ps) {
   if(!(is.na(projection(raster)) || isLonLat(raster))) {
     ps <- SpatialPoints(ps,proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
@@ -20,64 +18,75 @@ gcDist <- function(x1,x2) {
 
 
 essie.threshold.model <- function(twilight,rise,
+                                  twilight.model=c("LogNormal","Gamma","Normal"),
                                   alpha,beta,
-                                  logpk0=function(k,x) 0,
+                                  logp0=function(k,x) 0,
                                   x0,fixed=FALSE,dt=NULL,zenith=96) {
 
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
 
+  ## Fixed locations
   fixed <- rep_len(fixed,length.out=length(twilight))
 
-  logpk <- function(k,x) {
+  ## Twilight residuals
+  residuals <- function(k,x) {
     sgn <- ifelse(rise[k],1,-1)
     s <- solar(twilight[k])
-    r <- 4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise[k],zenith))
-    ifelse(!is.finite(r) | r < 0, -Inf,dlnorm(r,alpha[1L],alpha[2L],log=TRUE)+logpk0(k,x))
+    4*sgn*(s$solarTime-twilight.solartime(s,x[,1L],x[,2L],rise[k],zenith))
   }
 
+
+  ## Select the density of the twilight residuals
+  twilight.model <- match.arg(twilight.model)
+  logp.residual <- switch(twilight.model,
+                          Gamma=function(r) dgamma(r,alpha[1L],alpha[2L],log=TRUE),
+                          LogNormal=function(r) dlnorm(r,alpha[1L],alpha[2L],log=TRUE),
+                          Normal=function(r) dnorm(r,alpha[1L],alpha[2L],log=TRUE))
+
+  ## Contribution to log posterior from each x location
+  logpk <- function(k,x) {
+    logp <- logp.residual(residuals(k,x))
+    logp[!is.finite(logp)] <- -Inf
+    logp <- logp+logp0(k,x)
+    logp
+  }
+
+  ## Behavioural contribution to the log posterior
   logbk <- function(k,x1,x2) {
-      spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
-      dgamma(spd,beta[1L],beta[2L],log=TRUE)
+    spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
+    dgamma(spd,beta[1L],beta[2L],log=TRUE)
   }
-
 
   list(
+    time=twilight,
+    rise=rise,
     n=length(twilight),
+    alpha=alpha,
+    beta=beta,
     logpk=logpk,
     logbk=logbk,
     x0=x0,
     fixed=fixed)
 }
 
-zenith <- 96.2
-threshold <- 3
-twl <- read.csv(paste0(19745,"twl.csv"),header=T)
-twl$Twilight <- as.POSIXct(twl$Twilight,"GMT")
-x0 <- matrix(c(147.67,-43.133),nrow(twl),2,byrow=T)
-fixed <- twl$Marker > 0
 
 
-alpha <- c(2.2,1.0)
-beta <- c(2.8, 0.12)
-model <- essie.threshold.model(twl$Twilight,twl$Rise,alpha=alpha,beta=beta,x0=x0,fixed=fixed,zenith=zenith)
-#grid <- raster(ncols=1*(227-89),nrows=1*(66+75),xmn=89,xmx=227,ymn=-75,ymx=66)
+essie <- function(model,grid,epsilon=1.0E-2,verbose=interactive()) {
 
-grid <- crop(raster("C:/Reynolds/lsmask.nc"),extent(89,227,-75,66))
-plot(grid)
 
-essie.forback <- function(model,grid,epsilon=1.0E-10) {
+  normalize <- function(x) {
+    s <- sum(x)
+    if(s < 1.0E-12) rep(0,length(x)) else x/sum(x)
+  }
+
   n <- model$n
   pts <- lonlatFromCell(grid,1:ncell(grid))
   fixed <- integer(n)
   fixed[model$fixed] <- cellFromLonLat(grid,model$x0[model$fixed,])
 
-  normalize <- function(x) {
-      s <- sum(x)
-      if(s < 1.0E-12) rep(0,length(x)) else x/sum(x)
-  }
-
+  ## Compute likelihood
   cs <- (1:ncell(grid))[values(grid)>0]
   lattice <- lapply(1:n,function(k) {
     if(fixed[k]!=0) {
@@ -90,80 +99,93 @@ essie.forback <- function(model,grid,epsilon=1.0E-10) {
   })
 
   ## Forward iteration
+  if(verbose) {
+    cat("Fwd ",sprintf("%6d",1))
+    flush.console()
+  }
   xs <- pts[lattice[[1]]$cs,,drop=F]
   as <- lattice[[1]]$as <- lattice[[1]]$ps
   for(k in 2:n) {
-    print(k)
+    if(verbose) {
+      cat("\b\b\b\b\b\b");
+      cat(sprintf("%6d",k));
+      flush.console()
+    }
+
     xs0 <- xs
-    as0 <- as
-    xs0 <- pts[lattice[[k-1]]$cs,,drop=F]
     xs <- pts[lattice[[k]]$cs,,drop=F]
-    as0 <- lattice[[k-1]]$as
+    as0 <- as
     as <- 0
     for(i in which(as0>0))
-        as <- as + as0[i]*normalize(exp(model$logbk(k-1,xs0[i,,drop=F],xs)))
+      as <- as + as0[i]*exp(model$logbk(k-1,xs0[i,,drop=F],xs))
     as <- normalize(as*lattice[[k]]$ps)
     lattice[[k]]$as <- as
   }
 
 
   ## Backward iteration
+  if(verbose) {
+    cat("Bwd ",sprintf("%6d",1))
+    flush.console()
+  }
   xs <- pts[lattice[[n]]$cs,,drop=F]
   bs <- lattice[[n]]$bs <- lattice[[n]]$ps
   for(k in (n-1):1) {
-    print(k)
+    if(verbose) {
+      cat("\b\b\b\b\b\b");
+      cat(sprintf("%6d",k));
+      flush.console()
+    }
+
     xs0 <- xs
-    bs0 <- bs
     xs <- pts[lattice[[k]]$cs,,drop=F]
+    bs0 <- bs
     bs <- 0
-    #for(i in which(bs0 > epsilon*max(bs0)))
     for(i in which(bs0>0))
-        bs <- bs + bs0[i]*normalize(exp(model$logbk(k-1,xs,xs0[i,,drop=F])))
+      bs <- bs + bs0[i]*exp(model$logbk(k,xs,xs0[i,,drop=F]))
     bs <- normalize(bs*lattice[[k]]$ps)
     lattice[[k]]$bs <- bs
   }
 
-
+  list(grid=grid,time=model$time,lattice=lattice)
 }
 
 
-plot3 <- function(grid,cs,ps,...) {
-    g <- raster(grid)
-    g[cs] <- ps
-    plot(g,...)
+lattice.raster <- function(obj,k,type=c("posterior","forward","backward","likelihood")) {
+  g <- raster(obj$grid)
+  l <- obj$lattice[[k]]
+  type <- match.arg(type)
+  g[l$cs] <- switch(type,
+                    posterior=l$as*l$bs/l$ps,
+                    forward=l$as,
+                    backward=l$bs,
+                    likelihood=l$ps)
+  g
 }
 
 
-plot1 <- function(lattice,grid,k=NULL) {
-  opar <- par(mfrow=c(2,2))
-  ks <- unlist(lapply(lattice,function(l) l$cs[which.max(l$as)]))
-  plot(grid)
-  lines(pts[ks,])
-  if(!is.null(k)) points(pts[ks[k],,drop=F],pch=16,col="red")
-  ks <- unlist(lapply(lattice,function(l) l$cs[which.max(l$bs)]))
-  plot(grid)
-  lines(pts[ks,])
-  if(!is.null(k)) points(pts[ks[k],,drop=F],pch=16,col="red")
-  ks <- unlist(lapply(lattice,function(l) l$cs[which.max(l$as*l$bs/l$ps)]))
-  plot(grid)
-  lines(pts[ks,])
-  if(!is.null(k)) points(pts[ks[k],,drop=F],pch=16,col="red")
-  par(opar)
+lattice.mean <- function(obj,type=c("posterior","forward","backward")) {
+  type <- match.arg(type)
+  cs <- unlist(lapply(obj$lattice,function(l) {
+    ps <- switch(type,
+                 posterior=l$as*l$bs/l$ps,
+                 forward=l$as,
+                 backward=l$bs)
+    l$cs[which.max(ps)]
+  }))
+  lonlatFromCell(obj$grid,cs)
 }
 
-plot2 <- function(lattice,grid,k) {
-  opar <- par(mfrow=c(2,2))
-  g <- raster(grid)
-  g[lattice[[k]]$cs] <- with(lattice[[k]],normalize(ps))
-  plot(g)
-  g <- raster(grid)
-  g[lattice[[k]]$cs] <- with(lattice[[k]],normalize(as))
-  plot(g)
-  g <- raster(grid)
-  g[lattice[[k]]$cs] <- with(lattice[[k]],normalize(bs))
-  plot(g)
-  g <- raster(grid)
-  g[lattice[[k]]$cs] <- with(lattice[[k]],normalize(as*bs/ps))
-  plot(g)
-  par(opar)
+
+lattice.maxp <- function(obj,type=c("posterior","forward","backward")) {
+  type <- match.arg(type)
+  pts <- lonlatFromCell(obj$grid,1:ncell(obj$grid))
+  do.call(rbind,lapply(obj$lattice,function(l) {
+    ps <- switch(type,
+                 posterior=l$as*l$bs/l$ps,
+                 forward=l$as,
+                 backward=l$bs)
+    colSums(ps*pts[l$cs,,drop=F])/sum(ps)
+  }))
 }
+
