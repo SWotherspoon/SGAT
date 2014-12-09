@@ -252,7 +252,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-8,verbose=interactive
 
   ## Backward iteration
   if(verbose) {
-    cat("Bwd ",sprintf("%6d",1))
+    cat("\nBwd ",sprintf("%6d",1))
     flush.console()
   }
   xs <- pts[lattice[[n]]$cs,,drop=F]
@@ -292,6 +292,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-8,verbose=interactive
 ##' @export
 essie.raster <- function(obj,k,type=c("full","forward","backward","likelihood")) {
   g <- raster(obj$grid)
+  names(g) <- obj$time[k]
   l <- obj$lattice[[k]]
   type <- match.arg(type)
   g[l$cs] <- switch(type,
@@ -318,14 +319,15 @@ essie.raster <- function(obj,k,type=c("full","forward","backward","likelihood"))
 ##' @export
 essie.mean <- function(obj,type=c("full","forward","backward")) {
   type <- match.arg(type)
-  cs <- unlist(lapply(obj$lattice,function(l) {
-    ps <- switch(type,
-                 posterior=l$as*l$bs/l$ps,
-                 forward=l$as,
-                 backward=l$bs)
-    l$cs[which.max(ps)]
-  }))
-  x <- lonlatFromCell(obj$grid,cs)
+  pts <- lonlatFromCell(obj$grid,1:ncell(obj$grid))
+  x <- do.call(rbind,lapply(obj$lattice,function(l) {
+      ps <- switch(type,
+                   full=l$as*l$bs/l$ps,
+                   forward=l$as,
+                   backward=l$bs)
+      colSums(ps*pts[l$cs,,drop=F])/sum(ps)
+    }))
+  colnames(x) <- c("lon","lat")
   list(time=obj$time,x=x)
 }
 
@@ -333,12 +335,14 @@ essie.mean <- function(obj,type=c("full","forward","backward")) {
 ##' @export
 essie.mode <- function(obj,type=c("full","forward","backward")) {
   type <- match.arg(type)
-  pts <- lonlatFromCell(obj$grid,1:ncell(obj$grid))
-  do.call(rbind,lapply(obj$lattice,function(l) {
+  cs <- unlist(lapply(obj$lattice,function(l) {
     ps <- switch(type,
-                 posterior=l$as*l$bs/l$ps,
+                 full=l$as*l$bs/l$ps,
                  forward=l$as,
                  backward=l$bs)
-    colSums(ps*pts[l$cs,,drop=F])/sum(ps)
+    l$cs[which.max(ps)]
   }))
+  x <- lonlatFromCell(obj$grid,cs)
+  colnames(x) <- c("lon","lat")
+  list(time=obj$time,x=x)
 }
