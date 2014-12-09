@@ -370,6 +370,64 @@ trackDist2 <- function(x,z) {
 
 
 
+
+##' Bearing changes along a track
+##'
+##' The \code{trackBearingChange} computes the change in bearing between
+##' successive locations along path. The \code{trackBearingChange2}
+##' accepts a second sequence of intermediate points, and computes the
+##' change in bearing along the dog leg paths from \code{x[i,]}
+##' to \code{z[i,]} to \code{x[i+1,]}.
+##'
+##' @title Distance along a path
+##' @param x a two column matrix of (lon,lat) locations along the path.
+##' @param z a two column matrix of (lon,lat) intermediate locations
+##' along the path.
+##' @return vector of changes in bearing (degrees)
+##' @export
+trackBearingChange <- function(x) {
+  n <- nrow(x)
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2L])
+  sinx2 <- sin(rad*x[,2L])
+
+
+  ## Bearing from one x to the next
+  bs <- atan2(sin(rad*(x[-1L,1L]-x[-n,1L]))*cosx2[-1L],
+              cosx2[-n]*sinx2[-1L]-sinx2[-n]*cosx2[-1L]*cos(rad*(x[-1L,1L]-x[-n,1L])))/rad
+  ## Difference bs and fold difference into [-180,180)
+  (bs[1-n]-bs[-1]+180)%%360-180
+}
+
+
+##' @rdname trackBearingChange
+##' @export
+trackBearingChange2 <- function(x,z) {
+  n <- nrow(x)
+  rad <- pi/180
+  cosx2 <- cos(rad*x[,2L])
+  sinx2 <- sin(rad*x[,2L])
+  cosz2 <- cos(rad*z[,2L])
+  sinz2 <- sin(rad*z[,2L])
+  dLon1 <- rad*(x[-n,1L]-z[,1L])
+  dLon2 <- rad*(x[-1,1L]-z[,1L])
+
+  ## Bearing from z to previous x
+  b1 <- atan2(sin(dLon1)*cosx2[-n],
+              cosz2*sinx2[-n]-sinz2*cosx2[-n]*cos(dLon1))/rad
+
+  ## Bearing from z to next
+  b2 <- atan2(sin(dLon2)*cosx2[-1L],
+              cosz2*sinx2[-1L]-sinz2*cosx2[-1L]*cos(dLon2))/rad
+  ## Reverse b1 and fold difference into [-180,180)
+  (b2-b1)%%360-180
+}
+
+
+
+
+
+
 ##' Convert streams of twilights to sunrise/sunset pairs
 ##'
 ##' This function converts the twilight, rise format used by Stella
@@ -563,7 +621,6 @@ threshold.sensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.mulog,sr.sdlog,ss.mulog,ss.sdlog,
                                   sr.proposal,ss.proposal,
                                   n.thin=10,n.iters=1000) {
-
 
   ## Great circle distance (km)
   gcdist <- function(a,b) {
@@ -782,30 +839,37 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 
 
 
-##' Movement model that assumes speeds have a Gamma distribution.
+##' Movement model that assumes speeds are Gamma distributed
 ##'
-##' This function implements the simple Gamma speed movement model
-##' used by \code{\link{satellite.model}},
-##' \code{\link{threshold.model}},
-##' \code{\link{grouped.threshold.model}} and
-##' \code{\link{curve.model}}.
+##' This function implements a movement model that assumes the speed
+##' of travel between locations is Gamma distributed, and for Estelle
+##' models, the change in bearing along the dog-leg path segments can
+##' be assumed Normally distributed with mean zero.
 ##'
-##' Both the Estelle and Stella variants of this simple model assume
-##' that the speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' For Stella models, average speeds is calculated along great circle
+##' paths between primary locations (x).  For Estelle, average speed
+##' is calculated along dog leg paths through the intermediate points
+##' (z), and the change in bearing at each intermediate point calculated.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
+##'
+##' Alternately, these parameters can be specified individually for
+##' each track segment by passing \code{beta} as a matrix with one row
+##' for each segment.
 ##'
 ##' @title Gamma Behavioural Model
 ##' @param beta parameters of the behavioural model.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @return Functions to evaluate the contributions to the log
 ##' posterior for the Estelle and Stella models.
+##' @seealso \code{\link{satellite.model}}, \code{\link{threshold.model}},
+##' \code{\link{grouped.threshold.model}}, \code{\link{curve.model}}.
 ##' @export
 speed.gamma.model <- function(beta,dt) {
-
 
   ## Sanity check
   if(any(dt <= 0)) stop("Data not ordered in time")
@@ -813,16 +877,28 @@ speed.gamma.model <- function(beta,dt) {
   ## Ensure beta is always a matrix
   if(!is.matrix(beta)) beta <- t(beta)
 
-  ## Contribution to log posterior from the movement
-  estelle.logpb <- function(x,z) {
-    spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
-    dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+  if(ncol(beta)==2) {
+    ## Contribution to log posterior from the movement
+    estelle.logpb <- function(x,z) {
+      spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
+    }
+  }
+
+  if(ncol(beta)==3) {
+    ## Contribution to log posterior from the movement
+    estelle.logpb <- function(x,z) {
+      spd <- pmax.int(trackDist2(x,z), 1e-06)/dt
+      angle <- trackBearingChange2(x,z)
+      dgamma(spd,beta[,1L],beta[,2L],log=TRUE)+dnorm(angle,0,beta[,3L],log=TRUE)
+    }
   }
 
   stella.logpb <- function(x) {
     spd <- pmax.int(trackDist(x), 1e-06)/dt
     dgamma(spd,beta[,1L],beta[,2L],log=TRUE)
   }
+
 
   ## Behavioural contribution to the log posterior
   list(
@@ -852,22 +928,24 @@ speed.gamma.model <- function(beta,dt) {
 ##' \item{'T'}{t distributed with degrees of freedom df.}
 ##' }
 ##'
-##' The initialization locations \code{x0} and \code{z0} must be
-##' consistent with the chosen twilight model.  That is, if
-##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
-##' yield negative twilight errors.
-##'
 ##' Both Estelle and Stella variants of the model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
 ##'
-##' The \code{satellite.model0} function constructs only the
-##' non-movement elements of the model, and can be used as a basis for
-##' those wishing to experiment with alternative movement models.
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
+##'
+##' The \code{satellite.model0} function constructs the non-movement
+##' elements of the model, and the movement elements of the model are
+##' constructed by the \code{speed.gamma.model} function.
 ##'
 ##' @title Satellite Model Structures
 ##' @param time the times of the satellite determined locations.
@@ -1108,13 +1186,20 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' 'LogNormal' or 'Gamma' models are selected, the \code{x0} cannot
 ##' yield negative twilight errors.
 ##'
-##' Both Estelle and Stella variants of this model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' Both Estelle and Stella variants of the model assume that the
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
 ##'
 ##' Twilights can be missing because either the light record was too
 ##' noisy at that time to estimate twilight reliably, or because the
@@ -1132,9 +1217,9 @@ make.twilight.model <- function(twilight.model=c("Gamma","LogNormal","Normal","M
 ##' }
 ##'
 ##' The \code{threshold.model0} and \code{grouped.threshold.model0}
-##' functions construct only the non-movement elements of the model,
-##' and can be used as a basis for those wishing to experiment with
-##' alternative movement models.
+##' functions construct the non-movement elements of the model, and
+##' the movement elements of the model are constructed by the
+##' \code{speed.gamma.model} function.
 ##'
 ##' @title Threshold Model Structures
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -1409,13 +1494,20 @@ grouped.threshold.model0 <- function(twilight,rise,group,
 ##' The initialization locations \code{x0} and \code{z0} must be
 ##' consistent with any other constraints imposed by the data.
 ##'
-##' Both Estelle and Stella variants of this model assume that the
-##' speed of travel between successive (x) locations is gamma
-##' distributed with shape \code{beta[1]} and rate \code{beta[2]}.  By
-##' default, the speed of travel is calculated based on the time
-##' intervals between the twilights (in hours), but the intervals of
-##' time actually available for travel can be specified directly with
-##' the \code{dt} argument.
+##' Both Estelle and Stella variants of the model assume that the
+##' average speed of travel between successive locations is Gamma
+##' distributed, and for Estelle models, the change in bearing
+##' (degrees) along the dog-leg path segments can be assumed Normally
+##' distributed with mean zero.  By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument.
+##'
+##' If \code{beta} is a vector, then \code{beta[1]} and \code{beta[2]}
+##' specify the shape and rate of the Gamma distribution of speeds.
+##' If \code{beta} has three elements, then \code{beta[3]} specifies
+##' the standard deviation of the change in bearing (in degrees) along
+##' dog leg paths.
 ##'
 ##' The \code{curve.model0} function constructs only the non-movement
 ##' elements of the model, and can be used as a basis for those
@@ -1691,7 +1783,6 @@ estelle.metropolis <- function(model,
           logp.x1[accept] <- logp.x2[accept]
           logp.b1[accept] <- logp.b2[accept]
           logp.b1[accept-1L] <- logp.b2[accept-1L]
-
         }
 
         ## Update z
@@ -1700,7 +1791,7 @@ estelle.metropolis <- function(model,
         ## and would cancel), and so we can update all the z in parallel.
         z2 <- proposal.z(z1)
         logp.z2 <- logpz(z2)
-        logp.b2 <- logpb(x,z2)
+        logp.b2 <- logpb(x1,z2)
         logp1 <- logp.z1+logp.b1
         logp2 <- logp.z2+logp.b2
         ## MH rule - compute indices of the accepted points.
