@@ -206,7 +206,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-8,verbose=interactive
 
   normalize <- function(x) {
     s <- sum(x)
-    if(s < 1.0E-16) rep(0,length(x)) else x/sum(x)
+    if(s==0) x else x/sum(x)
   }
 
   n <- length(model$time)
@@ -215,7 +215,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-8,verbose=interactive
   fixed[model$fixed] <- cellFromLonLat(grid,model$x0[model$fixed,])
 
   ## Compute likelihood
-  cs <- (1:ncell(grid))[values(grid)>0]
+  cs <- (1:ncell(grid))[values(grid)!=0]
   lattice <- lapply(1:n,function(k) {
     if(fixed[k]!=0) {
       list(cs=fixed[k],ps=1)
@@ -302,6 +302,8 @@ essie.raster <- function(obj,k,type=c("full","forward","backward","likelihood"))
                     likelihood=l$ps)
   g
 }
+
+
 
 
 
