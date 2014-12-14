@@ -219,12 +219,16 @@ slice.indices <- function(slices,mcmc=slices$mcmc) {
 ##' Extract longitude and latitude of raster cells.
 ##'
 ##' Extract the longitude and latitude of the center of the requested
-##' cells of a Raster* object, similar to \code{xyFromCell}.
+##' cells of a Raster* object, similar to \code{xyFromCell} and \code{cellFromXY}.
 ##' @title Raster cell longitude and latitudes
 ##' @param raster a raster object
 ##' @param cells the cell numbers
+##' @param pts the lon, lat locations as a 2 column matrix
 ##' @param spatial return locations as SpatialPoints object instead of a matrix.
-##' @return the lon,lat locations for the requested cells.
+##' @return \code{lonlatFromCell} returns the lon,lat locations for
+##' the requested cells as a 2 column matrix, and
+##' \code{cellFromLonLat} returns the cells corresponding to the 2
+##' column matrix of lon,lat positions.
 ##' @export
 lonlatFromCell <- function(raster,cells,spatial=FALSE) {
   if(is.na(projection(raster)) || isLonLat(raster)) {
@@ -235,6 +239,19 @@ lonlatFromCell <- function(raster,cells,spatial=FALSE) {
     if(spatial) p else coordinates(p)
   }
 }
+
+
+##' @rdname lonlatFromCell
+##' @export
+cellFromLonLat <- function(raster,pts) {
+  if(!(is.na(projection(raster)) || isLonLat(raster))) {
+    pts <- SpatialPoints(pts,proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"))
+    pts <- coordinates(spTransform(pts,projection(raster,FALSE)))
+  }
+  cellFromXY(raster,pts)
+}
+
+
 
 ##' Spatial maps of twilight residuals
 ##'
