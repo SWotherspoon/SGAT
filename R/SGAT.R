@@ -2049,6 +2049,8 @@ location.mean <- function(s,discard=0,collapse=TRUE,chains=NULL) {
 ##' @export
 location.image <- function(s,xlim,ylim,nx,ny,weight=rep_len(1,dim(s)[1L]),
                            discard=0,collapse=TRUE,chains=NULL) {
+  nx <- round(nx)
+  ny <- round(ny)
   xbin <- seq.int(xlim[1L],xlim[2L],length.out=nx+1L)
   ybin <- seq.int(ylim[1L],ylim[2L],length.out=ny+1L)
 
