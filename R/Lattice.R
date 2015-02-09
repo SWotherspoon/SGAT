@@ -202,7 +202,7 @@ essie.threshold.model <- function(twilight,rise,
 ##' \item{\code{times}}{the times corresponding to the location estimates.}
 ##' \item{\code{lattice}}{a sparse grid representation of the posterior location probabilities.}
 ##' @export
-essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-8,verbose=interactive()) {
+essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactive()) {
 
   normalize <- function(x) {
     s <- sum(x)
