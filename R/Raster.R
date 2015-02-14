@@ -24,7 +24,7 @@ location.rasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
-    p <- coordinates(spTransform(SpatialPoints(p),from),to)
+    p <- coordinates(spTransform(SpatialPoints(p,from),to))
     s[,1L,] <- p[,1L]
     s[,2L,] <- p[,2L]
   }
@@ -68,7 +68,7 @@ location.kernelize <- function(s,grid,weights=1,bw=NULL) {
     from <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
     to <- CRS(projection(r))
     p <- cbind(as.vector((s[,1L,]+180)%%360-180),as.vector(s[,2L,]))
-    p <- coordinates(spTransform(SpatialPoints(p),from),to)
+    p <- coordinates(spTransform(SpatialPoints(p,from),to))
     s[,1L,] <- p[,1L]
     s[,2L,] <- p[,2L]
   }
