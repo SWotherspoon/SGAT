@@ -6,7 +6,7 @@
 ##' These functions provide spatial binning of samples. A spatial
 ##' summary image is stored separately for each time step and may be
 ##' mosaiced into the entire study region. Separate summaries may be
-##' combined to create a multiple-track summary. 
+##' combined to create a multiple-track summary.
 ##'
 ##' If \code{pimg} is supplied \code{grid} and \code{proj} are ignored
 ##' and binning is added to the existing \code{pimg}. If \code{pimg}
@@ -45,22 +45,22 @@
 ##'   x <- x - (x[1] + seq(0, 1, length=n) * (x[n] - x[1]))
 ##'   r * x
 ##' }
-##' 
+##'
 ##' ## Number of days and number of obs
 ##' days <- 50
 ##' n <- 200
-##' 
+##'
 ## Make separation between obs gamma distributed
 ##' x <- rgamma(n, 3)
 ##' x <- cumsum(x)
 ##' x <- x/x[n]
-##' 
+##'
 ## Track is lissajous + brownian bridge
 ##' b.scale <- 0.6
 ##' r.scale <- sample(c(0.1, 2, 10.2), n, replace=TRUE,
 ##'                   prob=c(0.8, 0.18, 0.02))
 ##' set.seed(71)
-##' 
+##'
 ##' tms <- ISOdate(2001, 1, 1) + trunc(days * 24 * 60 * 60 *x)
 ##' lon <- 120 + 20 * sin(2 * pi * x) +
 ##' brownian.bridge(n, b.scale) + rnorm(n, 0, r.scale)
@@ -69,8 +69,8 @@
 ##' x0 <- cbind(lon, lat)
 ##' z0 <- trackMidpts(x0)
 ##' n3 <- 1500
-##' fx <- list(x = list(array(NA_real_, c(length(lon), 2L, n3))), 
-##'            z = list(array(NA_real_, c(length(lon)-1L, 2L, n3))), 
+##' fx <- list(x = list(array(NA_real_, c(length(lon), 2L, n3))),
+##'            z = list(array(NA_real_, c(length(lon)-1L, 2L, n3))),
 ##'            model = list(time = tms))
 ##' fx$x[[1L]][,,1L] <- x0
 ##' fx$z[[1L]][,,1L] <- z0
@@ -78,7 +78,7 @@
 ##'    fx$x[[1L]][,,i] <- jitter(x0, factor = 8L)
 ##'    fx$z[[1L]][,,i] <- jitter(z0, factor = 12L)
 ##' }
-##'   
+##'
 ##' g <- raster(extent(x0) + 5, nrows = 350, ncols = 375, crs = "+proj=longlat +datum=WGS84")
 ##'px <- Pimage(fx, grid = g)
 ##'pz <- Pimage(fx, type = "intermediate", grid = g)
@@ -90,11 +90,11 @@
 ##'
 ##' px2 <- Pimage(fx, pimg = px)
 ##' pz2 <- Pimage(fx, type = "intermediate", pimg = pz)
-##' 
+##'
 ##' px3 <- Pimage(fx, grid = g)
 ##' pz3 <- Pimage(fx, grid = g, type  = "intermediate")
-##' 
-##' ## first 
+##'
+##' ## first
 ##' px$p[[80]]
 ##' ## this should be the sum of first and last
 ##' px2$p[[80]]
@@ -108,7 +108,7 @@ Pimage <- function(x, ...) UseMethod("Pimage")
 ##' @rdname Pimage
 ##' @method Pimage POSIXct
 ##' @export
-Pimage.POSIXct <- function(x, type = c("primary", "intermediate"), 
+Pimage.POSIXct <- function(x, type = c("primary", "intermediate"),
                            pimg = NULL,
                            grid = NULL,
                            proj = NULL, ...) {
@@ -173,7 +173,7 @@ Pimage.POSIXct <- function(x, type = c("primary", "intermediate"),
 ##' @rdname Pimage
 ##' @method Pimage default
 ##' @export
- 
+
 Pimage.default <- function(x, type = c("primary", "intermediate"),
                            pimg = NULL, grid = NULL, proj = NULL, ...) {
   ## this better be a SGAT fit object
@@ -189,10 +189,10 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
   type <- match.arg(type)
   if(type == "intermediate") {
     if (!tstZ) stop("type intermediate specified no z array list found")
-    chain <- chain.collapse(x$z)
+    chain <- chainCollapse(x$z)
   } else {
     if (!tstX) stop("type primary specified but no x array list found")
-    chain <-  chain.collapse(x$x)
+    chain <-  chainCollapse(x$x)
   }
 
   ## set up tests for map projection, and rgdal availibility
@@ -225,7 +225,7 @@ Pimage.default <- function(x, type = c("primary", "intermediate"),
   if (is.null(pimg) & !is.null(grid)) {
     pimg <- Pimage(modeltimes, grid = grid, type = type)
     if (!isLonLat(raster(grid))) {
-      ## I think isLonLat has changed its behaviour (2014-11-25) need to check the case 
+      ## I think isLonLat has changed its behaviour (2014-11-25) need to check the case
       ## where projection is NA, but couldBeLonLat should be TRUE
       .check_rgdal()
       proj <- projection(grid)
@@ -501,7 +501,7 @@ projection.Pimage <- function(x, asText = TRUE) {
 ##' Coercion method to extract times from Pimage object. The type is
 ##' inferred from the internal storage.
 ##' @title as.POSIXct for Pimage
-##' @seealso \code{estelle.metropolis} and \code{Pimage}
+##' @seealso \code{estelleMetropolis} and \code{Pimage}
 ##' @param x Pimage object
 ##' @param ... ignored
 ##' @export
