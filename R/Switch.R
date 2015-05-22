@@ -19,7 +19,7 @@ cluster.model <- function(model,beta=NULL,B0=1,b0=NULL) {
   env <- new.env(parent=environment(model$estelle.logpb))
   env$beta <- beta
   env$model <- c(model,
-                 B0=B0,
+                 B0=list(B0),
                  b0=b0)
 
   with(env, {
