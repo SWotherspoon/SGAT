@@ -49,7 +49,7 @@ gcOuterDist <-function(x1,x2) {
 ##' Threshold Model Structures for Essie
 ##'
 ##' Essie requires a model structure that describes the model being
-##' fitted. These functions generate basic model structures for
+##' fitted. This function generates basic model structures for
 ##' threshold twilight data that should provide a suitable starting
 ##' point for most analyses.
 ##'
@@ -66,7 +66,7 @@ gcOuterDist <-function(x1,x2) {
 ##' corresponds to the observed light level being lower than expected.
 ##'
 ##' The properties of the twilight model are determined by
-##' \code{alpha}, which must be either a vector of parameters that are
+##' \code{alpha}, which must be a vector of parameters that are
 ##' to be applied to each twilight.
 ##'
 ##' The \code{twilight.model} argument selects the distribution of the
@@ -77,7 +77,7 @@ gcOuterDist <-function(x1,x2) {
 ##' \item{'LogNormal'}{Log Normally distributed so the log errors have
 ##' mean \code{alpha[,1]} and standard deviation \code{alpha[,2]}, or}
 ##' \item{'Gamma'}{Gamma distributed with shape \code{alpha[,1]} and
-##' rate \code{alpha[2]}.}
+##' rate \code{alpha[,2]}.}
 ##' }
 ##'
 ##' The initialization locations \code{x0} are only required when
@@ -91,7 +91,8 @@ gcOuterDist <-function(x1,x2) {
 ##' parameters \code{beta[1]} and \code{beta[2]} specify the shape and
 ##' rate of the Gamma distribution of speeds.
 ##'
-##' At this point Essie cannot deal with missing values.
+##' At this point Essie can only deal with purely uninformative
+##' missing values.
 ##'
 ##' @title Threshold Model Structures (Essie)
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -104,6 +105,7 @@ gcOuterDist <-function(x1,x2) {
 ##' @param x0 suggested starting points for twilight locations.
 ##' @param fixed logical vector indicating which twilight locations
 ##' to hold fixed.
+##' @param missing integer vector indicating which twilights are missing.
 ##' @param dt time intervals for speed calculation in hours.
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a list with components
@@ -116,12 +118,14 @@ gcOuterDist <-function(x1,x2) {
 ##' \item{\code{x0}}{an array of initial twilight locations.}
 ##' \item{\code{time}}{the twilight times.}
 ##' \item{\code{rise}}{the sunrise indicators.}
+##' \item{\code{alpha}}{the twilight model parameters.}
+##' \item{\code{beta}}{the behavioural model parameters.}
 ##' @export
 essieThresholdModel <- function(twilight,rise,
                                   twilight.model=c("LogNormal","Gamma","Normal"),
                                   alpha,beta,
                                   logp0=function(k,x) 0,
-                                  x0,fixed=FALSE,dt=NULL,zenith=96) {
+                                  x0,fixed=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Times (hours) between observations
   if(is.null(dt))
@@ -129,6 +133,9 @@ essieThresholdModel <- function(twilight,rise,
 
   ## Fixed locations
   fixed <- rep_len(fixed,length.out=length(twilight))
+
+  ## Extend missing
+  missing <- rep_len(missing,length.out=length(twilight))
 
   ## Twilight residuals
   residuals <- function(k,x) {
@@ -147,10 +154,13 @@ essieThresholdModel <- function(twilight,rise,
 
   ## Contribution to log posterior from each x location
   logpk <- function(k,x) {
-    logp <- logp.residual(residuals(k,x))
-    logp[!is.finite(logp)] <- -Inf
-    logp <- logp+logp0(k,x)
-    logp
+    if(missing[k]==0) {
+      logp <- logp.residual(residuals(k,x))
+      logp[!is.finite(logp)] <- -Inf
+      logp+logp0(k,x)
+    } else {
+      logp0(k,x)
+    }
   }
 
   ## Behavioural contribution to the log posterior
@@ -169,6 +179,116 @@ essieThresholdModel <- function(twilight,rise,
     alpha=alpha,
     beta=beta)
 }
+
+
+
+##' Curve Model Structures for Essie
+##'
+##' Essie requires a model structure that describes the model being
+##' fitted. This function generates basic model structures for curve
+##' fitting metthods that should provide a suitable starting point for
+##' most analyses.
+##'
+##' The \code{essieCurveModel} function constructs a model structure
+##' assuming that each twilight profile is associated with a single
+##' location.  The errors in observed log light level are assumed to
+##' be Normally distributed about their expected value.
+##'
+##' The properties of the twilight model are determined by
+##' \code{alpha}, which must be a vector of parameters that are
+##' to be applied to each twilight.
+##'
+##' The initialization locations \code{x0} are only required when
+##' specifying fixed locations.
+##'
+##' Essie assumes that the average speed of travel between successive
+##' locations is Gamma distributed. By default, the speed of travel is
+##' calculated based on the time intervals between the twilights (in
+##' hours), but the intervals of time actually available for travel
+##' can be specified directly with the \code{dt} argument. The
+##' parameters \code{beta[1]} and \code{beta[2]} specify the shape and
+##' rate of the Gamma distribution of speeds.
+##'
+##' @title Curve Model Structures (Essie)
+##' @param time vector of sample times as POSIXct.
+##' @param light vector of observed (log) light levels.
+##' @param segment vector of integers that assign observations to
+##' twilight segments.
+##' @param calibration function that maps zenith angles to expected
+##' light levels.
+##' @param alpha parameters of the twilight model.
+##' @param beta parameters of the behavioural model.
+##' @param logp0 function to evaluate any additional contribution to
+##' the log posterior from the twilight locations.
+##' @param x0 suggested starting points for twilight locations.
+##' @param fixed logical vector indicating which twilight locations
+##' to hold fixed.
+##' @param dt time intervals for speed calculation in hours.
+##' @return a list with components
+##' \item{\code{logpk}}{function to evaluate the contributions to the
+##' log posterior from the k-th twilight}
+##' \item{\code{logpbk}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for the k-th track segment.}
+##' \item{\code{fixed}}{a logical vector indicating which locations
+##' should remain fixed.}
+##' \item{\code{x0}}{an array of initial twilight locations.}
+##' \item{\code{time}}{the twilight times.}
+##' \item{\code{rise}}{the sunrise indicators.}
+##' \item{\code{alpha}}{the twilight model parameters.}
+##' \item{\code{beta}}{the behavioural model parameters.}
+##' @export
+essieCurveModel <- function(time,light,segment,
+                            calibration,alpha,beta,
+                            logp0=function(k,x) 0,
+                            x0,fixed=FALSE,dt=NULL) {
+
+  ## Median time in each segment
+  tm <- .POSIXct(sapply(split(time,segment),median),"GMT")
+
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(tm)/3600)
+
+  ## Fixed locations
+  fixed <- rep_len(fixed,length.out=length(tm))
+
+  ## Convert to solar time
+  sun <- solar(time)
+
+  ## Contribution to log posterior from each x location
+  logpk <- function(k,x) {
+    ## Extract the (solar) times and light for this segment
+    seg <- as.numeric(segment)==k
+    sun <- solar(time[seg])
+    ls <- light[seg]
+    ## Contributions to log posterior from the light
+    logp <- sapply(1:nrow(x),
+                   function(i) {
+                     fs <- calibration(zenith(sun,x[i,1L],x[i,2L]))
+                     off <- mean(ls)-mean(fs)
+                     sum(dnorm(ls,fs+off,alpha[1L],log=TRUE))+dnorm(off,0,alpha[2L],log=TRUE)
+                   })
+    ## Add contribution from prior
+    logp <- logp + logp0(k,x)
+    logp
+  }
+
+  ## Behavioural contribution to the log posterior
+  logbk <- function(k,x1,x2) {
+    spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
+    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+  }
+
+  list(
+    logpk=logpk,
+    logbk=logbk,
+    fixed=fixed,
+    x0=x0,
+    time=tm,
+    alpha=alpha,
+    beta=beta)
+}
+
 
 
 ##' Fit an Essie model
