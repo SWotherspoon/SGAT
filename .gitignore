@@ -7,8 +7,6 @@
 *.Rhistory
 .Rbuildignore
 .Rhistory
-NAMESPACE
-man/*.Rd
 *~
 auto/
 *.tex
