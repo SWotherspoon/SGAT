@@ -18,7 +18,7 @@ If you don't have `devtools` installed already, install it first.
 install.packages("devtools")
 ```
 
-SGAT otherwise does not need devtools for normal use. 
+(SGAT otherwise does not need devtools for normal use.)
 
 
 ## TODO
