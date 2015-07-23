@@ -6,42 +6,19 @@ broadscale animal motions from archival or satellite tag data.
 
 ## Installing
 
-The package is easily built with RStudio
+The package is easily installed from GitHub, using the devtools package. 
 
-1. Install R
+```R
+devtools::install_github("SWotherspoon/SGAT")
+```
 
-2. Install [RStudio](http://www.rstudio.com)
+If you don't have `devtools` installed already, install it first. 
 
-3. Install [Rtools](http://cran.r-project.org/bin/windows/Rtools/) or
-   equivalent for your platform
+```R
+install.packages("devtools")
+```
 
-4. Install
-   [devtools](http://cran.r-project.org/web/packages/devtools/index.html)
-   and
-   [roxygen2](http://cran.r-project.org/web/packages/roxygen2/index.html)
-   packages and their dependencies in R.
-
-5. Install [sp](http://cran.r-project.org/web/packages/sp/index.html),
-   [raster](http://cran.r-project.org/web/packages/raster/index.html),
-   [coda](http://cran.r-project.org/web/packages/coda/index.html), and
-   [maptools](http://cran.r-project.org/web/packages/maptools/index.html)
-   packages and their dependencies in R.
-
-6. Clone the repository from GitHub (https://github.com/SWotherspoon/SGAT).
-
-7. Create an Rstudio project in the folder containing this README file.
-
-8. In the build tab, choose `More/Configure Build Tools...` and
-
-   1. Select `Use devtools if available`, and
-
-   2. Click `Generate documentation with Roxygen`, select `Configure`
-      and select all six teckboxes.
-
-9. Choose `Build & Reload` to make the package immediately available
-    to R, or choose `More/Build source package` `More/Build binary
-    package` from the `Build` tab to make source or binary packages.
-
+SGAT otherwise does not need devtools for normal use. 
 
 
 ## TODO
