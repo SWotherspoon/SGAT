@@ -1,3 +1,5 @@
+[![Travis-CI Build Status](https://travis-ci.org/SWotherspoon/SGAT.svg?branch=master)](https://travis-ci.org/SWotherspoon/SGAT)
+
 # Solar/Satellite Geolocation for Animal Tracking
 
 SGAT (pronounced "tags backwards") provides facilities for estimating
