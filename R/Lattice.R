@@ -182,6 +182,87 @@ essieThresholdModel <- function(twilight,rise,
 
 
 
+
+
+
+essieBindoffModel <- function(times,slices,
+                              alpha,beta,
+                              logp0=function(k,x) 0,
+                              x0,fixed=FALSE,dt=NULL,threshold=5,zenith=96) {
+
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(twilight)/3600)
+
+  ## Fixed locations
+  fixed <- rep_len(fixed,length.out=length(twilight))
+
+  ## Contribution to log posterior from each x location
+  logpk <- function(k,x) {
+
+    n <- nrow(x)
+    logl <- double(n)
+
+    ss <- solar(times from somewhere)
+    obsDay <- (observed light from somewhere) >= threshold
+
+    ## Loop over location
+    for(i in seq_len(n)) {
+
+      ## Compute for each x the time series of zeniths
+      expDay <- zenith(ss,x[i,1],x[i,2]) <= zenith
+
+      ## Some comparison to the observed light -> is L=0 (ie logl=-Inf)
+      if(any(obsDay & !expDay)) {
+        logl[i] <- -Inf
+      } else {
+          count <- sum(expDay & !obsDay)
+          logl[i] <- dgamma(count,alpha[1],alpha[2],log=TRUE)
+        }
+    }
+
+    ## Return sum of likelihood + prior
+    logl + logp0(k,x)
+  }
+
+  ## Behavioural contribution to the log posterior
+  logbk <- function(k,x1,x2) {
+    spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
+    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+  }
+
+  list(
+    logpk=logpk,
+    logbk=logbk,
+    fixed=fixed,
+    x0=x0,
+    time=time,
+    alpha=alpha,
+    beta=beta)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##' Curve Model Structures for Essie
 ##'
 ##' Essie requires a model structure that describes the model being
