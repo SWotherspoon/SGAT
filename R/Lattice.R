@@ -184,8 +184,8 @@ essieThresholdModel <- function(twilight,rise,
 
 
 
-
-essieBindoffModel <- function(times,slices,
+## SO here slices is a list of dataframes with (at minimum) date and light columns.
+essieBindoffModel <- function(slices,
                               alpha,beta,
                               logp0=function(k,x) 0,
                               x0,fixed=FALSE,dt=NULL,threshold=5,zenith=96) {
@@ -193,6 +193,8 @@ essieBindoffModel <- function(times,slices,
   ## Times (hours) between observations
   if(is.null(dt))
     dt <- diff(as.numeric(twilight)/3600)
+
+  time <- .POSIXct(sapply(slices,function(d) mean(d$Date)),"GMT")
 
   ## Fixed locations
   fixed <- rep_len(fixed,length.out=length(twilight))
@@ -203,8 +205,8 @@ essieBindoffModel <- function(times,slices,
     n <- nrow(x)
     logl <- double(n)
 
-    ss <- solar(times from somewhere)
-    obsDay <- (observed light from somewhere) >= threshold
+    ss <- solar(slices[[k]]$Date)
+    obsDay <- (slices[[k]]$Light) >= threshold
 
     ## Loop over location
     for(i in seq_len(n)) {
@@ -220,7 +222,6 @@ essieBindoffModel <- function(times,slices,
           logl[i] <- dgamma(count,alpha[1],alpha[2],log=TRUE)
         }
     }
-
     ## Return sum of likelihood + prior
     logl + logp0(k,x)
   }
