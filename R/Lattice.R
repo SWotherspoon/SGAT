@@ -190,14 +190,17 @@ essieBindoffModel <- function(slices,
                               logp0=function(k,x) 0,
                               x0,fixed=FALSE,dt=NULL,threshold=5,zenith=96) {
 
-  ## Times (hours) between observations
-  if(is.null(dt))
-    dt <- diff(as.numeric(twilight)/3600)
 
   time <- .POSIXct(sapply(slices,function(d) mean(d$Date)),"GMT")
 
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(time)/3600)
+
+
+
   ## Fixed locations
-  fixed <- rep_len(fixed,length.out=length(twilight))
+  fixed <- rep_len(fixed,length.out=length(slices))
 
   ## Contribution to log posterior from each x location
   logpk <- function(k,x) {
