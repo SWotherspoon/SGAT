@@ -298,8 +298,8 @@ essieCurveModel <- function(time,light,segment,
 ##'
 ##' The posterior probability that the tag is at a particular location
 ##' is determined by a two pass recursive algorithm.  The forward
-##' sweep propogates location information forward in time, the
-##' backward sweep propogates location information backward in time,
+##' sweep propagates location information forward in time, the
+##' backward sweep propagates location information backward in time,
 ##' and the full posterior is a compromise of these two.
 ##'
 ##' The method is only approximate and is controlled by the two
@@ -328,6 +328,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
     s <- sum(x)
     if(s==0) x else x/sum(x)
   }
+ 
 
   n <- length(model$time)
   pts <- lonlatFromCell(grid,1:ncell(grid))
@@ -335,7 +336,9 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
   fixed[model$fixed] <- cellFromLonLat(grid,model$x0[model$fixed,])
 
   ## Compute likelihood
-  cs <- (1:ncell(grid))[values(grid)!=0]
+  v <- values(grid)
+  if (anyNA(values(grid))) stop("grid should not contain missing values, only 0 or 1")
+  cs <- (1:ncell(grid))[v!=0]
   lattice <- lapply(1:n,function(k) {
     if(fixed[k]!=0) {
       list(cs=fixed[k],ps=1)
