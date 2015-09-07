@@ -6,11 +6,11 @@
 \alias{twilight}
 \title{Times of Sunrise and Sunset}
 \usage{
-twilight(tm, lon, lat, rise, zenith = 96, iters = 3)
+twilight(tm, lon, lat, rise, zenith = 96, iters = 3, closest = FALSE)
 
-sunrise(tm, lon, lat, zenith = 96, iters = 3)
+sunrise(tm, lon, lat, zenith = 96, iters = 3, closest = FALSE)
 
-sunset(tm, lon, lat, zenith = 96, iters = 3)
+sunset(tm, lon, lat, zenith = 96, iters = 3, closest = FALSE)
 }
 \arguments{
 \item{tm}{vector of approximate times of twilight.}
@@ -26,12 +26,15 @@ set.}
 
 \item{iters}{number of iteratve refinements made to the initial
 approximation.}
+
+\item{closest}{if \code{TRUE}, attempt to find the twilight
+closest to \code{tm}.}
 }
 \value{
 a vector of twilight times.
 }
 \description{
-Estimate time of sunrsie or sunset for a given day and location
+Estimate time of sunrise or sunset for a given day and location
 }
 \details{
 \code{twilight} uses an iterative algorithm to estimate times of
@@ -51,6 +54,12 @@ sunrise/sunset times to derive more accurate values of the Solar
 declination and equation of time and hence better approximations
 of sunrise/sunset.  The process is repreated and is accurate to
 less than 2 seconds within 2 or 3 iterations.
+
+It is possible that sunrise or sunset does occur for a given date
+and location. When \code{closest} is \code{FALSE}, the twilight
+returned on or before the (UTC) date of \code{tm}.  When
+\code{closest} is \code{TRUE}, \code{twilight} attempts to return
+the twilight closest to the input time \code{tm}.
 
 \code{sunrise} and \code{sunset} are simple wrappers for
 \code{twilight}.
