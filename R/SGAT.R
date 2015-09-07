@@ -232,7 +232,7 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 }
 
 
-##' Estimate time of sunrsie or sunset for a given day and location
+##' Estimate time of sunrise or sunset for a given day and location
 ##'
 ##' \code{twilight} uses an iterative algorithm to estimate times of
 ##' sunrise and sunset.
@@ -252,6 +252,12 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' of sunrise/sunset.  The process is repreated and is accurate to
 ##' less than 2 seconds within 2 or 3 iterations.
 ##'
+##' It is possible that sunrise or sunset does occur for a given date
+##' and location. When \code{closest} is \code{FALSE}, the twilight
+##' returned on or before the (UTC) date of \code{tm}.  When
+##' \code{closest} is \code{TRUE}, \code{twilight} attempts to return
+##' the twilight closest to the input time \code{tm}.
+##'
 ##' \code{sunrise} and \code{sunset} are simple wrappers for
 ##' \code{twilight}.
 ##' @title Times of Sunrise and Sunset
@@ -263,6 +269,8 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param iters number of iteratve refinements made to the initial
 ##' approximation.
+##' @param closest if \code{TRUE}, attempt to find the twilight
+##' closest to \code{tm}.
 ##' @return a vector of twilight times.
 ##' @examples
 ##' ## Approx location of Santa Barbara
@@ -273,7 +281,7 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' sunrise(day,lon,lat)
 ##' sunset(day,lon,lat)
 ##' @export
-twilight <- function(tm,lon,lat,rise,zenith=96,iters=3) {
+twilight <- function(tm,lon,lat,rise,zenith=96,iters=3,closest=FALSE) {
 
   ## Compute date
   date <- as.POSIXlt(tm)
@@ -290,18 +298,27 @@ twilight <- function(tm,lon,lat,rise,zenith=96,iters=3) {
     solarTime <- 4*twilightSolartime(s,lon,lat,rise,zenith)-s$eqnTime
     twl <- date+60*solarTime
   }
+
+  if(closest) {
+    delta <- (as.numeric(tm)-as.numeric(twl))/3600
+    off <- double(length(delta))
+    off[delta > 12] <- 86400
+    off[delta < -12] <- -86400
+    twl <- twilight(tm+off,lon,lat,rise,zenith,iters,FALSE)
+  }
+
   twl
 }
 
 ##' @rdname twilight
 ##' @export
-sunrise <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=TRUE,zenith=zenith,iters=iters)
+sunrise <- function(tm,lon,lat,zenith=96,iters=3,closest=FALSE)
+  twilight(tm,lon,lat,rise=TRUE,zenith=zenith,iters=iters,closest=closest)
 
 ##' @rdname twilight
 ##' @export
-sunset <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
+sunset <- function(tm,lon,lat,zenith=96,iters=3,closest=FALSE)
+  twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters,closest=closest)
 
 
 ##' Midpoints of a path
