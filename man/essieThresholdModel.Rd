@@ -94,7 +94,19 @@ can be specified directly with the \code{dt} argument. The
 parameters \code{beta[1]} and \code{beta[2]} specify the shape and
 rate of the Gamma distribution of speeds.
 
-At this point Essie can only deal with purely uninformative
-missing values.
+Twilights can be missing because either the light record was too
+noisy at that time to estimate twilight reliably, or because the
+tag was at very high latitude and no twilight was observed.
+Missing twilights should be replaced with an approximate time of
+twilight, and the vector \code{missing} used to indicate which
+twilights are approximate and which are true.  This should be a
+vector of integers, one for each twilight where the integer codes
+signify
+\describe{
+\item{0:}{The twilight is not missing.}
+\item{1:}{The twilight is missing, but a twilight did occur.}
+\item{2:}{The twilight is missing because twilight did not occur.}
+\item{3:}{The twilight is missing and it is not known if a twilight occurred.}
+}
 }
 
