@@ -29,7 +29,7 @@ approximate solar time of twilight
 \details{
 Solar declination and equation of time vary slowly over the day,
 and so the values of the Solar declination and equation of time at
-sunrise/sunset ca be caclulated approximately is an approximate
+sunrise/sunset can be caclulated approximately if an approximate
 time of sunrise/sunset is known. The sun's hour angle and hence
 sunrise/sunset for the required zenith can then be calculated from
 these approximations.
