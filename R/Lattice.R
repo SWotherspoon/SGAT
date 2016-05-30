@@ -132,6 +132,7 @@ gcOuterDist <-function(x1,x2) {
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{alpha}}{the twilight model parameters.}
 ##' \item{\code{beta}}{the behavioural model parameters.}
+##' @importFrom stats dgamma dnorm dlnorm
 ##' @export
 essieThresholdModel <- function(twilight,rise,
                                   twilight.model=c("LogNormal","Gamma","Normal"),
@@ -255,6 +256,7 @@ essieThresholdModel <- function(twilight,rise,
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{alpha}}{the twilight model parameters.}
 ##' \item{\code{beta}}{the behavioural model parameters.}
+##' @importFrom stats dgamma dnorm median
 ##' @export
 essieCurveModel <- function(time,light,segment,
                             calibration,alpha,beta,
@@ -340,6 +342,7 @@ essieCurveModel <- function(time,light,segment,
 ##' \item{\code{grid}}{a raster object that defines the grid.}
 ##' \item{\code{times}}{the times corresponding to the location estimates.}
 ##' \item{\code{lattice}}{a sparse grid representation of the posterior location probabilities.}
+##' @importFrom utils flush.console
 ##' @export
 essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactive()) {
 

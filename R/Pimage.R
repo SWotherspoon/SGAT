@@ -576,6 +576,7 @@ print.Pimage <- function(x, ...) {
 ##' @method str Pimage
 ##' @rdname Pimage-methods
 ##' @param object Pimage
+##' @importFrom utils str
 ##' @export
 str.Pimage <- function(object, ...) {
   class(object) <- NULL

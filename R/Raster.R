@@ -51,6 +51,7 @@ locationRasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
 
 
 ##' @rdname locationRasterize
+##' @importFrom stats dnorm var
 ##' @export
 locationKernelize <- function(s,grid,weights=1,bw=NULL) {
 
