@@ -190,6 +190,7 @@ refracted <- function(zenith) {
 
 
 ##' @rdname refracted
+##' @importFrom stats uniroot
 ##' @export
 unrefracted <- function(zenith)
   uniroot(function(x) refracted(x)-zenith,c(zenith,zenith+2))
@@ -201,7 +202,7 @@ unrefracted <- function(zenith)
 ##'
 ##' Solar declination and equation of time vary slowly over the day,
 ##' and so the values of the Solar declination and equation of time at
-##' sunrise/sunset ca be caclulated approximately is an approximate
+##' sunrise/sunset can be caclulated approximately if an approximate
 ##' time of sunrise/sunset is known. The sun's hour angle and hence
 ##' sunrise/sunset for the required zenith can then be calculated from
 ##' these approximations.
@@ -232,7 +233,7 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 }
 
 
-##' Estimate time of sunrsie or sunset for a given day and location
+##' Estimate time of sunrise or sunset for a given day and location
 ##'
 ##' \code{twilight} uses an iterative algorithm to estimate times of
 ##' sunrise and sunset.
@@ -252,6 +253,12 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' of sunrise/sunset.  The process is repreated and is accurate to
 ##' less than 2 seconds within 2 or 3 iterations.
 ##'
+##' It is possible that sunrise or sunset does occur for a given date
+##' and location. When \code{closest} is \code{FALSE}, the twilight
+##' returned on or before the (UTC) date of \code{tm}.  When
+##' \code{closest} is \code{TRUE}, \code{twilight} attempts to return
+##' the twilight closest to the input time \code{tm}.
+##'
 ##' \code{sunrise} and \code{sunset} are simple wrappers for
 ##' \code{twilight}.
 ##' @title Times of Sunrise and Sunset
@@ -263,6 +270,8 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param iters number of iteratve refinements made to the initial
 ##' approximation.
+##' @param closest if \code{TRUE}, attempt to find the twilight
+##' closest to \code{tm}.
 ##' @return a vector of twilight times.
 ##' @examples
 ##' ## Approx location of Santa Barbara
@@ -273,7 +282,7 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 ##' sunrise(day,lon,lat)
 ##' sunset(day,lon,lat)
 ##' @export
-twilight <- function(tm,lon,lat,rise,zenith=96,iters=3) {
+twilight <- function(tm,lon,lat,rise,zenith=96,iters=3,closest=FALSE) {
 
   ## Compute date
   date <- as.POSIXlt(tm)
@@ -290,18 +299,27 @@ twilight <- function(tm,lon,lat,rise,zenith=96,iters=3) {
     solarTime <- 4*twilightSolartime(s,lon,lat,rise,zenith)-s$eqnTime
     twl <- date+60*solarTime
   }
+
+  if(closest) {
+    delta <- (as.numeric(tm)-as.numeric(twl))/3600
+    off <- double(length(delta))
+    off[delta > 12] <- 86400
+    off[delta < -12] <- -86400
+    twl <- twilight(tm+off,lon,lat,rise,zenith,iters,FALSE)
+  }
+
   twl
 }
 
 ##' @rdname twilight
 ##' @export
-sunrise <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=TRUE,zenith=zenith,iters=iters)
+sunrise <- function(tm,lon,lat,zenith=96,iters=3,closest=FALSE)
+  twilight(tm,lon,lat,rise=TRUE,zenith=zenith,iters=iters,closest=closest)
 
 ##' @rdname twilight
 ##' @export
-sunset <- function(tm,lon,lat,zenith=96,iters=3)
-  twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters)
+sunset <- function(tm,lon,lat,zenith=96,iters=3,closest=FALSE)
+  twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters,closest=closest)
 
 
 ##' Midpoints of a path
@@ -552,6 +570,7 @@ thresholdLocation <- function(twilight,rise,zenith=96,tol=0.08) {
 
 
 ##' @rdname thresholdEstimate
+##' @importFrom stats approx
 ##' @export
 thresholdPath <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=TRUE) {
   ## Estimate locations
@@ -616,6 +635,7 @@ thresholdPath <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=
 ##' matrix}
 ##' \item{\code{set}}{the sampled sunset locations as a two column
 ##' matrix}
+##' @importFrom stats dlnorm runif
 ##' @export
 thresholdSensitivity <- function(rise,set,zenith=96,range=100,
                                   sr.mulog,sr.sdlog,ss.mulog,ss.sdlog,
@@ -738,6 +758,7 @@ thresholdSensitivity <- function(rise,set,zenith=96,range=100,
 ##' \item{\code{Rise}}{is this a sunrise}
 ##' \item{\code{Lon}}{longitude at twilight}
 ##' \item{\code{Lat}}{latitude at twilight}
+##' @importFrom stats approx
 ##' @export
 zenithSimulate <- function(tm,lon,lat,tm.out) {
   ## unwrap longitudes
@@ -868,6 +889,7 @@ coord <- function(tFirst,tSecond,type,degElevation=-6) {
 ##' posterior for the Estelle and Stella models.
 ##' @seealso \code{\link{satelliteModel}}, \code{\link{thresholdModel}},
 ##' \code{\link{groupedThresholdModel}}, \code{\link{curveModel}}.
+##' @importFrom stats dgamma dnorm
 ##' @export
 speedGammaModel <- function(beta,dt) {
 
@@ -1011,6 +1033,7 @@ satelliteModel <- function(time,X,
 
 
 ##' @rdname satelliteModel
+##' @importFrom stats dnorm dt
 ##' @export
 satelliteModel0 <- function(time,X,
                              location.model=c("Normal","T"),
@@ -1098,6 +1121,7 @@ satelliteModel0 <- function(time,X,
 ##' @param alpha parameters of the twilight model.
 ##' @return a function to evaluate the log density of the twilight
 ##' residuals in a threshold model.
+##' @importFrom stats dgamma dnorm dlnorm
 ##' @export
 makeTwilightModel <- function(twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
                                 alpha) {
@@ -1366,6 +1390,7 @@ thresholdModel0 <- function(twilight,rise,
 
 
 ##' @rdname thresholdModel
+##' @importFrom stats median
 ##' @export
 groupedThresholdModel <- function(twilight,rise,group,
                                     twilight.model=c("Gamma","LogNormal","Normal","ModifiedGamma","ModifiedLogNormal"),
@@ -1550,6 +1575,7 @@ groupedThresholdModel0 <- function(twilight,rise,group,
 ##' \item{\code{light}}{the recorded light levels.}
 ##' \item{\code{segment}}{vector of integers that assign observations
 ##' to twilight segments.}
+##' @importFrom stats median
 ##' @export
 curveModel <- function(time,light,segment,
                         calibration,alpha,beta,
@@ -1582,6 +1608,7 @@ curveModel <- function(time,light,segment,
 
 
 ##' @rdname curveModel
+##' @importFrom stats dnorm
 ##' @export
 curveModel0 <- function(time,light,segment,
                          calibration,alpha,
@@ -1662,6 +1689,8 @@ curveModel0 <- function(time,light,segment,
 ##' \item{\code{z}}{a list of (n-1) x p x r arrays of intermediate
 ##' locations from the q chains}.
 ##' @seealso \code{\link{thresholdModel}}
+##' @importFrom stats runif
+##' @importFrom utils flush.console
 ##' @export
 estelleMetropolis <- function(model,
                                proposal.x,proposal.z,
@@ -1814,6 +1843,8 @@ estelleMetropolis <- function(model,
 
 
 ##' @rdname estelleMetropolis
+##' @importFrom stats runif
+##' @importFrom utils flush.console
 ##' @export
 stellaMetropolis <- function(model,
                               proposal.x,
@@ -1984,6 +2015,7 @@ nlocation <- function(s) {
 ##' dataframes of summary quantities for each location.}
 ##' \item{\code{locationMean}}{returns an array or a list of arrays
 ##' of the means of the samples for each location.}
+##' @importFrom stats sd
 ##' @export
 locationSummary <- function(s,time=NULL,discard=0,alpha=0.95,collapse=TRUE,chains=NULL) {
   summary <- function(s) {
@@ -2135,6 +2167,7 @@ chainCollapse <- function(s,collapse=TRUE,discard=0,thin=1,chains=NULL) {
 
 
 ##' @rdname chainSummary
+##' @importFrom stats var
 ##' @export
 chainCov <- function(s,discard=0,chains=NULL) {
   s <- chainCollapse(s,collapse=FALSE,discard=discard,chains=chains)
@@ -2153,6 +2186,7 @@ chainCov <- function(s,discard=0,chains=NULL) {
 
 
 ##' @rdname chainSummary
+##' @importFrom stats var
 ##' @export
 chainBcov <- function(s,discard=0,chains=NULL) {
   bcov <- function(s) {
@@ -2325,6 +2359,7 @@ gperm <- function(x,perm) {
 ##' @param tol minimum allowable variance.
 ##' @return A function that draws bivariate Normal deviates with mean
 ##' given by its first argument.
+##' @importFrom stats rnorm
 ##' @export
 mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
 
@@ -2362,6 +2397,7 @@ mvnorm <- function(S,s=1,n=1,tol=1.0E-6) {
 }
 
 ##' @rdname mvnorm
+##' @importFrom stats rnorm
 ##' @export
 bmvnorm <- function(S,m,s=1) {
   S <- chol(s*S)

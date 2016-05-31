@@ -13,6 +13,8 @@ Depends:
     raster,
     sp
 Imports:
+    stats,
+    utils,
     MASS,
     coda
 Description: Facilities for estimating the broadscale animal motions from
@@ -20,3 +22,4 @@ Description: Facilities for estimating the broadscale animal motions from
 NeedsCompilation: no
 ByteCompile: yes
 License: GPL-3
+RoxygenNote: 5.0.1

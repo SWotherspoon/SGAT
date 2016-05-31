@@ -91,8 +91,20 @@ gcOuterDist <-function(x1,x2) {
 ##' parameters \code{beta[1]} and \code{beta[2]} specify the shape and
 ##' rate of the Gamma distribution of speeds.
 ##'
-##' At this point Essie can only deal with purely uninformative
-##' missing values.
+##' Twilights can be missing because either the light record was too
+##' noisy at that time to estimate twilight reliably, or because the
+##' tag was at very high latitude and no twilight was observed.
+##' Missing twilights should be replaced with an approximate time of
+##' twilight, and the vector \code{missing} used to indicate which
+##' twilights are approximate and which are true.  This should be a
+##' vector of integers, one for each twilight where the integer codes
+##' signify
+##' \describe{
+##' \item{0:}{The twilight is not missing.}
+##' \item{1:}{The twilight is missing, but a twilight did occur.}
+##' \item{2:}{The twilight is missing because twilight did not occur.}
+##' \item{3:}{The twilight is missing and it is not known if a twilight occurred.}
+##' }
 ##'
 ##' @title Threshold Model Structures (Essie)
 ##' @param twilight the observed times of twilight as POSIXct.
@@ -120,6 +132,7 @@ gcOuterDist <-function(x1,x2) {
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{alpha}}{the twilight model parameters.}
 ##' \item{\code{beta}}{the behavioural model parameters.}
+##' @importFrom stats dgamma dnorm dlnorm
 ##' @export
 essieThresholdModel <- function(twilight,rise,
                                   twilight.model=c("LogNormal","Gamma","Normal"),
@@ -154,9 +167,16 @@ essieThresholdModel <- function(twilight,rise,
 
   ## Contribution to log posterior from each x location
   logpk <- function(k,x) {
-    if(missing[k]==0) {
+    if(missing[k]<3) {
       logp <- logp.residual(residuals(k,x))
-      logp[!is.finite(logp)] <- -Inf
+      if(missing[k]==0) {
+        logp[!is.finite(logp)] <- -Inf
+      } else {
+        if(missing[k]==1)
+          logp <- ifelse(is.finite(logp),0,-Inf)
+        if(missing[k]==2)
+          logp <- ifelse(is.finite(logp),-Inf,0)
+      }
       logp+logp0(k,x)
     } else {
       logp0(k,x)
@@ -236,6 +256,7 @@ essieThresholdModel <- function(twilight,rise,
 ##' \item{\code{rise}}{the sunrise indicators.}
 ##' \item{\code{alpha}}{the twilight model parameters.}
 ##' \item{\code{beta}}{the behavioural model parameters.}
+##' @importFrom stats dgamma dnorm median
 ##' @export
 essieCurveModel <- function(time,light,segment,
                             calibration,alpha,beta,
@@ -321,6 +342,7 @@ essieCurveModel <- function(time,light,segment,
 ##' \item{\code{grid}}{a raster object that defines the grid.}
 ##' \item{\code{times}}{the times corresponding to the location estimates.}
 ##' \item{\code{lattice}}{a sparse grid representation of the posterior location probabilities.}
+##' @importFrom utils flush.console
 ##' @export
 essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactive()) {
 
