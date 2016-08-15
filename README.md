@@ -1,6 +1,6 @@
-[![Travis-CI Build Status](https://travis-ci.org/SWotherspoon/SGAT.svg?branch=master)](https://travis-ci.org/SWotherspoon/SGAT)
-
 # Solar/Satellite Geolocation for Animal Tracking
+[![Travis-CI Build Status](https://travis-ci.org/SWotherspoon/SGAT.svg?branch=master)](https://travis-ci.org/SWotherspoon/SGAT)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/SWotherspoon/SGAT?branch=master&svg=true)](https://ci.appveyor.com/project/SWotherspoon/SGAT)
 
 SGAT (pronounced "tags backwards") provides facilities for estimating
 broadscale animal motions from archival or satellite tag data.
