@@ -16,10 +16,11 @@ A dataframe with columns
 \item{\code{Twilight1}}{times of earlier twilight as POSIXct objects}
 \item{\code{Twilight2}}{times of later twilight as POSIXct objects}
 \item{\code{Day}}{logical vector indicating whether the twilights span a day.}
-\item{\code{Mid}}{the midpont of the two twilights.}
+\item{\code{Mid}}{the midpoint of the two twilights.}
 }
 \description{
-Convert streams of twilights to sunrise/sunset pairs
+Convert a sequence of twilights and rise indicators to
+sunrise/sunset pairs.
 }
 \details{
 This function converts the twilight, rise format used by Stella

@@ -24,13 +24,13 @@ a vector of twilight times in solar time (degrees)
 }
 \description{
 Estimate time of sunrise or sunset for a given location given the
-approximate solar time of twilight
+approximate solar time of twilight.
 }
 \details{
 Solar declination and equation of time vary slowly over the day,
 and so the values of the Solar declination and equation of time at
-sunrise/sunset can be caclulated approximately if an approximate
-time of sunrise/sunset is known. The sun's hour angle and hence
+sunrise/sunset can be estimated if the approximate time of
+sunrise/sunset is known. The sun's hour angle and hence
 sunrise/sunset for the required zenith can then be calculated from
 these approximations.
 

@@ -20,15 +20,14 @@ NULL
 ##
 
 
-##' Calculate solar time, the equation of time and solar declination
-##'
 ##' The solar time, the equation of time and the sine and cosine of
 ##' the solar declination are calculated for the times specified by
 ##' \code{tm} using the same methods as
 ##' \url{www.esrl.noaa.gov/gmd/grad/solcalc/}.
+##'
 ##' @title Solar Time and Declination
 ##' @param tm a vector of POSIXct times.
-##' @return A list containing the following vectors.
+##' @return A list containing the vectors:
 ##' \item{\code{solarTime}}{the solar time (degrees)}
 ##' \item{\code{eqnTime}}{the equation of time (minutes of time)}
 ##' \item{\code{sinSolarDec}}{sine of the solar declination}
@@ -106,13 +105,17 @@ solar <- function(tm) {
 
 
 
-##' Calculate the solar zenith angle for given times and locations
+##' Calculates the solar zenith angle for the given sequence of times
+##' and locations.
 ##'
 ##' \code{zenith} uses the solar time and declination calculated by
 ##' \code{solar} to compute the solar zenith angle for given times and
 ##' locations, using the same methods as
-##' \url{www.esrl.noaa.gov/gmd/grad/solcalc/}.  This function does not
-##' adjust for atmospheric refraction see \code{\link{refracted}}.
+##' \url{www.esrl.noaa.gov/gmd/grad/solcalc/}.
+##'
+##' This function does not adjust for atmospheric refraction; a first
+##' order adjustment can be made with \code{\link{refracted}}.
+##'
 ##' @title Solar Zenith Angle
 ##' @param sun list of solar time and declination computed by
 ##' \code{solar}.
@@ -152,7 +155,7 @@ zenith <- function(sun,lon,lat) {
 
 
 
-##' Adjust the solar zenith angle for atmospheric refraction.
+##' Adjust solar zenith angles for atmospheric refraction.
 ##'
 ##' Given a vector of solar zeniths computed by \code{\link{zenith}},
 ##' \code{refracted} calculates the solar zeniths adjusted for the
@@ -198,12 +201,12 @@ unrefracted <- function(zenith)
 
 
 ##' Estimate time of sunrise or sunset for a given location given the
-##' approximate solar time of twilight
+##' approximate solar time of twilight.
 ##'
 ##' Solar declination and equation of time vary slowly over the day,
 ##' and so the values of the Solar declination and equation of time at
-##' sunrise/sunset can be caclulated approximately if an approximate
-##' time of sunrise/sunset is known. The sun's hour angle and hence
+##' sunrise/sunset can be estimated if the approximate time of
+##' sunrise/sunset is known. The sun's hour angle and hence
 ##' sunrise/sunset for the required zenith can then be calculated from
 ##' these approximations.
 ##'
@@ -233,7 +236,7 @@ twilightSolartime <- function(solar,lon,lat,rise,zenith=96) {
 }
 
 
-##' Estimate time of sunrise or sunset for a given day and location
+##' Estimate time of sunrise or sunset for a given day and location.
 ##'
 ##' \code{twilight} uses an iterative algorithm to estimate times of
 ##' sunrise and sunset.
@@ -322,9 +325,10 @@ sunset <- function(tm,lon,lat,zenith=96,iters=3,closest=FALSE)
   twilight(tm,lon,lat,rise=FALSE,zenith=zenith,iters=iters,closest=closest)
 
 
-##' Midpoints of a path
+
+##' Compute the midpoints of the great circle segments between the
+##' locations along a path.
 ##'
-##' Compute the midpoints of a sequence of locations along a path.
 ##' @title Path Midpoints
 ##' @param p a two column matrix of (lon,lat) locations along the
 ##' path.
@@ -389,7 +393,8 @@ trackDist2 <- function(x,z) {
 
 
 
-##' Bearing changes along a track
+##' Calculate the change in bearing at the internal points along a
+##' track.
 ##'
 ##' The \code{trackBearingChange} computes the change in bearing between
 ##' successive locations along path. The \code{trackBearingChange2}
@@ -446,7 +451,8 @@ trackBearingChange2 <- function(x,z) {
 
 
 
-##' Convert streams of twilights to sunrise/sunset pairs
+##' Convert a sequence of twilights and rise indicators to
+##' sunrise/sunset pairs.
 ##'
 ##' This function converts the twilight, rise format used by Stella
 ##' and Estelle into successive sunrise and sunset pairs.
@@ -457,7 +463,7 @@ trackBearingChange2 <- function(x,z) {
 ##' \item{\code{Twilight1}}{times of earlier twilight as POSIXct objects}
 ##' \item{\code{Twilight2}}{times of later twilight as POSIXct objects}
 ##' \item{\code{Day}}{logical vector indicating whether the twilights span a day.}
-##' \item{\code{Mid}}{the midpont of the two twilights.}
+##' \item{\code{Mid}}{the midpoint of the two twilights.}
 ##' @export
 twilightPairs <- function(twilight,rise) {
   n <- length(twilight)
@@ -476,13 +482,13 @@ twilightPairs <- function(twilight,rise) {
 
 
 
-##' Estimate location from consecutive twilights
+##' Estimate locations from consecutive twilights
 ##'
 ##' These functions estimate the location of a stationary observer
 ##' given the times at which the observer sees two successive
-##' twilights. \code{thresholdEstimate} estimates locations given
+##' twilights. \code{thresholdLocationRS} estimates locations given
 ##' pairs of times of sunrise and sunset. \code{thresholdLocation}
-##' is a wrapper for \code{thresholdEstimate} that estimates
+##' is a wrapper for \code{thresholdLocationRS} that estimates
 ##' locations given a sequence twilight times and rise indicators,
 ##' while \code{thresholdPath} interpolates the estimates generated
 ##' by \code{thresholdLocation} to give locations at a sequence of
@@ -521,14 +527,57 @@ twilightPairs <- function(twilight,rise) {
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @param tol tolerance on the sine of the solar declination.
 ##' @param unfold if \code{TRUE}, unfold longitudes across the dateline.
-##' @return \code{thresholdEstimate} returns estimated locations as a
-##' two column (lon,lat) matrix.  \code{thresholdLocation} and
-##' \code{thresholdPath} return a list with components
+##' @return Return a list with components
 ##' \item{\code{time}}{the time as POSIXct.}
 ##' \item{\code{x}}{a two column matrix of (lon,lat) locations.}
 ##' @seealso \code{\link{zenith}}
+##' @examples
+##' ## Simulate twilight times for January 150E, -40S
+##' tm <- rep(seq(as.POSIXct("2016-01-01","GMT"),by="day",length.out=3),each=2)
+##' rise <- rep(c(FALSE,TRUE),3)
+##' twl <- twilight(tm,150,-40,rise)
+##' ## thresholdLocation - gives locations for approx local noon and midnight
+##' (loc <- thresholdLocation(twl,rise))
+##' ## Sunsets and sunrises for estimated locations
+##' data.frame(simulated=twl[c(1,3,3,5,5)],
+##'            estimated=twilight(loc$time,loc$x[,1],loc$x[,2],FALSE))
+##' data.frame(simulated=twl[c(2,2,4,4,6)],
+##'            estimated=twilight(loc$time,loc$x[,1],loc$x[,2],TRUE))
+##' ## thresholdPath - interpolates to give locations at twilight times
+##' (loc <- thresholdPath(twl,rise))
+##' data.frame(simulated=twl,
+##'            estimated=twilight(loc$time,loc$x[,1],loc$x[,2],rise))
+##'
+##' ## Near the equinox latitude estimation degrades and can fail
+##' tm <- rep(seq(as.POSIXct("2016-03-16","GMT"),by="day",length.out=3),each=2)
+##' rise <- rep(c(FALSE,TRUE),3)
+##' twl <- twilight(tm,150,-40,rise)
+##' thresholdLocation(twl,rise)
+##'
+##' ## Estimates degrade if the tag is moving
+##' ## Simulate twilight times for January 150E, -40S
+##' tm <- rep(seq(as.POSIXct("2016-01-01","GMT"),by="day",length.out=3),each=2)
+##' rise <- rep(c(FALSE,TRUE),3)
+##' twl <- twilight(tm,seq(150,by=0.8,length=6),-40,rise)
+##' (loc <- thresholdLocation(twl,rise))
+##' ## Sunsets and sunrises for estimated locations
+##' data.frame(simulated=twl[c(1,3,3,5,5)],
+##'            estimated=twilight(loc$time,loc$x[,1],loc$x[,2],FALSE))
+##' data.frame(simulated=twl[c(2,2,4,4,6)],
+##'            estimated=twilight(loc$time,loc$x[,1],loc$x[,2],TRUE))
 ##' @export
-thresholdEstimate <- function(trise,tset,zenith=96,tol=0) {
+thresholdLocation <- function(twilight,rise,zenith=96,tol=0.02) {
+  ## Convert to sunrise/sunset pairs
+  pr <- twilightPairs(twilight,rise)
+  ## Estimate locations
+  thresholdLocationRS(ifelse(pr$Day,pr$Twilight1,pr$Twilight2),
+                      ifelse(pr$Day,pr$Twilight2,pr$Twilight1),
+                      zenith=zenith,tol=tol)
+}
+
+##' @rdname thresholdLocation
+##' @export
+thresholdLocationRS <- function(trise,tset,zenith=96,tol=0) {
   rad <- pi/180
   sr <- solar(trise)
   ss <- solar(tset)
@@ -551,47 +600,88 @@ thresholdEstimate <- function(trise,tset,zenith=96,tol=0) {
   lat2 <- ifelse(abs(a)>tol,asin(x)/rad,NA)
 
   ## Average latitudes
-  cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=TRUE))
+  list(time=.POSIXct(as.numeric(trise)+(as.numeric(tset)-as.numeric(trise))/2,"GMT"),
+       x=cbind(lon=lon,lat=rowMeans(cbind(lat1,lat2),na.rm=TRUE)))
 }
 
 
 
-##' @rdname thresholdEstimate
-##' @export
-thresholdLocation <- function(twilight,rise,zenith=96,tol=0.08) {
-  ## Convert to sunrise/sunset pairs
-  pr <- twilightPairs(twilight,rise)
-  ## Estimate locations
-  ps <- thresholdEstimate(ifelse(pr$Day,pr$Twilight1,pr$Twilight2),
-                           ifelse(pr$Day,pr$Twilight2,pr$Twilight1),
-                           zenith=zenith,tol=tol)
-  list(time=pr$Mid,x=ps)
-}
-
-
-##' @rdname thresholdEstimate
+##' @rdname thresholdLocation
 ##' @importFrom stats approx
 ##' @export
-thresholdPath <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=TRUE) {
+thresholdPath <- function(twilight,rise,time=twilight,zenith=96,tol=0.02,unfold=TRUE) {
   ## Estimate locations
   ls <- thresholdLocation(twilight,rise,zenith=zenith,tol=tol)
-  if(!is.null(time)) {
-    ## Interpolate the non-missing longitudes
-    keep <- !is.na(ls$x[,1L])
-    ts <- ls$time[keep]
-    lon <- ls$x[keep,1L]
-    if(unfold) lon <- cumsum(c(lon[1L],(diff(lon)+180)%%360-180))
-    lon <- approx(x=ts,y=lon,xout=time,rule=2)$y
-    ## Interpolate the non-missing latitudes
-    keep <- !is.na(ls$x[,2L])
-    ts <- ls$time[keep]
-    lat <- ls$x[keep,2L]
-    lat <- approx(x=ts,y=lat,xout=time,rule=2)$y
-    ls <- list(time=time,x=cbind(lon,lat))
-  }
-  ls
+  if(is.null(time)) ls else gcInterpolate(ls$time,ls$x[,1],ls$x[,2],time)
 }
 
+##' Estimate location from two consecutive twilights by a threshold
+##' method
+##'
+##' This package and the \pkg{GeoLight} package provide some common
+##' functionality, but are based on different astronomical
+##' approximations.  This function provides a drop-in replacement for
+##' the \code{coord} function from the \pkg{GeoLight} package to allow
+##' easy comparison of the two systems.
+##' @title Geolocation Estimation by the Threshold Method
+##' @param tFirst factor or character vector representing the times of
+##' the first twilight in the format "Y-m-d H:M:S".
+##' @param tSecond factor or character vector representing the times
+##' of the second twilight in the format "Y-m-d H:M:S".
+##' @param type vector with elements 1 or 2, defining the elements of
+##' \code{tFirst} as sunrise or sunset respectively.
+##' @param degElevation sun elevation angle (90-zenith).
+##' @return location estimates stored as a two column (lon,lat) matrix.
+coord <- function(tFirst,tSecond,type,degElevation=-6) {
+  tFirst <- as.POSIXct(tFirst,"GMT")
+  tSecond <- as.POSIXct(tSecond,"GMT")
+  rise <- ifelse(type==1,tFirst,tSecond)
+  set <- ifelse(type==1,tSecond,tFirst)
+  thresholdLocationRS(rise,set,zenith=90-degElevation)$x
+}
+
+
+
+##' Given sequence of times and locations representing a path,
+##' interpolate along great circle segments to predict locations for a
+##' arbitrary set of times along the path.
+##'
+##' Assumes that the original times and locations are sorted in
+##' timewise order with no duplicates.
+##'
+##' @title Interpolate Along Great Circles
+##' @param tm times (as POSIXct)
+##' @param lon vector of longitudes (degrees)
+##' @param lat vector of latitudes (degrees)
+##' @param newtm times for which to predict (as POSIXct)
+##' @return return a list with components
+##' \item{\code{time}}{the time as POSIXct.}
+##' \item{\code{x}}{a two column matrix of (lon,lat) locations.}
+##' @export
+gcInterpolate <- function(tm,lon,lat,newtm) {
+  ## Interpolate the non-missing longitudes
+  keep <- !is.na(lon) & !is.na(lat)
+  lon <- pi/180*lon[keep]
+  lat <- pi/180*lat[keep]
+
+  knots <- as.numeric(tm[keep])
+  ks <- unclass(cut(pmin(max(knots),pmax(min(knots),as.numeric(newtm))),knots,include.lowest=TRUE))
+  f <- (as.numeric(newtm)-knots[ks])/(knots[ks+1]-knots[ks])
+
+  lon1 <- lon[ks]
+  lon2 <- lon[ks+1]
+  lat1 <- lat[ks]
+  lat2 <- lat[ks+1]
+
+  d <- acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon1-lon2))
+  A <- ifelse(abs(d) < 1.0E-14,1-f,sin((1-f)*d)/sin(d))
+  B <- ifelse(abs(d) < 1.0E-14,f,sin(f*d)/sin(d))
+  x <- A*cos(lat1)*cos(lon1)+B*cos(lat2)*cos(lon2)
+  y <- A*cos(lat1)*sin(lon1)+B*cos(lat2)*sin(lon2)
+  z <- A*sin(lat1)+B*sin(lat2)
+
+  list(time=newtm,x=cbind(lon=(180/pi)*atan2(y, x),lat=(180/pi)*atan2(z,sqrt(x^2+y^2))))
+}
 
 
 ##' Estimate locations by the threshold method assuming a
@@ -657,7 +747,7 @@ thresholdSensitivity <- function(rise,set,zenith=96,range=100,
   ss <- solar(set)
 
   ## Initialize chain from best estimate of location if stationary
-  p0 <- as.vector(thresholdEstimate(rise,set,zenith))
+  p0 <- as.vector(thresholdLocationRS(rise,set,zenith)$x)
   sr.p <- p0
   ss.p <- p0
 
@@ -832,30 +922,6 @@ twilightResiduals <- function(twilight,rise,p,zenith=96) {
 
 
 
-##' Estimate location from two consecutive twilights by a threshold
-##' method
-##'
-##' This package and the \pkg{GeoLight} package provide some common
-##' functionality, but are based on different astronomical
-##' approximations.  This function provides a drop-in replacement for
-##' the \code{coord} function from the \pkg{GeoLight} package to allow
-##' easy comparison of the two systems.
-##' @title Geolocation Estimation by the Threshold Method
-##' @param tFirst factor or character vector representing the times of
-##' the first twilight in the format "Y-m-d H:M:S".
-##' @param tSecond factor or character vector representing the times
-##' of the second twilight in the format "Y-m-d H:M:S".
-##' @param type vector with elements 1 or 2, defining the elements of
-##' \code{tFirst} as sunrise or sunset respectively.
-##' @param degElevation sun elevation angle (90-zenith).
-##' @return location estimates stored as a two column (lon,lat) matrix.
-coord <- function(tFirst,tSecond,type,degElevation=-6) {
-  tFirst <- as.POSIXct(tFirst,"GMT")
-  tSecond <- as.POSIXct(tSecond,"GMT")
-  rise <- ifelse(type==1,tFirst,tSecond)
-  set <- ifelse(type==1,tSecond,tFirst)
-  thresholdEstimate(rise,set,zenith=90-degElevation)
-}
 
 
 

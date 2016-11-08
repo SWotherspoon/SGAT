@@ -19,7 +19,8 @@ along the path.}
 vector of changes in bearing (degrees)
 }
 \description{
-Bearing changes along a track
+Calculate the change in bearing at the internal points along a
+track.
 }
 \details{
 The \code{trackBearingChange} computes the change in bearing between

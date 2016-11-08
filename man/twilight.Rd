@@ -34,7 +34,7 @@ closest to \code{tm}.}
 a vector of twilight times.
 }
 \description{
-Estimate time of sunrise or sunset for a given day and location
+Estimate time of sunrise or sunset for a given day and location.
 }
 \details{
 \code{twilight} uses an iterative algorithm to estimate times of

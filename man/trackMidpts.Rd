@@ -16,9 +16,7 @@ path.}
 a two column matrix of (lon,lat) midpoints.
 }
 \description{
-Midpoints of a path
-}
-\details{
-Compute the midpoints of a sequence of locations along a path.
+Compute the midpoints of the great circle segments between the
+locations along a path.
 }
 

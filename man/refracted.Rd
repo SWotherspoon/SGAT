@@ -17,7 +17,7 @@ vector of zenith angles (degrees) adjusted for atmospheric
 refraction.
 }
 \description{
-Adjust the solar zenith angle for atmospheric refraction.
+Adjust solar zenith angles for atmospheric refraction.
 }
 \details{
 Given a vector of solar zeniths computed by \code{\link{zenith}},

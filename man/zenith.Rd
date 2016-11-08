@@ -19,14 +19,17 @@ A vector of solar zenith angles (degrees) for the given
 locations and times.
 }
 \description{
-Calculate the solar zenith angle for given times and locations
+Calculates the solar zenith angle for the given sequence of times
+and locations.
 }
 \details{
 \code{zenith} uses the solar time and declination calculated by
 \code{solar} to compute the solar zenith angle for given times and
 locations, using the same methods as
-\url{www.esrl.noaa.gov/gmd/grad/solcalc/}.  This function does not
-adjust for atmospheric refraction see \code{\link{refracted}}.
+\url{www.esrl.noaa.gov/gmd/grad/solcalc/}.
+
+This function does not adjust for atmospheric refraction; a first
+order adjustment can be made with \code{\link{refracted}}.
 }
 \examples{
 ## Approx location of Sydney Harbour Bridge
