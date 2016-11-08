@@ -1,3 +1,108 @@
+##' Twilight Free Model Structure for Essie.
+##'
+##' The light data must be given as a list of dataframes where each
+##' dataframe corresponds to approximately one day of data, and
+##' ideally spans the true night.  Each data frame in the list should
+##' contain at least
+##' \tabular{ll}{
+##' \code{Date} \tab observation time (GMT POSIXct) \cr
+##' \code{Light} \tab observed light level \cr
+##' }
+##' It is assumed the dataframes are ordered by time.
+##'
+##' @title Twilight Free Model
+##' @param slices a list of dataframes of sampled light (see details)
+##' @param alpha parameters of the obscuration model.
+##' @param beta parameters of the behavioural model.
+##' @param logp0 function to evaluate any additional contribution to
+##' the log posterior from the daily locations.
+##' @param x0 suggested starting points for twilight locations.
+##' @param fixed logical vector indicating which twilight locations to
+##'   hold fixed.
+##' @param dt time intervals for speed calculation in hours.
+##' @param threshold the threshold light level that defines twilight.
+##' @param zenith the solar zenith angle that defines twilight.
+##' @return a list with components
+##' \item{\code{logpk}}{function to evaluate the contributions to the
+##' log posterior from the k-th twilight}
+##' \item{\code{logpbk}}{function to evaluate contribution to
+##' the log posterior from the behavioural model for the k-th track segment.}
+##' \item{\code{fixed}}{a logical vector indicating which locations
+##' should remain fixed.}
+##' \item{\code{x0}}{an array of initial twilight locations.}
+##' \item{\code{time}}{the twilight times.}
+##' \item{\code{alpha}}{the obscuration model parameters.}
+##' \item{\code{beta}}{the behavioural model parameters.}
+##' @export
+essieTwilightFreeModel <- function(slices,alpha,beta,
+                                   logp0=function(k,x) 0,
+                                   x0,fixed=FALSE,dt=NULL,
+                                   threshold=5,zenith=96) {
+
+  ## Estimate mean time in each slice
+  time <- .POSIXct(sapply(slices,function(d) mean(d$Date)),"GMT")
+
+  ## Times (hours) between observations
+  if(is.null(dt))
+    dt <- diff(as.numeric(time)/3600)
+
+  ## Fixed locations
+  fixed <- rep_len(fixed,length.out=length(slices))
+
+  ## Contribution to log posterior from each x location
+  logpk <- function(k,x) {
+
+    n <- nrow(x)
+    logl <- double(n)
+
+    ## Calculate observed solar times, and observed periods of day
+    ss <- solar(slices[[k]]$Date)
+    obsDay <- (slices[[k]]$Light) >= threshold
+
+    ## Loop over location
+    for(i in seq_len(n)) {
+
+      ## Compute for each x the time series of zeniths
+      expDay <- zenith(ss,x[i,1],x[i,2]) <= zenith
+
+      ## Compare observed light to expected
+      if(any(obsDay & !expDay)) {
+        ## Cannot see light when expected dark
+        logl[i] <- -Inf
+      } else {
+        ## If dark when expected light, might be obscured
+        count <- sum(expDay & !obsDay)
+        logl[i] <- dgamma(count,alpha[1],alpha[2],log=TRUE)
+      }
+    }
+    ## Return likelihood + prior
+    logl + logp0(k,x)
+  }
+
+  ## Behavioural contribution to the log posterior
+  logbk <- function(k,x1,x2) {
+    spd <- pmax.int(gcDist(x1,x2), 1e-06)/dt[k]
+    dgamma(spd,beta[1L],beta[2L],log=TRUE)
+  }
+
+  list(
+    logpk=logpk,
+    logbk=logbk,
+    fixed=fixed,
+    x0=x0,
+    time=time,
+    alpha=alpha,
+    beta=beta)
+}
+
+
+
+
+
+
+
+
+
 ##' Calculate great circle distancces between points.
 ##'
 ##' Compute the great circle distances from x1 to x2.
@@ -135,10 +240,10 @@ gcOuterDist <-function(x1,x2) {
 ##' @importFrom stats dgamma dnorm dlnorm
 ##' @export
 essieThresholdModel <- function(twilight,rise,
-                                  twilight.model=c("LogNormal","Gamma","Normal"),
-                                  alpha,beta,
-                                  logp0=function(k,x) 0,
-                                  x0,fixed=FALSE,missing=0,dt=NULL,zenith=96) {
+                                twilight.model=c("LogNormal","Gamma","Normal"),
+                                alpha,beta,
+                                logp0=function(k,x) 0,
+                                x0,fixed=FALSE,missing=0,dt=NULL,zenith=96) {
 
   ## Times (hours) between observations
   if(is.null(dt))
