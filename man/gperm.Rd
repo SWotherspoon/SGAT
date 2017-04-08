@@ -31,4 +31,3 @@ dim(gperm(x,list(c(4,3),2,1)))
 dim(gperm(x,list(1,c(3,2),4)))
 
 }
-

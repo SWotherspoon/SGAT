@@ -51,4 +51,3 @@ Estelle model by the Metropolis algorithm.
 \seealso{
 \code{\link{thresholdModel}}
 }
-

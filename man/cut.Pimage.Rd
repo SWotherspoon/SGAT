@@ -22,4 +22,3 @@ cut.Pimage
 \details{
 Cut a Pimage object based on a date-time input breaks character string, and return a multi-layer raster
 }
-

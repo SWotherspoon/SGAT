@@ -27,4 +27,3 @@ difference between the predicted and observed twilights for those
 locations, where the sign is chosen so that obscuration of the
 sensor leads to a positive residual.
 }
-

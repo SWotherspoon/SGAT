@@ -22,4 +22,3 @@ describe. Assumes \code{s} is either an array or a list of arrays
 in which the first dimension corresponds to location, and returns
 the length of the first dimension.
 }
-

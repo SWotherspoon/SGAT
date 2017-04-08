@@ -47,4 +47,3 @@ a list of samples from parallel mcmc runs.  If
 \code{collapse} is true, multiple samples are merged and single
 image is returned, otherwise an image is returned for each sample.
 }
-

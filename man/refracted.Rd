@@ -35,4 +35,3 @@ refracted(85:92)
 ## unrefracted gives unadjusted zenith
 unrefracted(refracted(90))
 }
-

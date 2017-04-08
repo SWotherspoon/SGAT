@@ -50,4 +50,3 @@ Tasmania. \code{ElephantSeal1} is B362_99 and \code{ElephantSeal2}
 is C699_02
 }
 \keyword{data}
-

@@ -28,4 +28,3 @@ distribution with a desired mean and standard deviation.
 ## Shape and rate that give a mean of 3 and sd of 2
 parametersGamma(3,2)
 }
-

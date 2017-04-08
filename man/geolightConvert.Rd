@@ -25,4 +25,3 @@ Convert GeoLight data
 This function converts from the tFirst, tSecond format used by
 GeoLight to the twilight, rise format used by Stella and Estelle.
 }
-

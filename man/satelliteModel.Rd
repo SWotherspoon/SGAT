@@ -102,4 +102,3 @@ The \code{satelliteModel0} function constructs the non-movement
 elements of the model, and the movement elements of the model are
 constructed by the \code{speedGammaModel} function.
 }
-

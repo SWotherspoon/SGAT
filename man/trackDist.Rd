@@ -28,4 +28,3 @@ accepts a second sequence of intermediate points, and computes the
 great circle distances along the dog leg paths from \code{x[i,]}
 to \code{z[i,]} to \code{x[i+1,]}.
 }
-

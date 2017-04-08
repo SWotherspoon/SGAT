@@ -66,4 +66,3 @@ sunrise.
 draw samples from the posterior distribution for the sunrise and
 sunset.
 }
-

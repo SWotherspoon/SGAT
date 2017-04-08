@@ -32,4 +32,3 @@ approximations.  This function provides a drop-in replacement for
 the \code{coord} function from the \pkg{GeoLight} package to allow
 easy comparison of the two systems.
 }
-

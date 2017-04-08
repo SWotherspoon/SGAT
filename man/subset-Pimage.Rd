@@ -18,4 +18,3 @@ See \code{[.Pimage}
 \examples{
 subset(Pimage(Sys.time() + 1:3), c(2, 3))
 }
-

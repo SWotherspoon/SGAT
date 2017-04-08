@@ -24,4 +24,3 @@ Return the probabilities from an Essie model as a raster object.
 This function returns the likelihood or the posterior probability
 of a single location as a raster object.
 }
-

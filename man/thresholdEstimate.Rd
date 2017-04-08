@@ -79,4 +79,3 @@ different astronomical approximations.
 \seealso{
 \code{\link{zenith}}
 }
-

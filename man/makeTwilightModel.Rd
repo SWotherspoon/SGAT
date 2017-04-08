@@ -53,4 +53,3 @@ are extremely unlikely, but not forbidden, and can be used to
 generate suitable initialization locations for their unmodified
 counterparts.
 }
-

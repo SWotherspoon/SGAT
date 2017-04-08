@@ -21,4 +21,3 @@ Calculate great circle distancces between all pairs of points.
 Compute the great circle distances from every point in x1 to every
 point is x2, and return the result as a matrix.
 }
-

@@ -39,4 +39,3 @@ Note this function returns the time of twilight in solar time.
 \seealso{
 \code{\link{twilight}}
 }
-

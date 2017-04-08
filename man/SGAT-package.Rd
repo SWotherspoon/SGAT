@@ -12,4 +12,3 @@ archival or satellite tag data, similar to the \pkg{GeoLight} and
 \author{
 S. Wotherspoon, M. Sumner and S. Lisovski.
 }
-

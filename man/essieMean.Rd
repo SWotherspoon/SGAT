@@ -27,4 +27,3 @@ Compute posterior mean or mode locations from an Essie fit
 These functions compute the posterior mean or posterior mode
 locations for each time point from and Essie fit.
 }
-

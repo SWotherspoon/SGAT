@@ -46,4 +46,3 @@ locations for which the probability below \code{epsilon2} of the
 maximum are ignored in the movement calculation.  The smaller
 these parameters are set, the slower but more accurate the fit.
 }
-

@@ -43,4 +43,3 @@ for each segment.
 \code{\link{satelliteModel}}, \code{\link{thresholdModel}},
 \code{\link{groupedThresholdModel}}, \code{\link{curveModel}}.
 }
-

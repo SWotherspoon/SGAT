@@ -21,4 +21,3 @@ inferred from the internal storage.
 \seealso{
 \code{estelleMetropolis} and \code{Pimage}
 }
-

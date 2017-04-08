@@ -20,4 +20,3 @@ Calculate great circle distancces between points.
 \details{
 Compute the great circle distances from x1 to x2.
 }
-

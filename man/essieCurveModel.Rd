@@ -75,4 +75,3 @@ can be specified directly with the \code{dt} argument. The
 parameters \code{beta[1]} and \code{beta[2]} specify the shape and
 rate of the Gamma distribution of speeds.
 }
-

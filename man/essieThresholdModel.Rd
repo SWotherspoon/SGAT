@@ -109,4 +109,3 @@ signify
 \item{3:}{The twilight is missing and it is not known if a twilight occurred.}
 }
 }
-

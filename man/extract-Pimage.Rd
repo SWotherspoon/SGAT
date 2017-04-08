@@ -35,4 +35,3 @@ to Raster.
 \code{\link{cut.Pimage}} for creating temporal
 partitions.
 }
-

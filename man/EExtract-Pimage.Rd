@@ -21,4 +21,3 @@ Pimage
 \description{
 Extract a part of a Pimage object.
 }
-

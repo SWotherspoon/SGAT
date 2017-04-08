@@ -21,4 +21,3 @@ Midpoints of a path
 \details{
 Compute the midpoints of a sequence of locations along a path.
 }
-

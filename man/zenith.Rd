@@ -40,4 +40,3 @@ zenith(s,lon,lat)
 \seealso{
 \code{\link{solar}}
 }
-

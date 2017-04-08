@@ -2,9 +2,9 @@
 % Please edit documentation in R/Raster.R
 \name{slice}
 \alias{slice}
-\alias{sliceIndices}
-\alias{sliceInterval}
 \alias{slices}
+\alias{sliceInterval}
+\alias{sliceIndices}
 \title{Location Density Estimates}
 \usage{
 slice(slices, k, mcmc = slices$mcmc, grid = slices$grid,
@@ -76,4 +76,3 @@ slice, \code{sliceInterval} returns the corresponding time
 interval, and \code{sliceIndices} returns the indices that will
 yield non null raster.
 }
-

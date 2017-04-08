@@ -32,4 +32,3 @@ solar(Sys.time())
 \seealso{
 \code{\link{zenith}}
 }
-

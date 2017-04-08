@@ -28,4 +28,3 @@ accepts a second sequence of intermediate points, and computes the
 change in bearing along the dog leg paths from \code{x[i,]}
 to \code{z[i,]} to \code{x[i+1,]}.
 }
-

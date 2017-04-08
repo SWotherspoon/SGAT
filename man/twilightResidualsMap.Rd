@@ -28,4 +28,3 @@ a single observed twilight across a grid of locations.
 \seealso{
 \code{\link{twilightResiduals}}
 }
-

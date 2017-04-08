@@ -25,4 +25,3 @@ Convert streams of twilights to sunrise/sunset pairs
 This function converts the twilight, rise format used by Stella
 and Estelle into successive sunrise and sunset pairs.
 }
-

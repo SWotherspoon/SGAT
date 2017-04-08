@@ -100,4 +100,3 @@ The \code{curveModel0} function constructs only the non-movement
 elements of the model, and can be used as a basis for those
 wishing to experiment with alternative movement models.
 }
-
