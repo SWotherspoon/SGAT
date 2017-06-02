@@ -10,6 +10,29 @@
 NULL
 
 
+##' These functions wrap and unwrap a sequence of longitudes around
+##' the dateline.
+##'
+##' The \code{wrapLon} function wraps the longitudes back into the
+##' interval [lmin,lmin+360).  The \code{unwrapLon} function unwraps a
+##' sequence of longitudes so the the initial point lies in
+##' [lmin,lmin+360), but the subsequent longitudes in the sequence may
+##' wander outside that range.
+##'
+##' @title Wrap Locations Around the Dateline.
+##' @param lon a vector of longitudes
+##' @param lmin western boundary for wrapped longitudes
+##' @return a vector of longitudes
+##' @export
+wrapLon <- function(lon,lmin=-180)
+  (lon-lmin)%%360+lmin
+
+##' @rdname wrapLon
+##' @export
+unwrapLon <- function(lon,lmin=-180)
+  cumsum(c(wrapLon(lon[1],lmin),wrapLon(diff(lon))))
+
+
 
 ## Solar Zenith/Sunrise/Sunset calculations
 ##
@@ -343,7 +366,7 @@ trackMidpts <- function(p,fold=FALSE) {
   by <- cos(lat2)*sin(dlon)
   lat <- atan2(sin(lat1)+sin(lat2),sqrt((cos(lat1)+bx)^2+by^2))/rad
   lon <- (lon1+atan2(by,cos(lat1)+bx))/rad
-  if(fold) lon <- (lon+180)%%360-180
+  if(fold) lon <- wrapLon(lon)
   cbind(lon,lat)
 }
 
@@ -414,7 +437,7 @@ trackBearingChange <- function(x) {
   bs <- atan2(sin(rad*(x[-1L,1L]-x[-n,1L]))*cosx2[-1L],
               cosx2[-n]*sinx2[-1L]-sinx2[-n]*cosx2[-1L]*cos(rad*(x[-1L,1L]-x[-n,1L])))/rad
   ## Difference bs and fold difference into [-180,180)
-  (bs[1-n]-bs[-1]+180)%%360-180
+  wrapLon(bs[1-n]-bs[-1])
 }
 
 
@@ -438,7 +461,7 @@ trackBearingChange2 <- function(x,z) {
   b2 <- atan2(sin(dLon2)*cosx2[-1L],
               cosz2*sinx2[-1L]-sinz2*cosx2[-1L]*cos(dLon2))/rad
   ## Reverse b1 and fold difference into [-180,180)
-  (b2-b1)%%360-180
+  wrapLon(b2-b1+180)
 }
 
 
@@ -534,7 +557,7 @@ thresholdEstimate <- function(trise,tset,zenith=96,tol=0) {
   ss <- solar(tset)
   cosz <- cos(rad*zenith)
   lon <- -(sr$solarTime+ss$solarTime+ifelse(sr$solarTime<ss$solarTime,360,0))/2
-  lon <- (lon+180)%%360-180
+  lon <- wrapLon(lon)
 
   ## Compute latitude from sunrise
   hourAngle <- sr$solarTime+lon-180
@@ -580,7 +603,7 @@ thresholdPath <- function(twilight,rise,time=twilight,zenith=96,tol=0.08,unfold=
     keep <- !is.na(ls$x[,1L])
     ts <- ls$time[keep]
     lon <- ls$x[keep,1L]
-    if(unfold) lon <- cumsum(c(lon[1L],(diff(lon)+180)%%360-180))
+    if(unfold) lon <- unwrapLon(lon)
     lon <- approx(x=ts,y=lon,xout=time,rule=2)$y
     ## Interpolate the non-missing latitudes
     keep <- !is.na(ls$x[,2L])
@@ -762,7 +785,7 @@ thresholdSensitivity <- function(rise,set,zenith=96,range=100,
 ##' @export
 zenithSimulate <- function(tm,lon,lat,tm.out) {
   ## unwrap longitudes
-  lon <- cumsum(c(lon[1L],(diff(lon)+180)%%360-180))
+  lon <- unwrapLon(lon)
   ## Interpolate track
   keep <- !is.na(lon)
   lon.out <- approx(tm[keep],lon[keep],tm.out,rule=2)$y

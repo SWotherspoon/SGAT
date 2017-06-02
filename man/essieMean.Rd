@@ -2,10 +2,13 @@
 % Please edit documentation in R/Lattice.R
 \name{essieMean}
 \alias{essieMean}
+\alias{essieCircularMean}
 \alias{essieMode}
 \title{Essie locations}
 \usage{
 essieMean(obj, type = c("full", "forward", "backward"))
+
+essieCircularMean(obj, type = c("full", "forward", "backward"))
 
 essieMode(obj, type = c("full", "forward", "backward"))
 }
@@ -25,5 +28,8 @@ Compute posterior mean or mode locations from an Essie fit
 }
 \details{
 These functions compute the posterior mean or posterior mode
-locations for each time point from and Essie fit.
+locations for each time point from and Essie fit. The
+\code{essieCircularMean} function assumes the computational grid
+is in (lon,lat) projection and computes a circular mean for
+longitude.
 }
