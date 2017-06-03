@@ -5,7 +5,6 @@
 *.Rproj
 *.Rdata
 *.Rhistory
-.Rbuildignore
 .Rhistory
 *~
 auto/
