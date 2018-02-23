@@ -14,7 +14,7 @@ bibentry(
   volume = "4",
   year = "2009",
   url = "http://dx.plos.org/10.1371/journal.pone.0007324")
-
+ 
 bibentry(
   bibtype="Article",
   title = "GeoLight - processing and analysing light-based geolocator data in R",
@@ -27,4 +27,4 @@ bibentry(
   pages = "1055--1059",
   volume = "3",
   year = "2012",
-  url = "http://doi.wiley.com/10.1111/j.2041-210X.2012.00248.x")
+  url = "http://onlinelibrary.wiley.com/doi/10.1111/j.2041-210X.2012.00248.x/abstract")
