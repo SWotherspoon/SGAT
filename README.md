@@ -32,11 +32,11 @@ install.packages("devtools")
   coordinate transformation and the added code complexity. This is a
   low priority.
 
-- **Parallelisation**.  At this point, the Metropolis samplers are
+- **Parallelization**.  At this point, the Metropolis samplers are
   only capable of utilizing a single core on a multicore machine.  It
   would be relatively simple to introduce coarse grain parallelism by
   having the samplers draw multiple chains in parallel, using
   something like the multicore facility in the parallel package.
   Unfortunately, at the time of writing there does not seem to be a
-  good parallization solution that works equally well on all
+  good parallelization solution that works equally well on all
   platforms.  This is a low priority.

@@ -1,12 +1,11 @@
 Package: SGAT
 Type: Package
 Title: Solar/Satellite Geolocation for Animal Tracking
-Version: 0.1.3
-Date: 2016-08-15
+Version: 0.1.4
 Authors@R: c(
-    as.person("Simon Wotherspoon <Simon.Wotherspoon@utas.edu.au> [aut,cre]"),
-    as.person("Michael Sumner [aut]"),
-    as.person("Simeon Lisovski [aut]"))
+    person("Simon", "Wotherspoon", email = "Simon.Wotherspoon@utas.edu.au", role = "aut"),
+    person("Michael", "Sumner", email = "mdsumner@gmail.com", role = c("aut", "cre")),
+    person("Simeon", "Lisovski", role = "aut"))
 Description: Facilities for estimating the broadscale animal motions from
     archival or satellite tags.
 Depends:
