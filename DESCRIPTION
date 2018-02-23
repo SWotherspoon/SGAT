@@ -7,7 +7,10 @@ Authors@R: c(
     person("Michael", "Sumner", email = "mdsumner@gmail.com", role = c("aut", "cre")),
     person("Simeon", "Lisovski", role = "aut"))
 Description: Facilities for estimating the broadscale animal motions from
-    archival or satellite tags.
+    archival or satellite tags. Locations are estimated using extensions of the 
+    threshold, curve and satellite models of Sumner, Wotherspoon and Hindell (2009) 
+    <http://dx.plos.org/10.1371/journal.pone.0007324> and Lisovski and Hahn (2012) 
+    <http://onlinelibrary.wiley.com/doi/10.1111/j.2041-210X.2012.00248.x/abstract>. 
 Depends:
     R(>= 3.3.0)
 Imports:

@@ -101,7 +101,7 @@ for (i in seq(n3)[-1L]) {
    fx$z[[1L]][,,i] <- jitter(z0, factor = 12L)
 }
 
-g <- raster(extent(x0) + 5, nrows = 350, ncols = 375, crs = "+proj=longlat +datum=WGS84")
+g <- raster::raster(extent(x0) + 5, nrows = 350, ncols = 375, crs = "+proj=longlat +datum=WGS84")
 px <- Pimage(fx, grid = g)
 pz <- Pimage(fx, type = "intermediate", grid = g)
 
