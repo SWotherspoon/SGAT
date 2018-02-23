@@ -21,7 +21,7 @@ matrix:
         - os: osx
           r: release
           env:
-           - BUILD_NAME=(fork)osx_release  ## rename to osx_release when home
+           - BUILD_NAME=_fork_osx_release  ## rename to osx_release when home
            - DETAILS="release build"
 
 after_success:
