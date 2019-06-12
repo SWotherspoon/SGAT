@@ -10,8 +10,8 @@ thresholdEstimate(trise, tset, zenith = 96, tol = 0)
 
 thresholdLocation(twilight, rise, zenith = 96, tol = 0.08)
 
-thresholdPath(twilight, rise, time = twilight, zenith = 96, tol = 0.08,
-  unfold = TRUE)
+thresholdPath(twilight, rise, time = twilight, zenith = 96,
+  tol = 0.08, unfold = TRUE)
 }
 \arguments{
 \item{trise}{vector of sunrise times.}

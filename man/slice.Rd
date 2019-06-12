@@ -11,9 +11,9 @@ slice(slices, k, mcmc = slices$mcmc, grid = slices$grid,
   weights = slices$weights, method = slices$method,
   bandwidth = slices$bandwidth, chains = NULL)
 
-slices(type = c("primary", "intermediate"), breaks = NULL, mcmc = NULL,
-  grid = raster(), weights = NULL, method = c("hist", "kde"),
-  bandwidth = 0, include.lowest = TRUE, right = FALSE)
+slices(type = c("primary", "intermediate"), breaks = NULL,
+  mcmc = NULL, grid = raster(), weights = NULL, method = c("hist",
+  "kde"), bandwidth = 0, include.lowest = TRUE, right = FALSE)
 
 sliceInterval(slices, k, mcmc = slices$mcmc)
 
