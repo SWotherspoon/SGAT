@@ -7,27 +7,67 @@
 \alias{groupedThresholdModel0}
 \title{Threshold Model Structures}
 \usage{
-thresholdModel(twilight, rise, twilight.model = c("Gamma", "LogNormal",
-  "Normal", "ModifiedGamma", "ModifiedLogNormal"), alpha, beta,
-  logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), x0, z0 = NULL, fixedx = FALSE, missing = 0,
-  dt = NULL, zenith = 96)
+thresholdModel(
+  twilight,
+  rise,
+  twilight.model = c("Gamma", "LogNormal", "Normal", "ModifiedGamma",
+    "ModifiedLogNormal"),
+  alpha,
+  beta,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  x0,
+  z0 = NULL,
+  fixedx = FALSE,
+  missing = 0,
+  dt = NULL,
+  zenith = 96
+)
 
-thresholdModel0(twilight, rise, twilight.model = c("Gamma", "LogNormal",
-  "Normal", "ModifiedGamma", "ModifiedLogNormal"), alpha,
-  logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), fixedx = FALSE, missing = 0, zenith = 96)
+thresholdModel0(
+  twilight,
+  rise,
+  twilight.model = c("Gamma", "LogNormal", "Normal", "ModifiedGamma",
+    "ModifiedLogNormal"),
+  alpha,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  fixedx = FALSE,
+  missing = 0,
+  zenith = 96
+)
 
-groupedThresholdModel(twilight, rise, group, twilight.model = c("Gamma",
-  "LogNormal", "Normal", "ModifiedGamma", "ModifiedLogNormal"), alpha,
-  beta, logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), x0, z0 = NULL, fixedx = FALSE, missing = 0,
-  dt = NULL, zenith = 96)
+groupedThresholdModel(
+  twilight,
+  rise,
+  group,
+  twilight.model = c("Gamma", "LogNormal", "Normal", "ModifiedGamma",
+    "ModifiedLogNormal"),
+  alpha,
+  beta,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  x0,
+  z0 = NULL,
+  fixedx = FALSE,
+  missing = 0,
+  dt = NULL,
+  zenith = 96
+)
 
-groupedThresholdModel0(twilight, rise, group, twilight.model = c("Gamma",
-  "LogNormal", "Normal", "ModifiedGamma", "ModifiedLogNormal"), alpha,
-  logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), fixedx = FALSE, missing = 0, zenith = 96)
+groupedThresholdModel0(
+  twilight,
+  rise,
+  group,
+  twilight.model = c("Gamma", "LogNormal", "Normal", "ModifiedGamma",
+    "ModifiedLogNormal"),
+  alpha,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  fixedx = FALSE,
+  missing = 0,
+  zenith = 96
+)
 }
 \arguments{
 \item{twilight}{the observed times of twilight as POSIXct.}

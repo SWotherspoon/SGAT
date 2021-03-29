@@ -5,8 +5,14 @@
 \alias{locationMean}
 \title{Summaries of Location Samples}
 \usage{
-locationSummary(s, time = NULL, discard = 0, alpha = 0.95,
-  collapse = TRUE, chains = NULL)
+locationSummary(
+  s,
+  time = NULL,
+  discard = 0,
+  alpha = 0.95,
+  collapse = TRUE,
+  chains = NULL
+)
 
 locationMean(s, discard = 0, collapse = TRUE, chains = NULL)
 }

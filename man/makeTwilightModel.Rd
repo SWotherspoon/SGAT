@@ -4,8 +4,11 @@
 \alias{makeTwilightModel}
 \title{Twilight Error Models}
 \usage{
-makeTwilightModel(twilight.model = c("Gamma", "LogNormal", "Normal",
-  "ModifiedGamma", "ModifiedLogNormal"), alpha)
+makeTwilightModel(
+  twilight.model = c("Gamma", "LogNormal", "Normal", "ModifiedGamma",
+    "ModifiedLogNormal"),
+  alpha
+)
 }
 \arguments{
 \item{twilight.model}{the model for the errors in twilight times.}

@@ -4,9 +4,19 @@
 \alias{essieThresholdModel}
 \title{Threshold Model Structures (Essie)}
 \usage{
-essieThresholdModel(twilight, rise, twilight.model = c("LogNormal",
-  "Gamma", "Normal"), alpha, beta, logp0 = function(k, x) 0, x0,
-  fixed = FALSE, missing = 0, dt = NULL, zenith = 96)
+essieThresholdModel(
+  twilight,
+  rise,
+  twilight.model = c("LogNormal", "Gamma", "Normal"),
+  alpha,
+  beta,
+  logp0 = function(k, x) 0,
+  x0,
+  fixed = FALSE,
+  missing = 0,
+  dt = NULL,
+  zenith = 96
+)
 }
 \arguments{
 \item{twilight}{the observed times of twilight as POSIXct.}

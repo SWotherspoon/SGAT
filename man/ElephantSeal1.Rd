@@ -7,7 +7,8 @@
 \alias{ElephantSeal2}
 \alias{ElephantSeal2calib}
 \title{Southern Elephant seal tag data}
-\format{\code{ElephantSeal1} A data frame with 3 columns.  The
+\format{
+\code{ElephantSeal1} A data frame with 3 columns.  The
 columns represent
 \tabular{rl}{
 \code{time} \tab times of measurement \cr
@@ -25,7 +26,8 @@ frame with 2 columns.  The columns represent
 \tabular{rl}{
 \code{zenith} \tab zenith values \cr
 \code{light} \tab  (log) light values \cr
-}}
+}
+}
 \description{
 Light data from the foraging trips of the Southern elephant seal.
 }

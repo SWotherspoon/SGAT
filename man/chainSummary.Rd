@@ -16,8 +16,7 @@ chainTail(s, discard = 0, thin = 1)
 
 chainLast(s)
 
-chainCollapse(s, collapse = TRUE, discard = 0, thin = 1,
-  chains = NULL)
+chainCollapse(s, collapse = TRUE, discard = 0, thin = 1, chains = NULL)
 
 chainCov(s, discard = 0, chains = NULL)
 

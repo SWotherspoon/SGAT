@@ -5,14 +5,31 @@
 \alias{curveModel0}
 \title{Curve Model Structure}
 \usage{
-curveModel(time, light, segment, calibration, alpha, beta,
-  logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), x0 = NULL, z0 = NULL, fixedx = FALSE,
-  dt = NULL)
+curveModel(
+  time,
+  light,
+  segment,
+  calibration,
+  alpha,
+  beta,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  x0 = NULL,
+  z0 = NULL,
+  fixedx = FALSE,
+  dt = NULL
+)
 
-curveModel0(time, light, segment, calibration, alpha,
-  logp.x = function(x) rep.int(0L, nrow(x)), logp.z = function(z)
-  rep.int(0L, nrow(z)), fixedx = FALSE)
+curveModel0(
+  time,
+  light,
+  segment,
+  calibration,
+  alpha,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  fixedx = FALSE
+)
 }
 \arguments{
 \item{time}{vector of sample times as POSIXct.}

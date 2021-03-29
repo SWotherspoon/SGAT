@@ -5,14 +5,31 @@
 \alias{satelliteModel0}
 \title{Satellite Model Structures}
 \usage{
-satelliteModel(time, X, location.model = c("Normal", "T"), sd,
-  df = NULL, beta, logp.x = function(x) rep.int(0L, nrow(x)),
-  logp.z = function(z) rep.int(0L, nrow(z)), x0, z0 = NULL,
-  fixedx = FALSE, dt = NULL)
+satelliteModel(
+  time,
+  X,
+  location.model = c("Normal", "T"),
+  sd,
+  df = NULL,
+  beta,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  x0,
+  z0 = NULL,
+  fixedx = FALSE,
+  dt = NULL
+)
 
-satelliteModel0(time, X, location.model = c("Normal", "T"), sd,
-  df = NULL, logp.x = function(x) rep.int(0L, nrow(x)),
-  logp.z = function(z) rep.int(0L, nrow(z)), fixedx = FALSE)
+satelliteModel0(
+  time,
+  X,
+  location.model = c("Normal", "T"),
+  sd,
+  df = NULL,
+  logp.x = function(x) rep.int(0L, nrow(x)),
+  logp.z = function(z) rep.int(0L, nrow(z)),
+  fixedx = FALSE
+)
 }
 \arguments{
 \item{time}{the times of the satellite determined locations.}

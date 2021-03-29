@@ -4,13 +4,15 @@
 \name{Shearwater}
 \alias{Shearwater}
 \title{Short-tailed Shearwater Track}
-\format{A data frame with 3 columns and 72 rows.  The columns
+\format{
+A data frame with 3 columns and 72 rows.  The columns
 represent
 \tabular{rl}{
 \code{twilight} \tab times of twilight. \cr
 \code{rise} \tab logical indicating which twilights are sunrise. \cr
 \code{burrow} \tab logical indicating when the bird in its burrow.
-}}
+}
+}
 \description{
 Twilight times from a flight of a Short-tailed Shearwater.
 }

@@ -8,11 +8,23 @@
 \usage{
 Pimage(x, ...)
 
-\method{Pimage}{POSIXct}(x, type = c("primary", "intermediate"),
-  pimg = NULL, grid = NULL, proj = NULL, ...)
+\method{Pimage}{POSIXct}(
+  x,
+  type = c("primary", "intermediate"),
+  pimg = NULL,
+  grid = NULL,
+  proj = NULL,
+  ...
+)
 
-\method{Pimage}{default}(x, type = c("primary", "intermediate"),
-  pimg = NULL, grid = NULL, proj = NULL, ...)
+\method{Pimage}{default}(
+  x,
+  type = c("primary", "intermediate"),
+  pimg = NULL,
+  grid = NULL,
+  proj = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{vector of POSIXct date-times for locations}

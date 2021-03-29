@@ -4,8 +4,18 @@
 \alias{essieCurveModel}
 \title{Curve Model Structures (Essie)}
 \usage{
-essieCurveModel(time, light, segment, calibration, alpha, beta,
-  logp0 = function(k, x) 0, x0, fixed = FALSE, dt = NULL)
+essieCurveModel(
+  time,
+  light,
+  segment,
+  calibration,
+  alpha,
+  beta,
+  logp0 = function(k, x) 0,
+  x0,
+  fixed = FALSE,
+  dt = NULL
+)
 }
 \arguments{
 \item{time}{vector of sample times as POSIXct.}

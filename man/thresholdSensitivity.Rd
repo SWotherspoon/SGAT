@@ -4,9 +4,20 @@
 \alias{thresholdSensitivity}
 \title{Threshold Geolocation Sensitivity}
 \usage{
-thresholdSensitivity(rise, set, zenith = 96, range = 100, sr.mulog,
-  sr.sdlog, ss.mulog, ss.sdlog, sr.proposal, ss.proposal, n.thin = 10,
-  n.iters = 1000)
+thresholdSensitivity(
+  rise,
+  set,
+  zenith = 96,
+  range = 100,
+  sr.mulog,
+  sr.sdlog,
+  ss.mulog,
+  ss.sdlog,
+  sr.proposal,
+  ss.proposal,
+  n.thin = 10,
+  n.iters = 1000
+)
 }
 \arguments{
 \item{rise}{observed time of sunrise as POSIXct.}
