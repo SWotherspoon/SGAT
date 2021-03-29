@@ -1,5 +1,6 @@
 # Solar/Satellite Geolocation for Animal Tracking
 [![Travis-CI Build Status](https://travis-ci.org/SWotherspoon/SGAT.svg?branch=master)](https://travis-ci.org/SWotherspoon/SGAT)
+[![Build Status](http://badges.herokuapp.com/travis/mdsumner/SGAT?branch=master&env=BUILD_NAME=_fork_osx_release&label=osx)](https://travis-ci.org/mdsumner/SGAT) 
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/SWotherspoon/SGAT?branch=master&svg=true)](https://ci.appveyor.com/project/SWotherspoon/SGAT)
 
 SGAT (pronounced "tags backwards") provides facilities for estimating
@@ -32,11 +33,11 @@ install.packages("devtools")
   coordinate transformation and the added code complexity. This is a
   low priority.
 
-- **Parallelisation**.  At this point, the Metropolis samplers are
+- **Parallelization**.  At this point, the Metropolis samplers are
   only capable of utilizing a single core on a multicore machine.  It
   would be relatively simple to introduce coarse grain parallelism by
   having the samplers draw multiple chains in parallel, using
   something like the multicore facility in the parallel package.
   Unfortunately, at the time of writing there does not seem to be a
-  good parallization solution that works equally well on all
+  good parallelization solution that works equally well on all
   platforms.  This is a low priority.
