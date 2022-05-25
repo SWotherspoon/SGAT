@@ -813,7 +813,7 @@ twilightSimulate <- function(dfz,zenith=96) {
   ## Interleave sunrise and sunset
   ord <- order(c(sr.k,ss.k))
   k <- c(sr.k,ss.k)[ord]
-  rise <- rep(c(T,F),c(length(sr.k),length(ss.k)))[ord]
+  rise <- rep(c(TRUE,FALSE),c(length(sr.k),length(ss.k)))[ord]
   ## Interpolation weights
   w <- (zenith-dfz$Zenith[k])/(dfz$Zenith[k+1L]-dfz$Zenith[k])
 
@@ -1770,8 +1770,8 @@ estelleMetropolis <- function(model,
     for(k2 in 1:iters) {
 
       if(verbose && k2%%10==0) {
-        cat("\b\b\b\b\b\b");
-        cat(sprintf("%6d",k2));
+        cat("\b\b\b\b\b\b")
+        cat(sprintf("%6d",k2))
         flush.console()
       }
 
@@ -1916,8 +1916,8 @@ stellaMetropolis <- function(model,
     for(k2 in 1:iters) {
 
       if(verbose && k2%%10==0) {
-        cat("\b\b\b\b\b\b");
-        cat(sprintf("%6d",k2));
+        cat("\b\b\b\b\b\b")
+        cat(sprintf("%6d",k2))
         flush.console()
       }
 
@@ -2128,21 +2128,21 @@ SGAT2Movebank <- function(s,time=NULL,group=NULL,discard=0,alpha=0.95,chains=NUL
       if(length(time)==n)
         stop("Intermediate locations do not make sense for the grouped model, use fit$x instead.")
       else
-        d <- data.frame(StartTime = as.POSIXct(tapply(time, group, min), origin = "1970-01-01", tz = "GMT"),  
+        d <- data.frame(StartTime = as.POSIXct(tapply(time, group, min), origin = "1970-01-01", tz = "GMT"),
                         EndTime =   as.POSIXct(tapply(time, group, max), origin = "1970-01-01", tz = "GMT"), d)
-      
+
     }
     d
   }
-  
+
   s <- chainCollapse(s,collapse=TRUE,discard=discard,chains=chains)
-  
+
   if(!is.null(group)){
     groupedSummary(s)
   } else {
     if(is.list(s)) lapply(s,summary) else summary(s)
   }
-  
+
 }
 
 
