@@ -2095,7 +2095,7 @@ locationMean <- function(s,discard=0,collapse=TRUE,chains=NULL) {
 ##' @param chains the set of chains to retain, or \code{NULL}.
 ##' @return
 ##' \item{\code{SGAT2Movebank}}{returns a dataframe of summary quantities for each location or grouped location.}
-##' @importFrom stats sd
+##' @importFrom stats sd quantile
 ##' @export
 SGAT2Movebank <- function(s,time=NULL,group=NULL,discard=0,alpha=0.95,chains=NULL) {
   summary <- function(s) {

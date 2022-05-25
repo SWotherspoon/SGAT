@@ -35,7 +35,8 @@
 ##' Details
 ##' @param ... arguments passed to \code{chain.bin}
 ##' @return \code{\link{Pimage}}
-##' @import raster sp
+##' @importFrom raster raster xmin xmax ymin ymax res projection projectExtent
+##' @importFrom sp CRS spTransform coordinates
 ##' @export
 ##' @examples
 ##' \dontrun{
@@ -526,6 +527,7 @@ as.POSIXct.Pimage <- function(x, ...) {
 ##' @param ... pass arguments to \code{\link{cut.POSIXt}}
 ##' @method cut Pimage
 ##' @return RasterLayer or RasterBrick, for multiple or single level cut respectively
+##' @importFrom raster brick xmin xmax ymin ymax projection getValues setZ
 ##' @export
 cut.Pimage <- function(x, breaks, ...) {
 
@@ -762,17 +764,17 @@ as.image.Pimage <- function (pimgs) {
 
 ## check that extents do align, otherwise hint at rebuilding Pimage
 ## to match
-.aligned <- function(x, y, ...) {
-  all.equal(extent(x), alignExtent(extent(x), y, snap = "out"))
-}
+#.aligned <- function(x, y, ...) {
+#  all.equal(extent(x), alignExtent(extent(x), y, snap = "out"))
+#}
 ## function to convert pimg offset to cellnumbers of PARENT
 ## (then we can crop global to match parent and do direct transfers)
-cn.pimg <- function(x) {
-  xbnd <- x$xbound
-  ybnd <- x$ybound
-  offs <- x$offset
-  tl <- ((ybnd[3L] - (offs[2L] + ncol(x$image))) + 1L) * xbnd[3L] + offs[1L]
-  sort(rep(seq(tl, by = xbnd[3], length = ncol(x$image)), each = nrow(x$image)) +
-       rep(seq_len(nrow(x$image)) - 1, ncol(x$image)))
-}
+#cn.pimg <- function(x) {
+#  xbnd <- x$xbound
+#  ybnd <- x$ybound
+#  offs <- x$offset
+#  tl <- ((ybnd[3L] - (offs[2L] + ncol(x$image))) + 1L) * xbnd[3L] + offs[1L]
+#  sort(rep(seq(tl, by = xbnd[3], length = ncol(x$image)), each = nrow(x$image)) +
+#       rep(seq_len(nrow(x$image)) - 1, ncol(x$image)))
+#}
 

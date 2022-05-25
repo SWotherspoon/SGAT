@@ -13,6 +13,7 @@
 ##' @param bw optional bandwidth for the kernel density estimator.
 ##' @param zero.is.na if \code{TRUE}, zero counts are returned as \code{NA}.
 ##' @return a raster representing a 2D histogram of locations
+##' @importFrom raster raster isLonLat values bbox
 ##' @export
 locationRasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   s <- chainCollapse(s)
@@ -40,8 +41,8 @@ locationRasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
   W <- dim(s)[3L]*prod(res(r))
   for(k in seq_len(dim(s)[1L])) {
     A <- A+(weights[k]/W)*table(
-      factor((ny+1)-.bincode(s[k,2L,],ybin,TRUE,TRUE),levels=1:ny),
-      factor(.bincode(s[k,1L,],xbin,TRUE,TRUE),levels=1:nx))
+      factor((ny+1)-.bincode(s[k,2L,],ybin,TRUE,TRUE),levels=seq_len(ny)),
+      factor(.bincode(s[k,1L,],xbin,TRUE,TRUE),levels=seq_len(nx)))
   }
   if(zero.is.na) A[A==0] <- NA
   values(r) <- A
@@ -52,6 +53,8 @@ locationRasterize <- function(s,grid,weights=1,zero.is.na=TRUE) {
 
 ##' @rdname locationRasterize
 ##' @importFrom stats dnorm var
+##' @importFrom raster raster xFromCol yFromRow values<-
+##' @importFrom sp CRS SpatialPoints
 ##' @export
 locationKernelize <- function(s,grid,weights=1,bw=NULL) {
 
@@ -132,6 +135,7 @@ locationKernelize <- function(s,grid,weights=1,bw=NULL) {
 ##' \code{sliceInterval} returns the time interval spanned by a
 ##' slice, and \code{sliceIndices} returns the valid set of indices
 ##' that will yield a raster.
+##' @importFrom raster raster
 ##' @export
 slice <- function(slices,k,
                   mcmc=slices$mcmc,grid=slices$grid,weights=slices$weights,
@@ -213,7 +217,7 @@ sliceIndices <- function(slices,mcmc=slices$mcmc) {
                        include.lowest=slices$include.lowest,
                        right=slices$right)))
   else
-    1:length(time)
+    seq_along(time)
 }
 
 
@@ -230,6 +234,8 @@ sliceIndices <- function(slices,mcmc=slices$mcmc) {
 ##' the requested cells as a 2 column matrix, and
 ##' \code{cellFromLonLat} returns the cells corresponding to the 2
 ##' column matrix of lon,lat positions.
+##' @importFrom raster xyFromCell cellFromXY
+##' @importFrom sp CRS spTransform coordinates
 ##' @export
 lonlatFromCell <- function(raster,cells,spatial=FALSE) {
   if(is.na(projection(raster)) || isLonLat(raster)) {
@@ -266,9 +272,10 @@ cellFromLonLat <- function(raster,pts) {
 ##' @param zenith the solar zenith angle that defines twilight.
 ##' @return a raster of twilight residuals (in minutes).
 ##' @seealso \code{\link{twilightResiduals}}
+##' @importFrom raster raster
 ##' @export
 twilightResidualsMap <- function(twilight,rise,grid,zenith=96) {
-  p <- lonlatFromCell(grid,1:ncell(grid))
+  p <- lonlatFromCell(grid,seq_len(ncell(grid)))
   legal <- !(is.na(p[,1]) | is.na(p[,2]))
   sgn <- if(rise) 1 else -1
   s <- solar(twilight)

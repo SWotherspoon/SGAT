@@ -283,7 +283,7 @@ essieCurveModel <- function(time,light,segment,
     sun <- solar(time[seg])
     ls <- light[seg]
     ## Contributions to log posterior from the light
-    logp <- sapply(1:nrow(x),
+    logp <- sapply(seq_len(nrow(x)),
                    function(i) {
                      fs <- calibration(zenith(sun,x[i,1L],x[i,2L]))
                      off <- mean(ls)-mean(fs)
@@ -343,6 +343,7 @@ essieCurveModel <- function(time,light,segment,
 ##' \item{\code{times}}{the times corresponding to the location estimates.}
 ##' \item{\code{lattice}}{a sparse grid representation of the posterior location probabilities.}
 ##' @importFrom utils flush.console
+##' @importFrom raster ncell values
 ##' @export
 essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactive()) {
 
@@ -352,13 +353,13 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
   }
 
   n <- length(model$time)
-  pts <- lonlatFromCell(grid,1:ncell(grid))
+  pts <- lonlatFromCell(grid,seq_len(ncell(grid)))
   fixed <- integer(n)
   fixed[model$fixed] <- cellFromLonLat(grid,model$x0[model$fixed,])
 
   ## Compute likelihood
-  cs <- (1:ncell(grid))[values(grid)!=0]
-  lattice <- lapply(1:n,function(k) {
+  cs <- seq_len(ncell(grid))[values(grid)!=0]
+  lattice <- lapply(seq_len(n),function(k) {
     if(fixed[k]!=0) {
       list(cs=fixed[k],ps=1)
     } else {
@@ -373,20 +374,20 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
     cat("Fwd ",sprintf("%6d",1))
     flush.console()
   }
-  xs <- pts[lattice[[1]]$cs,,drop=F]
+  xs <- pts[lattice[[1]]$cs,,drop=FALSE]
   as <- lattice[[1]]$as <- lattice[[1]]$ps
   for(k in 2:n) {
     if(verbose) {
-      cat("\b\b\b\b\b\b");
-      cat(sprintf("%6d",k));
+      cat("\b\b\b\b\b\b")
+      cat(sprintf("%6d",k))
       flush.console()
     }
     xs0 <- xs
-    xs <- pts[lattice[[k]]$cs,,drop=F]
+    xs <- pts[lattice[[k]]$cs,,drop=FALSE]
     as0 <- as
     as <- 0
     for(i in which(as0 > epsilon2*max(as0)))
-      as <- as + as0[i]*exp(model$logbk(k-1,xs0[i,,drop=F],xs))
+      as <- as + as0[i]*exp(model$logbk(k-1,xs0[i,,drop=FALSE],xs))
     as <- normalize(as*lattice[[k]]$ps)
     lattice[[k]]$as <- as
   }
@@ -397,20 +398,20 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
     cat("\nBwd ",sprintf("%6d",1))
     flush.console()
   }
-  xs <- pts[lattice[[n]]$cs,,drop=F]
+  xs <- pts[lattice[[n]]$cs,,drop=FALSE]
   bs <- lattice[[n]]$bs <- lattice[[n]]$ps
   for(k in (n-1):1) {
     if(verbose) {
-      cat("\b\b\b\b\b\b");
-      cat(sprintf("%6d",k));
+      cat("\b\b\b\b\b\b")
+      cat(sprintf("%6d",k))
       flush.console()
     }
     xs0 <- xs
-    xs <- pts[lattice[[k]]$cs,,drop=F]
+    xs <- pts[lattice[[k]]$cs,,drop=FALSE]
     bs0 <- bs
     bs <- 0
     for(i in which(bs0 > epsilon2*max(bs0)))
-      bs <- bs + bs0[i]*exp(model$logbk(k,xs,xs0[i,,drop=F]))
+      bs <- bs + bs0[i]*exp(model$logbk(k,xs,xs0[i,,drop=FALSE]))
     bs <- normalize(bs*lattice[[k]]$ps)
     lattice[[k]]$bs <- bs
   }
@@ -431,6 +432,7 @@ essie <- function(model,grid,epsilon1=1.0E-3,epsilon2=1.0E-16,verbose=interactiv
 ##' @param type whether to return the full estimate, the estimate from
 ##' the forward or backward pass of the algorithm or the likelihood.
 ##' @return a raster of probabilities/likelihoods
+##' @importFrom raster raster
 ##' @export
 essieRaster <- function(obj,k,type=c("full","forward","backward","likelihood")) {
   g <- raster(obj$grid)
@@ -467,13 +469,13 @@ essieRaster <- function(obj,k,type=c("full","forward","backward","likelihood")) 
 ##' @export
 essieMean <- function(obj,type=c("full","forward","backward")) {
   type <- match.arg(type)
-  pts <- lonlatFromCell(obj$grid,1:ncell(obj$grid))
+  pts <- lonlatFromCell(obj$grid,seq_len(ncell(obj$grid)))
   x <- do.call(rbind,lapply(obj$lattice,function(l) {
       ps <- switch(type,
                    full=l$as*l$bs/l$ps,
                    forward=l$as,
                    backward=l$bs)
-      colSums(ps*pts[l$cs,,drop=F])/sum(ps)
+      colSums(ps*pts[l$cs,,drop=FALSE])/sum(ps)
     }))
   colnames(x) <- c("lon","lat")
   list(time=obj$time,x=x)
@@ -484,7 +486,7 @@ essieMean <- function(obj,type=c("full","forward","backward")) {
 ##' @export
 essieCircularMean <- function(obj,type=c("full","forward","backward")) {
   type <- match.arg(type)
-  pts <- lonlatFromCell(obj$grid,1:ncell(obj$grid))
+  pts <- lonlatFromCell(obj$grid,seq_len(ncell(obj$grid)))
   ## Convert longitude
   pts <- cbind(sin(pts[,1]*pi/180),cos(pts[,1]*pi/180),pts[,2])
   x <- do.call(rbind,lapply(obj$lattice,function(l) {
@@ -492,7 +494,7 @@ essieCircularMean <- function(obj,type=c("full","forward","backward")) {
                    full=l$as*l$bs/l$ps,
                    forward=l$as,
                    backward=l$bs)
-      mn <- colSums(ps*pts[l$cs,,drop=F])/sum(ps)
+      mn <- colSums(ps*pts[l$cs,,drop=FALSE])/sum(ps)
       c(180/pi*atan2(mn[1],mn[2]),mn[3])
     }))
   colnames(x) <- c("lon","lat")
